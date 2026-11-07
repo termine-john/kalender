@@ -715,7 +715,7 @@ async function init(){
     del(id){if(roBlock())return;col.doc(id).delete().catch(failed)},
     async names(n,keys){if(roBlock())return;await col.doc("_config").set({typ:"config",namen:n,personen:keys||SLOTS},{merge:true})},
     async conf(o){if(roBlock())return;await col.doc("_config").set({typ:"config",...o},{merge:true})},
-    async wipe(){if(roBlock())throw new Error("ro");const snap=await col.get();let b=col.firestore.batch(),n=0;for(const d of snap.docs){b.delete(d.ref);if(++n%400===0){await b.commit();b=col.firestore.batch()}}await b.commit()}};
+    async wipe(){if(roBlock())throw new Error("ro");const snap=await col.get();let b=col.firestore.batch(),n=0;for(const d of snap.docs){const x=d.data();if(x.geschuetzt&&x.ersteller&&x.ersteller!==MY_UID)continue;b.delete(d.ref);if(++n%400===0){await b.commit();b=col.firestore.batch()}}await b.commit()}};
   {let r=null;try{r=localStorage.getItem("fk-rolle-"+cfg.code)}catch(e){}if(r)applyRole(r)}
   await Promise.race([ensureMember(cfg),new Promise(r=>setTimeout(r,5000))]);
   try{const nn=sessionStorage.getItem("fk-namen-neu");if(nn){sessionStorage.removeItem("fk-namen-neu");await store.names(JSON.parse(nn))}}catch(e){}
@@ -943,6 +943,7 @@ const HELP=[
 ["aendern","✏️","Ändern, löschen, rückgängig",`<ul><li><b>Ändern:</b> auf den Eintrag tippen, anpassen, speichern.</li>
 <li><b>Löschen:</b> im Eintrag unten auf „Löschen“. Die App fragt vorher nach.</li>
 <li><b>Rückgängig:</b> nach dem Löschen erscheint unten kurz „Rückgängig“.</li>
+<li><b>🔒 Schützen:</b> Im Eintrag „Vor dem Löschen durch andere schützen“ antippen. Dann kann nur noch die Person, die den Termin eingetragen hat, ihn löschen. Die anderen können ihn weiter ansehen und ändern. Geschützte Termine haben ein 🔒 vor dem Titel.</li>
 <li>Bei Serien kannst du nur diesen Eintrag oder die ganze Serie auf einmal löschen.</li></ul>`],
 ["foto","📷","Per Foto oder Sprache eintragen",`<p><b>📷 Foto:</b> Terminzettel, Brief oder Dienstplan fotografieren. Die App liest Datum und Uhrzeit heraus und schlägt Einträge vor. Du prüfst und speicherst.</p>
 <p><b>🎤 Sprache:</b> auf das Mikrofon tippen und z. B. sagen: „Donnerstag 15 Uhr Elternabend“ oder „morgen Arbeit von 6 bis 14 Uhr“. Nennst du einen Namen, landet der Eintrag in seiner Spalte.</p>`],
@@ -1255,7 +1256,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v46";
+const APP_VER="v47";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -1883,7 +1884,7 @@ function timeTxt(e){if(e.typ==="urlaub")return"";if(e.von&&e.bis)return`${e.von}
 function chipHTML(e,day){
   const multi=e.endDatum&&e.endDatum>e.datum;
   const t=timeTxt(e);
-  let label=e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?(e.titel||"Arbeit"):e.typ==="urlaub"?(e.titel?`Urlaub · ${e.titel}`:"Urlaub"):e.titel;
+  let label=(e.geschuetzt?"🔒 ":"")+(e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?(e.titel||"Arbeit"):e.typ==="urlaub"?(e.titel?`Urlaub · ${e.titel}`:"Urlaub"):e.titel);
   const range=multi&&e.typ!=="geburtstag"?` <span class="rep">(${fmt(e.datum).slice(3)}–${fmt(e.endDatum).slice(3)})</span>`:"";
   const rep=e.serie?` <span class="rep">↻</span>`:"";
   return `<button class="chip ${e.typ} ${e.person}${e.wichtig?" imp":""}${CLASH.has(e.id)?" clash":""}" data-id="${esc(e.id)}" ${CLASH.has(e.id)?'title="Überschneidet sich mit einem anderen Termin"':""}>${t?`<span class="t">${CLASH.has(e.id)?"⚠️ ":""}${t}</span>`:""}<span class="chip-label">${esc(label)}</span>${range}${rep}</button>`;
@@ -2070,8 +2071,14 @@ function isAck(){try{return localStorage.getItem(ackKey())==="1"}catch(e){return
 /* ---------- Neue & geänderte Einträge ---------- */
 let DEVICE_ID="";try{DEVICE_ID=localStorage.getItem("fk-dev")||"";if(!DEVICE_ID){DEVICE_ID="d"+Math.random().toString(36).slice(2,10);localStorage.setItem("fk-dev",DEVICE_ID)}}catch(e){DEVICE_ID="d"+Math.random().toString(36).slice(2,10)}
 const nowISO=()=>new Date().toISOString();
-function stampNew(o){return {...o,erstellt:nowISO(),geraet:DEVICE_ID}}
-function stampEdit(id,o){const prev=[...entries,...tasks,...rewards].find(x=>x.id===id);return {...o,erstellt:(prev&&prev.erstellt)||o.erstellt||nowISO(),geaendert:nowISO(),geraet:DEVICE_ID}}
+function stampNew(o){const r={...o,erstellt:nowISO(),geraet:DEVICE_ID};if(MY_UID&&!r.ersteller)r.ersteller=MY_UID;const nm=MY_MEMBER&&MY_MEMBER.name;if(nm&&!r.vonName)r.vonName=nm;if(r.geschuetzt&&r.ersteller!==MY_UID)delete r.geschuetzt;return r}
+function stampEdit(id,o){const prev=[...entries,...tasks,...rewards].find(x=>x.id===id);const r={...o,erstellt:(prev&&prev.erstellt)||o.erstellt||nowISO(),geaendert:nowISO(),geraet:DEVICE_ID};
+  if(prev&&prev.ersteller&&!r.ersteller)r.ersteller=prev.ersteller;if(prev&&prev.vonName&&!r.vonName)r.vonName=prev.vonName;
+  if(prev&&prev.geschuetzt&&prev.ersteller!==MY_UID)r.geschuetzt=true; // nur der Ersteller kann den Schutz aufheben
+  return r}
+/* Termin-Schutz: nur der Ersteller darf löschen */
+function isMine(e){return !!e&&((!!e.ersteller&&e.ersteller===MY_UID)||(!e.ersteller&&e.geraet===DEVICE_ID))}
+function canDel(e){return !e||!e.geschuetzt||!e.ersteller||e.ersteller===MY_UID}
 function seenAt(){try{let v=localStorage.getItem("fk-seen");if(!v){v=nowISO();localStorage.setItem("fk-seen",v)}return v}catch(e){return nowISO()}}
 function whenTxt(isoStr){const d=new Date(isoStr);const day=iso(d);const t=d.toTimeString().slice(0,5);
   if(day===today)return `heute ${t} Uhr`;if(day===addDays(today,-1))return `gestern ${t} Uhr`;return `${fmt(day)}, ${t} Uhr`}
@@ -2331,6 +2338,8 @@ function drawSheet(){
       ${vlDays(d)?`<label class="f">Woran erinnern?<input id="i-vlt" maxlength="80" value="${esc(vlText(d))}" placeholder="z. B. Geschenk besorgen, Fragen notieren, Unterlagen raussuchen"></label>`:""}
     </div>
     <button class="impbtn" id="i-imp" aria-pressed="${!!d.wichtig}">❗ ${d.wichtig?"Als wichtig markiert":"Als wichtig markieren"}</button>
+    ${store&&store.mode==="db"&&(!isEdit||isMine(d))?`<button class="impbtn" id="i-lock" aria-pressed="${!!d.geschuetzt}">🔒 ${d.geschuetzt?"Geschützt: nur du kannst löschen":"Vor dem Löschen durch andere schützen"}</button>`
+      :d.geschuetzt&&!canDel(d)?`<p class="hint">🔒 Geschützt von <b>${esc(d.vonName||"der Person, die ihn eingetragen hat")}</b>. Nur sie kann ihn löschen. Ändern darfst du ihn trotzdem.</p>`:""}
     ${bd?`<div class="row2"><label class="f">Geburtstag (Tag und Monat)<input type="date" id="i-datum" value="${d.datum}"></label>
       <label class="f">Geburtsjahr (optional)<input type="number" inputmode="numeric" id="i-jahr" min="1900" max="2100" value="${esc(d.geburtsjahr||"")}" placeholder="z. B. 1956"></label></div>
       <p class="hint">Kommt jedes Jahr automatisch wieder. Mit Geburtsjahr wird das Alter angezeigt.</p><input type="hidden" id="i-end" value="">`:`<div class="row2">
@@ -2358,7 +2367,7 @@ function drawSheet(){
       <button class="btn" id="save">${isEdit?"Änderungen speichern":"Eintragen"}</button>
       <button class="btn ghost" id="cancel">Abbrechen</button>
     </div>
-    ${isEdit?(confirmDel?`<div class="confirm"><b>Wirklich löschen?</b><div class="actions">
+    ${isEdit&&canDel(d)?(confirmDel?`<div class="confirm"><b>Wirklich löschen?</b><div class="actions">
         <button class="btn danger" id="delOne">Nur diesen Eintrag</button>
         ${d.serie?`<button class="btn danger" id="delSeries">Ganze Serie (${series})</button>`:""}
         <button class="btn ghost" id="delNo">Nein</button></div></div>`
@@ -2392,6 +2401,7 @@ function drawSheet(){
   showClash(d);
   $("cancel").onclick=closeSheet;
   $("i-imp").onclick=()=>{read();d.wichtig=!d.wichtig;drawSheet()};
+  if($("i-lock"))$("i-lock").onclick=()=>{read();if(!MY_UID){toast("Gerade keine Verbindung · bitte später nochmal");return}d.geschuetzt=!d.geschuetzt;if(d.geschuetzt&&!d.ersteller)d.ersteller=MY_UID;toast(d.geschuetzt?"🔒 Nur du kannst diesen Termin löschen":"Schutz aufgehoben");drawSheet()};
   document.querySelectorAll(".sheet [data-vl]").forEach(b=>b.onclick=()=>{read();d.vorlauf=+b.dataset.vl;if(d.vorlauf&&!d.vorlaufText)d.vorlaufText=vlText(d);drawSheet()});
   if($("voiceIn"))$("voiceIn").onclick=()=>startVoice();
   $("save").onclick=()=>{read();save()};
@@ -2402,12 +2412,14 @@ function drawSheet(){
     if(await askConfirm(`„${d.typ==="geburtstag"?"Geburtstag "+d.titel:d.titel||TYPN[d.typ]}“ wirklich löschen?`)){const id=editId,old=entries.find(x=>x.id===id);await store.del(id);closeSheet();if(old)undoToast("Gelöscht",()=>store.set(id,strip(old)));else toast("Gelöscht")}};
   if($("delNo"))$("delNo").onclick=()=>{confirmDel=false;drawSheet()};
   if($("delOne"))$("delOne").onclick=async()=>{if(!await askConfirm("Nur diesen einen Eintrag löschen?"))return;const id=editId,old=entries.find(x=>x.id===id);await store.del(id);closeSheet();if(old)undoToast("Gelöscht",()=>store.set(id,strip(old)));else toast("Gelöscht")};
-  if($("delSeries"))$("delSeries").onclick=async()=>{const ids=entries.filter(x=>x.serie===d.serie).map(x=>x.id);if(!await askConfirm(`Wirklich die ganze Serie mit ${ids.length} Einträgen löschen?`,"Serie löschen"))return;const olds=entries.filter(x=>ids.includes(x.id)).map(x=>[x.id,strip(x)]);closeSheet();for(const id of ids)await store.del(id);undoToast(`${ids.length} Einträge gelöscht`,async()=>{for(const[id,o] of olds)await store.set(id,o)})};
+  if($("delSeries"))$("delSeries").onclick=async()=>{const skip=entries.filter(x=>x.serie===d.serie&&!canDel(x)).length;if(skip)toast(`${skip} geschützte Einträge bleiben stehen`);const ids=entries.filter(x=>x.serie===d.serie&&canDel(x)).map(x=>x.id);if(!await askConfirm(`Wirklich die ganze Serie mit ${ids.length} Einträgen löschen?`,"Serie löschen"))return;const olds=entries.filter(x=>ids.includes(x.id)).map(x=>[x.id,strip(x)]);closeSheet();for(const id of ids)await store.del(id);undoToast(`${ids.length} Einträge gelöscht`,async()=>{for(const[id,o] of olds)await store.set(id,o)})};
 }
 function clean(d){
   const o={typ:d.typ,person:d.person,titel:d.titel||"",datum:d.datum,endDatum:(d.endDatum&&d.endDatum>d.datum)?d.endDatum:"",
     von:d.typ==="urlaub"?"":(d.von||""),bis:d.typ==="urlaub"?"":(d.bis||""),serie:d.serie||"",intervall:d.intervall||0};
   if(d.wichtig)o.wichtig=true;
+  if(d.geschuetzt){o.geschuetzt=true;if(d.ersteller)o.ersteller=d.ersteller}
+  if(d.vonName)o.vonName=d.vonName;
   if(d.vorlauf!==undefined&&d.vorlauf!==null&&d.vorlauf!==""){o.vorlauf=+d.vorlauf||0;if(o.vorlauf)o.vorlaufText=String(d.vorlaufText||vlText(d)).slice(0,80)}
   if(d.typ==="geburtstag"){o.endDatum="";o.von="";o.bis="";o.serie="";o.intervall=0;o.geburtsjahr=String(d.geburtsjahr||"").replace(/\D/g,"").slice(0,4)}
   return o;
@@ -2883,6 +2895,8 @@ setTimeout(watchAnn,2500);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN anfügen. v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-07f",d:"2026-11-07",t:"Termine schützen",items:[
+    "🔒 Termine schützen: Wer einen Termin eingetragen hat, kann ihn so sperren, dass nur er selbst ihn löschen kann (im Termin „Vor dem Löschen durch andere schützen“)"]},
   {v:"2026-11-07e",d:"2026-11-07",t:"Ideen-Wand & Umfragen",items:[
     "💡 Ideen-Wand: Wünsche für die App vorschlagen und mit 👍 abstimmen (Einstellungen → Ideen-Wand)",
     "📊 Kurze Umfragen erscheinen oben als Karte, ein Tipp zum Abstimmen",
