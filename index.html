@@ -1472,7 +1472,7 @@ function decideWish({l,w},yes){
 function newWish(){
   let art="Ferien";const t0=today;
   const draw=()=>{sheet("Wunsch äußern",`<p class="hint">Wann hättest du ${esc(PEOPLE[0]?PEOPLE[0][1]:"ihn")} gern bei dir? Die Familie bekommt den Wunsch angezeigt und antwortet dir hier.</p>
-    <div class="seg" style="--n:5">${WART.map(a=>`<button class="typ" data-wa="${a}" aria-pressed="${art===a}">${a}</button>`).join("")}</div>
+    <div class="seg" style="--n:3">${WART.map(a=>`<button class="typ" data-wa="${a}" aria-pressed="${art===a}">${a}</button>`).join("")}</div>
     <div class="row2"><label class="f">Von<input type="date" id="wVon" value="${t0}"></label><label class="f">Bis (optional)<input type="date" id="wBis"></label></div>
     <label class="f">Nachricht<input id="wTxt" maxlength="300" placeholder="z. B. 2. Weihnachtsfeiertag bei Oma, Geburtstagsfeier, Zoo-Besuch"></label>
     <div class="actions"><button class="btn" id="wSend">Wunsch senden</button><button class="btn ghost" id="wCancel">Abbrechen</button></div>`);
