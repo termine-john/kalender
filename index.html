@@ -242,6 +242,17 @@ body.offline .appbar{box-shadow:0 0 0 3px #d98a00}
 .tour-card .actions .btn{flex:1 1 0}
 .tour-skip{font-size:.85rem;color:var(--muted);text-decoration:underline;align-self:center}
 @media (prefers-reduced-motion:reduce){.tour-hole{transition:none}}
+.legend div{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px}
+.legend div span{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.av{width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid currentColor;flex:none}
+.av.sm{width:20px;height:20px;border-width:1px;vertical-align:-5px;margin-right:4px}
+.av.big-av{width:44px;height:44px}
+.avgrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.avcell{display:flex;flex-direction:column;align-items:center;gap:4px;min-width:0}
+.avpick{width:64px;height:64px;border-radius:50%;border:2px dashed currentColor;display:flex;align-items:center;justify-content:center;overflow:hidden;font-size:1.3rem}
+.avpick img{width:100%;height:100%;object-fit:cover}
+.avname{font-size:.8rem;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.avdel{font-size:.72rem;color:var(--muted);text-decoration:underline}
 .sec{font-family:var(--f-display);font-size:1.05rem;margin:6px 0 0}
 .empty-note{font-size:.85rem;color:var(--muted);text-align:center;padding:4px}
 
@@ -357,12 +368,18 @@ const SLOTS=["christin","john","robert"];
 const DEFAULT_NAMES=["","",""];
 let NAMES=DEFAULT_NAMES.slice();
 let PEOPLE=[],PNAME={};
+let PHOTOS={};try{PHOTOS=JSON.parse(localStorage.getItem("fk-bilder")||"{}")||{}}catch(e){PHOTOS={}}
+const av=(k,cls="av")=>PHOTOS[k]?`<img class="${cls}" src="${PHOTOS[k]}" alt="">`:"";
+function legendHTML(){return PEOPLE.map(([k,n])=>`<div class="p-${k}">${av(k)}<span>${esc(n)}</span></div>`).join("")}
+function setPhotos(obj){PHOTOS={};for(const[k,v] of Object.entries(obj||{}))if(typeof v==="string"&&v.startsWith("data:image/"))PHOTOS[k]=v;
+  try{localStorage.setItem("fk-bilder",JSON.stringify(PHOTOS))}catch(e){}
+  const lg=document.querySelector(".legend");if(lg&&PEOPLE.length)lg.innerHTML=legendHTML()}
 function applyNames(arr){
   NAMES=SLOTS.map((k,i)=>String((arr&&arr[i])||"").trim().slice(0,20)||`Person ${i+1}`);
   PEOPLE=[...SLOTS.map((k,i)=>[k,NAMES[i]]),["gemeinsam","Gemeinsam"]];
   PNAME=Object.fromEntries(PEOPLE);
   const lg=document.querySelector(".legend");
-  if(lg)lg.innerHTML=PEOPLE.map(([k,n])=>`<div class="p-${k}">${esc(n)}</div>`).join("");
+  if(lg)lg.innerHTML=legendHTML();
 }
 
 const WD=["So","Mo","Di","Mi","Do","Fr","Sa"];
@@ -475,6 +492,7 @@ async function init(){
     const conf=snap.docs.find(d=>d.id==="_config");
     if(conf){const n=conf.data().namen;if(Array.isArray(n)){applyNames(n);try{localStorage.setItem("fk-namen",JSON.stringify(n))}catch(e){}}}
     LESE=conf?(conf.data().lesen||[]):[];
+    if(conf&&conf.data().bilder)setPhotos(conf.data().bilder);
     splitData(snap.docs.filter(d=>d.id!=="_config").map(d=>({...d.data(),id:d.id})));
     const nr=calNr();
     if(snap.metadata.hasPendingWrites)setStatus(`Kalender ${nr} · Änderungen werden übertragen …`);
@@ -520,6 +538,10 @@ function showSettings(){
     <h4 class="sub">Mit einem anderen Kalender verbinden</h4>
     ${joinBox()}
     <p class="hint">Deine bisherigen Einträge werden dabei in den neuen Kalender übernommen.</p>
+    <h4 class="sub">Bilder der Personen</h4>
+    <div class="avgrid">${PEOPLE.map(([k,n])=>`<div class="avcell"><button class="avpick p-${k}" data-avpick="${k}" aria-label="Bild für ${esc(n)} wählen">${PHOTOS[k]?`<img src="${PHOTOS[k]}" alt="">`:`<span>📷</span>`}</button><span class="avname">${esc(n)}</span>${PHOTOS[k]?`<button class="avdel" data-avdel="${k}">Entfernen</button>`:""}</div>`).join("")}</div>
+    <input type="file" id="avIn" accept="image/*" hidden>
+    <p class="hint">Tippe auf einen Kreis und wähle ein Foto. Es wird verkleinert und erscheint bei allen über dem Namen.</p>
     <h4 class="sub">Namen der Spalten</h4>
     ${nameFields(NAMES)}
     <button class="btn ghost" id="nmSave">Namen speichern</button>
@@ -555,6 +577,7 @@ function showSettings(){
   const sh=document.getElementById("invShare");
   if(navigator.share)sh.onclick=()=>navigator.share({title:"Familienkalender",text:"Unser Familienkalender",url:link}).catch(()=>{});else sh.hidden=true;
   document.getElementById("setClose").onclick=closeSheet;
+  wirePhotos();
   document.getElementById("nmSave").onclick=async()=>{const n=readNames();if(!n.some(Boolean)){toast("Bitte mindestens einen Namen eintragen");return}try{await store.names(n);applyNames(n);render();toast("Namen gespeichert")}catch(e){toast("Speichern hat nicht geklappt")}};
   document.getElementById("applCopy").onclick=async()=>{try{await navigator.clipboard.writeText(appLink);toast("App-Link kopiert")}catch(e){const r=document.createRange();r.selectNodeContents(document.getElementById("appl"));const x=getSelection();x.removeAllRanges();x.addRange(r);toast("Link markiert, jetzt kopieren")}};
   document.getElementById("disc").onclick=async()=>{if(!await askConfirm("Dieses Handy vom Kalender trennen? Die Termine bleiben für die anderen erhalten. Zum erneuten Verbinden brauchst du den Einladungslink.","Trennen"))return;localStorage.removeItem(CFG_KEY);location.reload()};
@@ -720,7 +743,7 @@ function starWeek(p){const m=mondayOf(today);return taskLogs.filter(l=>l.person=
 let popPerson="";
 function renderStars(){
   const P=PEOPLE.slice(0,3);
-  const cards=P.map(([k,n])=>`<div class="starcard${popPerson===k?" pop":""}"><span class="nm p-${k}" style="background:none">${esc(n)}</span><span class="big">⭐ ${starBalance(k)}</span><span class="wk">diese Woche +${starWeek(k)}</span></div>`).join("");
+  const cards=P.map(([k,n])=>`<div class="starcard${popPerson===k?" pop":""}">${av(k,"av big-av")}<span class="nm p-${k}" style="background:none">${esc(n)}</span><span class="big">⭐ ${starBalance(k)}</span><span class="wk">diese Woche +${starWeek(k)}</span></div>`).join("");
   popPerson="";
   const vis=tasks.filter(t=>{const l=logFor(t);return !(t.wiederholung==="einmalig"&&l&&l.datum<today)});
   vis.sort((a,b)=>(!!logFor(a))-(!!logFor(b))||String(a.person).localeCompare(b.person));
@@ -815,7 +838,7 @@ function scheduleMirror(){clearTimeout(mirrorTimer);mirrorTimer=setTimeout(syncM
 async function syncMirrors(){
   if(!memberOK||!FS||!LESE.length)return;
   for(const l of LESE){
-    const body={namen:SLOTS.map((k,i)=>(l.spalten||[]).includes(k)?NAMES[i]:""),spalten:l.spalten,name:l.name||"",eintraege:mirrorData(l)};
+    const body={namen:SLOTS.map((k,i)=>(l.spalten||[]).includes(k)?NAMES[i]:""),bilder:Object.fromEntries(Object.entries(PHOTOS).filter(([k])=>(l.spalten||[]).includes(k))),spalten:l.spalten,name:l.name||"",eintraege:mirrorData(l)};
     const key=JSON.stringify(body);let last="";try{last=localStorage.getItem("fk-mirror-"+l.rc)||""}catch(e){}
     if(key===last)continue;
     try{await FS.doc(`lesen/${l.rc}`).set({...body,stand:new Date().toISOString()});try{localStorage.setItem("fk-mirror-"+l.rc,key)}catch(e){}}catch(e){console.warn("Spiegel",e)}
@@ -889,7 +912,8 @@ function startReader(cfg){
       PEOPLE=PEOPLE.filter(([k])=>sp.includes(k));
       document.documentElement.style.setProperty("--ncol",String(PEOPLE.length));
       const h1=document.querySelector("h1");if(h1)h1.textContent=PEOPLE.length===1?`Termine von ${PEOPLE[0][1]}`:"Familienkalender";
-      const lg=document.querySelector(".legend");if(lg)lg.innerHTML=PEOPLE.map(([k,n])=>`<div class="p-${k}">${esc(n)}</div>`).join("");
+      PHOTOS={};for(const[k,v] of Object.entries(d.bilder||{}))if(typeof v==="string"&&v.startsWith("data:image/"))PHOTOS[k]=v;
+      const lg=document.querySelector(".legend");if(lg)lg.innerHTML=legendHTML();
       entries=(d.eintraege||[]).map((e,i)=>({...e,id:"r"+i}));
       const st=d.stand?new Date(d.stand):null;
       setStatus(`Nur ansehen${d.name?" · "+d.name:""}${st?" · Stand "+st.toLocaleDateString("de-DE")+" "+st.toTimeString().slice(0,5):""}`);
@@ -965,6 +989,26 @@ function themeNow(){try{return localStorage.getItem("fk-theme")||"dark"}catch(e)
 function setTheme(t){try{localStorage.setItem("fk-theme",t)}catch(e){}
   if(t==="auto")document.documentElement.removeAttribute("data-theme");else document.documentElement.setAttribute("data-theme",t);
   const m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#0d1418":"#15394b")}
+/* ---------- Bilder über den Namen ---------- */
+function shrinkPhoto(file){
+  return new Promise((ok,no)=>{const url=URL.createObjectURL(file);const img=new Image();
+    img.onload=()=>{const S=160,c=document.createElement("canvas");c.width=S;c.height=S;const g=c.getContext("2d");
+      const m=Math.min(img.width,img.height);g.drawImage(img,(img.width-m)/2,(img.height-m)/2,m,m,0,0,S,S);URL.revokeObjectURL(url);ok(c.toDataURL("image/jpeg",.82))};
+    img.onerror=()=>{URL.revokeObjectURL(url);no(new Error("bild"))};img.src=url});
+}
+async function savePhoto(k,data){
+  const neu={...PHOTOS};if(data)neu[k]=data;else delete neu[k];
+  setPhotos(neu);
+  if(store&&store.conf){try{await store.conf({bilder:{...Object.fromEntries(PEOPLE.map(([p])=>[p,neu[p]||""]))}})}catch(e){toast("Bild konnte nicht gespeichert werden");return}}
+  scheduleMirror&&scheduleMirror();render();toast(data?"Bild gespeichert":"Bild entfernt");showSettings();
+}
+function wirePhotos(){
+  const inp=document.getElementById("avIn");if(!inp)return;let who="";
+  document.querySelectorAll("[data-avpick]").forEach(b=>b.onclick=()=>{who=b.dataset.avpick;inp.click()});
+  document.querySelectorAll("[data-avdel]").forEach(b=>b.onclick=async()=>{if(await askConfirm(`Bild von ${PNAME[b.dataset.avdel]} entfernen?`,"Entfernen"))savePhoto(b.dataset.avdel,null)});
+  inp.onchange=async()=>{const f=inp.files&&inp.files[0];inp.value="";if(!f||!who)return;try{savePhoto(who,await shrinkPhoto(f))}catch(e){toast("Das Bild konnte nicht geöffnet werden")}};
+}
+
 function calNr(){const c=getCfg();return c&&c.code?c.code.slice(0,4).toUpperCase():"–"}
 function joinFromText(t){const m=String(t||"").match(/#join=([^\s&]+)/);const v=m?m[1]:String(t||"").trim().toLowerCase();
   if(!/^[a-z2-9]{18,}$/.test(v)&&!m){toast("Das ist kein gültiger Einladungslink");return}
@@ -1142,7 +1186,7 @@ function renderMorning(){
   document.getElementById("mTitle").textContent=`Heute, ${WDL[d.getDay()]} ${d.getDate()}. ${MON[d.getMonth()]}`;
   document.getElementById("mList").innerHTML=list.length?list.map(e=>{
     const t=timeTxt(e);const lbl=e.typ==="geburtstag"?bdayLabel(e,today):e.typ==="arbeit"?`Arbeit ${t}`:e.typ==="urlaub"?"Urlaub":`${t?t+" ":""}${e.titel}`;
-    return `<li${e.wichtig?' class="imp"':""}><span class="who p-${e.person}" style="background:none">${PNAME[e.person]}</span><span>${e.wichtig?"❗ ":""}${esc(lbl)}${e.typ==="arbeit"&&e.titel&&e.titel!=="Arbeit"?" · "+esc(e.titel):""}</span></li>`}).join("")
+    return `<li${e.wichtig?' class="imp"':""}><span class="who p-${e.person}" style="background:none">${av(e.person,"av sm")}${PNAME[e.person]}</span><span>${e.wichtig?"❗ ":""}${esc(lbl)}${e.typ==="arbeit"&&e.titel&&e.titel!=="Arbeit"?" · "+esc(e.titel):""}</span></li>`}).join("")
     :`<li>Heute steht nichts im Kalender.</li>`;
   const up=[];for(let i=1;i<=7;i++){const dd=addDays(today,i);for(const e of entries)if(e.wichtig&&onDay(e,dd)&&!up.some(u=>u.e===e))up.push({e,dd})}
   const old=box.querySelector(".upcoming");if(old)old.remove();
