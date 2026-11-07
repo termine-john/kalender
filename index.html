@@ -839,7 +839,7 @@ function showSetup(){
   sheet("Willkommen",`${langSelect()}<p>Hier legst du einen eigenen Kalender für deine Familie an. Trag dafür die Namen ein, die als Spalten erscheinen sollen. Die Spalte „Gemeinsam“ gibt es immer dazu.</p>
     ${nameFields(["","",""])}
     <div class="actions"><button class="btn" id="cfgNew">Neuen Kalender starten</button></div>
-    <h4 class="sub">Du hast einen Einladungslink bekommen?</h4>
+    <h4 class="sub">✉️ Du hast einen Einladungslink bekommen?</h4>
     ${joinBox()}
     <p class="hint">Privates, kostenloses Projekt nur zur eigenen Nutzung, kein Verkauf. Mehr dazu und was gespeichert wird: <a href="datenschutz.html">Datenschutz & Nutzungshinweise</a>.</p>
     <div class="actions"><button class="btn ghost" id="cfgLocal">Erst mal nur auf diesem Handy</button><button class="btn ghost" id="cfgLater">Schließen</button></div>`);
@@ -858,32 +858,32 @@ function showSettings(){
   const link=inviteLink(c);let curLink=link;
   const appLink=location.origin+location.pathname;
   sheet("Teilen & Einstellungen",`<details class="rw"><summary class="hint" style="cursor:pointer">🔑 Kalender-Nummer anzeigen</summary><p class="hint" style="margin:6px 0 0">Dieses Handy ist mit <b>Kalender ${calNr()}</b> verbunden. Bei allen in der Familie muss hier dieselbe Nummer stehen.</p></details>
-    <h4 class="sub">Familie einladen</h4><p class="hint">Wähle zuerst, was die eingeladene Person darf. Gib die Links nur an die Familie weiter.</p>
+    <h4 class="sub">👪 Familie einladen</h4><p class="hint">Wähle zuerst, was die eingeladene Person darf. Gib die Links nur an die Familie weiter.</p>
     <div class="seg" style="--n:2"><button class="typ" data-inv="lesen" aria-pressed="true">👁️ Nur lesen</button><button class="typ" data-inv="schreiben" aria-pressed="false">✏️ Darf mitschreiben</button></div>
     <div class="linkbox" id="inv">${esc(link)}</div>
     <p class="hint" id="invHint">Wer diesen Link öffnet, sieht alle Einträge, kann aber nichts ändern. Freischalten kannst du die Person jederzeit unten.</p>
     <div class="actions"><button class="btn" id="invCopy">Link kopieren</button><button class="btn ghost" id="invShare">Teilen …</button></div>
     <a class="btn ghost" id="invWa" style="text-align:center;text-decoration:none" href="https://wa.me/?text=${encodeURIComponent("Unser Familienkalender: "+link)}" target="_blank" rel="noopener">Per WhatsApp schicken</a>
-    <h4 class="sub">Mitglieder & Rechte</h4>
+    <h4 class="sub">👥 Mitglieder & Rechte</h4>
     <p class="hint">✏️ darf eintragen, ändern und löschen · 👁️ sieht alles, kann aber nichts ändern. Tippe zum Umstellen. Die Nur-Lese-Links weiter unten sind davon nicht betroffen.</p>
     <div id="memList" class="tasklist"><p class="hint">Lade Mitglieder …</p></div>
     ${nameBox()}
     <button class="btn ghost" id="tokWipe">Alte Mitschreib-Links ungültig machen</button>
     ${readLinkSection()}
-    <h4 class="sub">Mit einem anderen Kalender verbinden</h4>
+    <h4 class="sub">🔗 Mit einem anderen Kalender verbinden</h4>
     ${joinBox()}
     <p class="hint">Deine bisherigen Einträge werden dabei in den neuen Kalender übernommen.</p>
-    <h4 class="sub">Bilder der Personen</h4>
+    <h4 class="sub">📸 Bilder der Personen</h4>
     <div class="avgrid">${PEOPLE.map(([k,n])=>`<div class="avcell"><button class="avpick p-${k}" data-avpick="${k}" aria-label="Bild für ${esc(n)} wählen">${PHOTOS[k]?`<img src="${PHOTOS[k]}" alt="">`:`<span>📷</span>`}</button><span class="avname">${esc(n)}</span>${PHOTOS[k]?`<button class="avdel" data-avdel="${k}">Entfernen</button>`:""}</div>`).join("")}</div>
     <input type="file" id="avIn" accept="image/*" hidden>
     <p class="hint">Tippe auf einen Kreis und wähle ein Foto. Es wird verkleinert und erscheint bei allen über dem Namen.</p>
-    <h4 class="sub">Personen im Haushalt</h4>
+    <h4 class="sub">🏠 Personen im Haushalt</h4>
     <div id="persList" class="tasklist">${SLOTS.map((k,i)=>personRow(k,NAMES[i])).join("")}</div>
     <div class="tasklist" id="gemRow">${`<div class="task prow" data-pkey="gemeinsam" data-col="${esc(FARBEN.gemeinsam||"")}" style="grid-template-columns:auto 1fr"><button class="pcol" data-pcolbtn="gemeinsam" style="background:${shownColor("gemeinsam")}" aria-label="Farbe wählen"></button><span style="align-self:center">Gemeinsam <span class="hint">(nur Farbe)</span></span>${paletteHTML("gemeinsam")}</div>`}</div>
     <button class="btn ghost" id="persAdd">+ Person hinzufügen</button>
     <p class="hint">Jede Person bekommt eine eigene Spalte und Farbe. Tippe auf den farbigen Kreis, um die Farbe zu ändern. „Gemeinsam“ gibt es immer dazu. <a href="#" id="persHelp">Wie geht das genau?</a></p>
     <button class="btn" id="nmSave">Personen speichern</button>
-    <h4 class="sub">Für Freunde: eigenen Kalender</h4>
+    <h4 class="sub">🤝 Für Freunde: eigenen Kalender</h4>
     <p class="hint">Mit diesem Link können andere die App nutzen und legen dabei ihren <b>eigenen, getrennten</b> Kalender an. Deine Termine sehen sie nicht.</p>
     <div class="linkbox" id="appl">${esc(appLink)}</div>
     <button class="btn ghost" id="applCopy">App-Link kopieren</button>
@@ -894,7 +894,7 @@ function showSettings(){
     <button class="btn ghost" id="supBtn">💬 Support · Nachricht an den Entwickler</button>
     <button class="btn ghost" id="ideaBtn">💡 Ideen-Wand · Wünsche für die App</button>
     <div id="adminBox"></div>
-    <h4 class="sub">Darstellung</h4>
+    <h4 class="sub">🎨 Darstellung</h4>
     ${langSelect()}
     <div class="rw">
       <label class="pick" style="justify-content:space-between"><span>Kompakt-Modus (mehr auf einen Blick)</span><input type="checkbox" id="optCompact" ${prefOn("compact")?"checked":""}></label>
@@ -908,14 +908,14 @@ function showSettings(){
       <div class="rw-btns"><button id="bgPick">${bgImage()?"Anderes Bild wählen":"Bild wählen"}</button>${bgImage()?'<button id="bgDel">Entfernen</button>':""}</div>
       <input type="file" id="bgIn" accept="image/*" hidden><p class="hint" style="margin:0">Zum Beispiel ein Familienfoto. Gilt nur für dieses Handy.</p></div>
     <div class="seg" style="--n:3">${[["dark","🌙 Dunkel"],["light","☀️ Hell"],["auto","📱 Wie Handy"]].map(([k,n])=>`<button class="typ" data-theme-set="${k}" aria-pressed="${themeNow()===k}">${n}</button>`).join("")}</div>
-    <h4 class="sub">Sperrbildschirm</h4>
+    <h4 class="sub">📱 Sperrbildschirm</h4>
     <button class="btn ghost" id="setImg">🖼 Bild mit den heutigen Terminen erstellen</button>
-    <h4 class="sub">Sicherungen</h4>
+    <h4 class="sub">💾 Sicherungen</h4>
     <div class="rw"><p class="hint" style="margin:0">Läuft automatisch: <b>täglich</b> auf diesem Handy (die letzten 7 Tage) und <b>wöchentlich</b> in der Cloud (die letzten 4 Wochen). Beim Wiederherstellen kommen gelöschte Einträge zurück, vorhandene bleiben unverändert.</p>
       <div id="bkList" class="tasklist"></div>
       <div class="rw-btns"><button id="bkNow">Jetzt sichern</button><button id="bkFile">Als Datei speichern</button><button id="bkLoad">Aus Datei wiederherstellen</button></div>
       <input type="file" id="bkIn" accept=".json,application/json" hidden></div>
-    <h4 class="sub">Deine Daten</h4>
+    <h4 class="sub">📦 Deine Daten</h4>
     <button class="btn ghost" id="exp">Alle Termine exportieren (.ics)</button>
     <p class="hint">Die Datei kannst du z. B. in Google Kalender importieren oder als Sicherung aufheben.</p>
     <button class="btn danger" id="wipe">Kalender endgültig löschen</button>
@@ -996,7 +996,8 @@ const HELP=[
 <li>Person, Datum und ggf. Uhrzeit wählen. Ohne Uhrzeit gilt der Eintrag den ganzen Tag.</li>
 <li>Für mehrere Tage am Stück ein <b>„Bis Datum“</b> eintragen (bei Urlaub „Letzter Tag“).</li>
 <li><b>Speichern</b> tippen.</li></ol>
-<ul><li><b>❗ Wichtig:</b> Der Eintrag wird hervorgehoben und erscheint in der Tagesübersicht schon Tage vorher.</li>
+<ul><li><b>😀 Emojis:</b> Termine bekommen automatisch ein passendes Emoji, z. B. 🦷 bei „Zahnarzt“, ⚽ bei „Fußball“ oder 🏫 bei „Schule“. Arbeitszeiten zeigen 🌅 Früh-, 🌆 Spät- oder 🌙 Nachtdienst. Beginnt dein Titel schon mit einem eigenen Emoji, bleibt deins stehen.</li>
+<li><b>❗ Wichtig:</b> Der Eintrag wird hervorgehoben und erscheint in der Tagesübersicht schon Tage vorher.</li>
 <li><b>Geburtstag:</b> kommt jedes Jahr von selbst wieder. Mit Geburtsjahr wird das Alter angezeigt.</li>
 <li>Beim Tippen schlägt die App Titel vor, die ihr schon mal benutzt habt.</li></ul>`],
 ["wdh","🔁","Wiederkehrende Termine",`<ol><li>Beim neuen Eintrag unter <b>„Wiederholen“</b> „Jede Woche“ oder „Alle 2 Wochen“ wählen.</li>
@@ -1073,7 +1074,7 @@ function showHelp(open){
     <label class="f hsearch">Suchen<input id="hQ" type="search" placeholder="z. B. Person, Link, Geburtstag …"></label>
     <div id="hList">${HELP.map(([k,ic,t,b])=>`<details data-hk="${k}"${k===open?" open":""}><summary>${ic} ${t}</summary><div class="hb">${b}</div></details>`).join("")}</div>
     <p class="hint" id="hNone" hidden>Nichts gefunden. Probier ein anderes Wort.</p>
-    <h4 class="sub">Nicht weitergekommen?</h4>
+    <h4 class="sub">🤔 Nicht weitergekommen?</h4>
     <button class="btn" id="hSupport" style="width:100%">💬 Nachricht an den Entwickler</button>
     <button class="btn ghost" id="hIdea" style="width:100%">💡 Ideen-Wand</button>
     <div class="actions"><button class="btn ghost" id="hClose">Schließen</button></div></div>`);
@@ -1324,7 +1325,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v56";
+const APP_VER="v57";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -1653,7 +1654,7 @@ function showReaderSettings(){
     <button class="btn ghost" id="rHelp">❓ Hilfe & Anleitung</button>
     <button class="btn ghost" id="rSup">💬 Support · Nachricht an den Entwickler</button>
     <button class="btn ghost" id="rIdea">💡 Ideen-Wand</button>
-    <h4 class="sub">Darstellung</h4>
+    <h4 class="sub">🎨 Darstellung</h4>
     ${langSelect()}
     <div class="seg" style="--n:3">${[["dark","🌙 Dunkel"],["light","☀️ Hell"],["auto","📱 Wie Handy"]].map(([k,n])=>`<button class="typ" data-theme-set="${k}" aria-pressed="${themeNow()===k}">${n}</button>`).join("")}</div>
     <div class="rw">
@@ -1664,7 +1665,7 @@ function showReaderSettings(){
     ${pbgBox()}
     <button class="btn ghost" id="setImg">🖼 Bild mit den heutigen Terminen erstellen</button>
     <button class="btn ghost" id="exp">Alle Termine exportieren (.ics)</button>
-    <h4 class="sub">Mit einem anderen Kalender verbinden</h4>
+    <h4 class="sub">🔗 Mit einem anderen Kalender verbinden</h4>
     ${joinBox()}
     <p class="hint"><a href="datenschutz.html">Datenschutz, Impressum & Nutzungshinweise</a></p>
     <div class="actions"><button class="btn danger" id="disc">Auf diesem Handy trennen</button><button class="btn ghost" id="setClose">Schließen</button></div>`);
@@ -1729,7 +1730,7 @@ function readLinkSection(){
   const rows=LESE.map(l=>`<div class="rw"><div class="rw-head"><b>${esc(l.name||"Nur-Lese-Link")}</b><span class="hint">sieht: ${(l.spalten||[]).map(k=>esc(PNAME[k]||k)).join(", ")}</span></div>
     <div class="linkbox">${esc(readLink(l.rc))}</div>
     <div class="rw-btns"><button data-rlcopy="${l.rc}">Link kopieren</button><a class="btn ghost" style="padding:7px 10px;font-size:.82rem;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent("Hier siehst du unsere Termine: "+readLink(l.rc))}">Per WhatsApp</a><button data-rldel="${l.rc}">Link löschen</button></div></div>`).join("");
-  return `<h4 class="sub">Nur-Lese-Links (z. B. für Papa)</h4>
+  return `<h4 class="sub">🔗 Nur-Lese-Links (z. B. für Papa)</h4>
     <p class="hint">Wer diesen Link öffnet, kann die ausgewählten Spalten <b>nur ansehen</b>, nichts ändern und nichts von den anderen Spalten sehen. Änderungen erscheinen bei ihm automatisch, sobald ein Familien-Handy die App geöffnet hat.</p>
     ${rows}
     <div class="rw"><label class="f">Für wen?<input id="rlName" maxlength="30" placeholder="z. B. Papa von John"></label>
@@ -1955,7 +1956,7 @@ function timeTxt(e){if(e.typ==="urlaub")return"";if(e.von&&e.bis)return`${e.von}
 function chipHTML(e,day){
   const multi=e.endDatum&&e.endDatum>e.datum;
   const t=timeTxt(e);
-  let label=(e._privat?"👥 ":"")+(e.geschuetzt?"🔒 ":"")+(e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?(e.titel||"Arbeit"):e.typ==="urlaub"?(e.titel?`Urlaub · ${e.titel}`:"Urlaub"):e.titel);
+  let label=emoP(e)+(e._privat?"👥 ":"")+(e.geschuetzt?"🔒 ":"")+(e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?(e.titel||"Arbeit"):e.typ==="urlaub"?(e.titel?`Urlaub · ${e.titel}`:"Urlaub"):e.titel);
   const range=multi&&e.typ!=="geburtstag"?` <span class="rep">(${fmt(e.datum).slice(3)}–${fmt(e.endDatum).slice(3)})</span>`:"";
   const rep=e.serie?` <span class="rep">↻</span>`:"";
   return `<button class="chip ${e.typ} ${e.person}${e.wichtig?" imp":""}${CLASH.has(e.id)?" clash":""}" data-id="${esc(e.id)}" ${CLASH.has(e.id)?'title="Überschneidet sich mit einem anderen Termin"':""}>${t?`<span class="t">${CLASH.has(e.id)?"⚠️ ":""}${t}</span>`:""}<span class="chip-label">${esc(label)}</span>${range}${rep}</button>`;
@@ -2074,7 +2075,7 @@ function renderMonth(){
     const d=parse(day),fe=feierOf(day),fr=ferienOf(day);
     const list=entries.filter(e=>onDay(e,day)).sort(sortE);
     list.sort((a,b)=>(!!b.wichtig)-(!!a.wichtig));
-    const bars=list.slice(0,3).map(e=>{const cls=e.typ==="termin"?e.person:e.typ;const t=e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?`${PNAME[e.person][0]} ${e.von||"Arbeit"}`:e.typ==="urlaub"?`${PNAME[e.person]} Urlaub`:`${e.von?e.von+" ":""}${e.titel}`;return `<div class="mbar ${cls}${e.wichtig?" imp":""}">${esc(t)}</div>`}).join("");
+    const bars=list.slice(0,3).map(e=>{const cls=e.typ==="termin"?e.person:e.typ;const t=emoP(e)+(e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?`${PNAME[e.person][0]} ${e.von||"Arbeit"}`:e.typ==="urlaub"?`${PNAME[e.person]} Urlaub`:`${e.von?e.von+" ":""}${e.titel}`);return `<div class="mbar ${cls}${e.wichtig?" imp":""}">${esc(t)}</div>`}).join("");
     const pp=papaOf(day);
     h+=`<button class="mcell${[0,6].includes(d.getDay())?" we":""}${d.getMonth()!==m?" out":""}${pp?" papa":fr?" fer":""}${fe?" feier":""}${day===today?" today":""}" data-goday="${day}" aria-label="${fmt(day)}${fe?", "+fe:""}${fr?", "+fr:""}, ${list.length} Einträge"><span class="n">${d.getDate()}</span>${fe?`<span class="fname">${esc(fe)}</span>`:""}${bars}${list.length>3?`<span class="more">+${list.length-3} mehr</span>`:""}</button>`;
   }
@@ -2162,6 +2163,31 @@ function startPriv(){
 async function loadMembers2(){const c=getCfg();if(!c||!c.code||!FS)return;try{const sn=await FS.collection(`familien/${c.code}/mitglieder`).get();MEMBERS=sn.docs.map(d=>({...d.data(),id:d.id}))}catch(e){}}
 const memName=id=>{const m=MEMBERS.find(x=>x.id===id);return id===MY_UID?"du":(m&&m.name)||"Gerät ohne Namen"};
 /* Termin-Schutz: nur der Ersteller darf löschen */
+
+/* ---------- Passende Emojis zu Terminen ---------- */
+const TYPE_EMO={termin:"📅",arbeit:"💼",urlaub:"🏖️",geburtstag:"🎂"};
+const EMO_RULES=[
+ [/zahn|kieferorth/,"🦷"],[/tierarzt|tierärzt|impfung hund|impfung katze/,"🐾"],[/kinderarzt|arzt|ärztin|praxis|doktor|vorsorge|untersuchung|impf|u\d\b/,"🩺"],[/krankenhaus|klinik|op\b/,"🏥"],[/apotheke|rezept/,"💊"],[/physio|massage|ergo|logo/,"💆"],
+ [/friseur|frisör|haare schneiden/,"💇"],[/fußball|fussball|kicken/,"⚽"],[/schwimm|baden|freibad|hallenbad/,"🏊"],[/turnen|sport|training|fitness|gym|verein/,"🏃"],[/tanz|ballett/,"💃"],[/reiten|pferd/,"🐴"],[/fahrrad/,"🚲"],
+ [/elternabend|elterngespräch|elternsprechtag|lehrer/,"👨‍👩‍👧"],[/schule|klassen|prüfung|klausur|zeugnis|einschulung/,"🏫"],[/kita|kindergarten|hort|krippe/,"🧸"],[/hausaufgabe|lernen|nachhilfe/,"📚"],
+ [/papa|pascal/,"👨"],[/mama/,"👩"],[/\boma\b|\bopa\b|großeltern/,"👵"],[/übernacht|schlafen bei/,"🛏️"],
+ [/geburtstag|party|feier|fest\b/,"🎉"],[/hochzeit/,"💍"],[/kino|film/,"🎬"],[/theater|konzert|musical/,"🎭"],[/musik|gitarre|klavier|chor|flöte/,"🎵"],[/zoo|tierpark/,"🦁"],[/spielplatz|spielen|spielenachmittag/,"🛝"],[/ausflug|wander/,"🥾"],[/strand|see\b|ostsee|nordsee/,"🏖️"],
+ [/einkauf|supermarkt|shopping|einkaufen/,"🛒"],[/\bessen\b|restaurant|brunch|frühstück|grillen|abendessen/,"🍽️"],[/kuchen|backen|plätzchen/,"🧁"],[/weihnacht|nikolaus|advent/,"🎄"],[/ostern/,"🐣"],[/silvester/,"🎆"],[/halloween/,"🎃"],
+ [/\bauto\b|tüv|werkstatt|reifen|ölwechsel/,"🚗"],[/flug|flughafen/,"✈️"],[/\bzug\b|\bbahn\b|s-bahn|u-bahn/,"🚆"],[/urlaub|reise|koffer/,"🧳"],[/umzug/,"📦"],
+ [/bürgeramt|\bamt\b|behörde|jobcenter|finanzamt|gericht/,"🏛️"],[/\bbank\b|sparkasse/,"🏦"],[/\bpost\b|paket/,"📮"],[/handwerker|reparatur|monteur/,"🔧"],[/müll|abfall|sperrmüll/,"🗑️"],[/putzen|aufräumen|wäsche/,"🧹"],
+ [/telefon|anruf|call\b/,"📞"],[/besuch/,"🏠"],[/meeting|besprechung|konferenz/,"💼"],[/kirche|gottesdienst|moschee/,"🕊️"],[/hund|gassi/,"🐕"],[/katze/,"🐈"],[/aquarium|fische/,"🐠"],[/garten|pflanzen/,"🌱"],[/zahlen|rechnung|miete/,"💶"]
+];
+const startsEmo=t=>/^(\p{Extended_Pictographic}|\p{Regional_Indicator})/u.test(String(t||"").trim());
+function emo(e){
+  if(!e)return "";
+  if(e.typ==="geburtstag")return "";
+  if(e.typ==="urlaub")return "🏖️";
+  if(e.typ==="arbeit"){const t=(e.titel||"").toLowerCase();if(/nacht/.test(t))return "🌙";if(/spät/.test(t))return "🌆";if(/früh/.test(t))return "🌅";const h=parseInt(e.von||"",10);return isNaN(h)?"💼":h<10?"🌅":h>=18?"🌙":h>=13?"🌆":"💼"}
+  if(startsEmo(e.titel))return "";
+  const t=(e.titel||"").toLowerCase();for(const[re,x] of EMO_RULES)if(re.test(t))return x;
+  return "";
+}
+const emoP=e=>{const x=emo(e);return x?x+" ":""};
 function isMine(e){return !!e&&((!!e.ersteller&&e.ersteller===MY_UID)||(!e.ersteller&&e.geraet===DEVICE_ID))}
 function canDel(e){return !e||!e.geschuetzt||!e.ersteller||e.ersteller===MY_UID}
 function seenAt(){try{let v=localStorage.getItem("fk-seen");if(!v){v=nowISO();localStorage.setItem("fk-seen",v)}return v}catch(e){return nowISO()}}
@@ -2336,7 +2362,7 @@ function renderNext(){
   const n=nextEntry();if(!n){el.hidden=true;return}
   const h=Math.floor(n.diff/60),m=n.diff%60,dd=Math.floor(n.diff/1440);
   const inTxt=n.diff<1?"jetzt":dd>=1&&n.day!==addDays(today,1)?`${WDL[parse(n.day).getDay()]}`:n.day===addDays(today,1)?"morgen":h?`in ${h} Std ${m} Min`:`in ${m} Min`;
-  const e=n.e;const lbl=e.typ==="arbeit"?`Arbeit ${timeTxt(e)}`:`${e.von} ${e.titel}`;
+  const e=n.e;const lbl=emoP(e)+(e.typ==="arbeit"?`Arbeit ${timeTxt(e)}`:`${e.von} ${e.titel}`);
   el.className="nextcard"+(e.wichtig?" imp":"")+(n.diff<=60?" soon":"");
   el.innerHTML=`<span class="nx-l">⏭ Als Nächstes · <b>${esc(inTxt)}</b></span><span class="nx-t">${av(e.person,"av sm")}<b class="p-${e.person}" style="background:none">${esc(PNAME[e.person]||"")}</b> ${e.wichtig?"❗ ":""}${esc(lbl)}</span>`;
   el.onclick=()=>{dayCur=n.day;setView("tag")};
@@ -2367,7 +2393,7 @@ function renderEve(){
   document.getElementById("eveTitle").textContent=`🌙 Morgen, ${WDL[d.getDay()]} ${d.getDate()}. ${MON[d.getMonth()]}`;
   const extra=[papaOf(tm)?"John bei Papa":"",feierOf(tm),ferienOf(tm)].filter(Boolean).join(" · ");
   document.getElementById("eveList").innerHTML=(extra?`<li class="eve-extra">${esc(extra)}</li>`:"")+(list.length?list.map(e=>{
-    const t=timeTxt(e);const lbl=e.typ==="geburtstag"?bdayLabel(e,tm):e.typ==="arbeit"?`Arbeit ${t}`:e.typ==="urlaub"?"Urlaub":`${t?t+" ":""}${e.titel}`;
+    const t=timeTxt(e);const lbl=emoP(e)+(e.typ==="geburtstag"?bdayLabel(e,tm):e.typ==="arbeit"?`Arbeit ${t}`:e.typ==="urlaub"?"Urlaub":`${t?t+" ":""}${e.titel}`);
     return `<li${e.wichtig?' class="imp"':""}><span class="who p-${e.person}" style="background:none">${av(e.person,"av sm")}${esc(PNAME[e.person]||"")}</span><span>${e.wichtig?"❗ ":""}${esc(lbl)}</span></li>`}).join("")
     :`<li>Morgen steht nichts im Kalender. 🌿</li>`);
   const first=list.find(e=>e.von&&e.typ!=="urlaub"&&e.typ!=="geburtstag");
@@ -2384,7 +2410,7 @@ function renderMorning(){
   const d=parse(today);
   document.getElementById("mTitle").textContent=`Heute, ${WDL[d.getDay()]} ${d.getDate()}. ${MON[d.getMonth()]}`;
   document.getElementById("mList").innerHTML=list.length?list.map(e=>{
-    const t=timeTxt(e);const lbl=e.typ==="geburtstag"?bdayLabel(e,today):e.typ==="arbeit"?`Arbeit ${t}`:e.typ==="urlaub"?"Urlaub":`${t?t+" ":""}${e.titel}`;
+    const t=timeTxt(e);const lbl=emoP(e)+(e.typ==="geburtstag"?bdayLabel(e,today):e.typ==="arbeit"?`Arbeit ${t}`:e.typ==="urlaub"?"Urlaub":`${t?t+" ":""}${e.titel}`);
     return `<li${e.wichtig?' class="imp"':""}><span class="who p-${e.person}" style="background:none">${av(e.person,"av sm")}${PNAME[e.person]}</span><span>${e.wichtig?"❗ ":""}${esc(lbl)}${e.typ==="arbeit"&&e.titel&&e.titel!=="Arbeit"?" · "+esc(e.titel):""}</span></li>`}).join("")
     :`<li>Heute steht nichts im Kalender.</li>`;
   const up=[];for(let i=1;i<=7;i++){const dd=addDays(today,i);for(const e of entries)if(e.wichtig&&onDay(e,dd)&&!up.some(u=>u.e===e))up.push({e,dd})}
@@ -2419,7 +2445,7 @@ function drawSheet(){
   document.getElementById("sheetHost").innerHTML=`
   <div class="backdrop" id="bd"><div class="sheet" role="dialog" aria-modal="true" aria-label="${isEdit?"Eintrag bearbeiten":"Neuer Eintrag"}">
     <h3>${isEdit?"Eintrag bearbeiten":"Neuer Eintrag"}</h3>
-    <div class="seg" style="--n:4">${["termin","arbeit","urlaub","geburtstag"].map(t=>`<button class="typ" data-typ="${t}" aria-pressed="${d.typ===t}">${TYPN[t]}</button>`).join("")}</div>
+    <div class="seg" style="--n:4">${["termin","arbeit","urlaub","geburtstag"].map(t=>`<button class="typ" data-typ="${t}" aria-pressed="${d.typ===t}">${TYPE_EMO[t]} ${TYPN[t]}</button>`).join("")}</div>
     ${!isEdit&&voiceOK()?`<button class="btn ghost" id="voiceIn">🎤 Per Sprache ausfüllen</button>`:""}
     <div class="seg" style="--n:${Math.min(4,peopleAllowed.length)}">${peopleAllowed.map(([k,n])=>`<button class="p-${k}" data-person="${k}" aria-pressed="${d.person===k}">${n}</button>`).join("")}</div>
     ${bd?`<p class="hint">In welcher Spalte soll der Geburtstag stehen? Für Verwandte und Freunde passt „Gemeinsam“.</p>`:""}
@@ -2953,7 +2979,7 @@ async function ensureAuth(){const db=supDB();if(!db||!firebase.auth)throw{code:"
 async function showIdeas(){
   sheet("💡 Ideen-Wand",`<p class="hint">Was soll die App als Nächstes können? Stimme mit 👍 für Ideen, die dir gefallen, oder schlag selbst etwas vor.</p>
     <div id="idList"><p class="hint">Lade Ideen …</p></div>
-    <h4 class="sub">Eigene Idee vorschlagen</h4>
+    <h4 class="sub">✍️ Eigene Idee vorschlagen</h4>
     <label class="f">Deine Idee<textarea id="idT" rows="3" maxlength="200" placeholder="z. B. Eine gemeinsame Einkaufsliste"></textarea></label>
     <button class="btn" id="idGo">💡 Vorschlagen</button>
     <p class="hint">Neue Ideen erscheinen, sobald der Entwickler sie freigegeben hat. Bitte keine Namen oder privaten Angaben.</p>
@@ -3026,6 +3052,10 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-07h",d:"2026-11-07",t:"Mehr Emojis",items:[
+    "😀 Termine bekommen automatisch ein passendes Emoji, z. B. 🦷 Zahnarzt, ⚽ Fußball, 🏊 Schwimmen, 🏫 Schule, 🛒 Einkaufen",
+    "🌅 Arbeitszeiten zeigen Früh-, 🌆 Spät- oder 🌙 Nachtdienst",
+    "🎨 Mehr Emojis in den Einstellungen und bei den Termin-Arten"]},
   {v:"2026-11-07g",d:"2026-11-07",t:"Begrüßung, 3D-Design & Sprachen",items:[
     "👋 Persönliche Begrüßung beim Öffnen der App",
     "✨ Neuer Kopfbereich in 3D mit Kalender-Symbol und aktuellem Jahr",
@@ -3223,7 +3253,8 @@ const I18N_PART=[
  [/^Schön, dass du vorbeischaust\.$/,["Nice to see you.","Gördüğüme sevindim.","Miło cię widzieć.","Радий тебе бачити."]],
  [/ bei Papa\b/,[" at dad's"," babasında"," u taty"," у тата"]]
 ];
-function T(t){if(LANG==="de"||t==null)return t;const r=I18N[t];if(r)return r[LI[LANG]];let o=t;for(const[re,v] of I18N_PART)o=o.replace(re,v[LI[LANG]]);return o}
+function T(t){if(LANG==="de"||t==null)return t;const r=I18N[t];if(r)return r[LI[LANG]];
+  const em=t.match(/^((?:\p{Extended_Pictographic}|\uFE0F|\u200D)+\s+)([\s\S]+)$/u);if(em&&I18N[em[2]])return em[1]+I18N[em[2]][LI[LANG]];let o=t;for(const[re,v] of I18N_PART)o=o.replace(re,v[LI[LANG]]);return o}
 function trNode(n){const v=n.nodeValue;if(!v||!/[A-Za-zÄÖÜäöüß]/.test(v))return;const m=v.match(/^(\s*)([\s\S]*?)(\s*)$/);const x=T(m[2]);if(x!==m[2])n.nodeValue=m[1]+x+m[3]}
 const TR_ATTR=["placeholder","aria-label","title"];
 function trTree(root){
