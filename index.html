@@ -206,6 +206,17 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 body.ro .foot,body.ro .fabs,body.ro:not(.romem) #gear,body.ro [data-view="sterne"],body.ro .plus,body.ro .empty-note,body.ro #mImg{display:none!important}
 body.ro .tabs{grid-template-columns:repeat(5,minmax(0,1fr))}
 body.ro .cell{cursor:default}
+.help .hsearch{margin:4px 0 6px}
+.help details{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin:8px 0}
+.help summary{padding:13px 14px;font-weight:700;cursor:pointer;list-style:none;display:flex;justify-content:space-between;gap:8px}
+.help summary::-webkit-details-marker{display:none}
+.help summary::after{content:"›";transition:transform .2s;opacity:.6}
+.help details[open] summary::after{transform:rotate(90deg)}
+.help .hb{padding:0 14px 12px;line-height:1.5;font-size:15px}
+.help .hb ol,.help .hb ul{padding-left:20px;margin:6px 0}
+.help .hb li{margin:5px 0}
+.help .hb p{margin:6px 0}
+.help .tipp{border-left:3px solid var(--line);padding:4px 10px;opacity:.9;font-size:14px}
 .rolebox{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--surface);line-height:1.45}
 .mrow{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
 .mrow .mname{min-width:0;overflow:hidden;text-overflow:ellipsis}
@@ -424,7 +435,7 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
       <h1>Familienkalender</h1>
       <div class="status" id="status">Verbinde …</div>
     </div>
-    <div class="topbtns"><button class="gear" id="searchBtn" aria-label="Termine suchen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg></button><button class="gear" id="helpBtn" aria-label="Anleitung starten">?</button>
+    <div class="topbtns"><button class="gear" id="searchBtn" aria-label="Termine suchen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg></button><button class="gear" id="helpBtn" aria-label="Hilfe und Anleitung">?</button>
     <button class="gear" id="gear" aria-label="Einstellungen und Familie einladen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M17 8v6M14 11h6"/></svg></button></div>
   </div>
   <div class="tabs" role="tablist" aria-label="Ansicht">
@@ -729,7 +740,7 @@ function showSettings(){
     <h4 class="sub">Personen im Haushalt</h4>
     <div id="persList" class="tasklist">${SLOTS.map((k,i)=>personRow(k,NAMES[i])).join("")}</div>
     <button class="btn ghost" id="persAdd">+ Person hinzufügen</button>
-    <p class="hint">Jede Person bekommt eine eigene Spalte und Farbe. „Gemeinsam“ gibt es immer dazu.</p>
+    <p class="hint">Jede Person bekommt eine eigene Spalte und Farbe. „Gemeinsam“ gibt es immer dazu. <a href="#" id="persHelp">Wie geht das genau?</a></p>
     <button class="btn" id="nmSave">Personen speichern</button>
     <h4 class="sub">Für Freunde: eigenen Kalender</h4>
     <p class="hint">Mit diesem Link können andere die App nutzen und legen dabei ihren <b>eigenen, getrennten</b> Kalender an. Deine Termine sehen sie nicht.</p>
@@ -737,7 +748,7 @@ function showSettings(){
     <button class="btn ghost" id="applCopy">App-Link kopieren</button>
     <p class="hint">Tipp: Im Browser-Menü „Zum Startbildschirm hinzufügen“ wählen, dann hat jeder die App als Symbol auf dem Handy.</p>
     ${isStandalone()?"":`<button class="btn" id="installSet">📲 Als App installieren</button>`}
-    <button class="btn ghost" id="tourAgain">📖 Anleitung ansehen</button>
+    <button class="btn ghost" id="tourAgain">❓ Hilfe & Anleitung</button>
     <h4 class="sub">Darstellung</h4>
     <div class="rw">
       <label class="pick" style="justify-content:space-between"><span>Kompakt-Modus (mehr auf einen Blick)</span><input type="checkbox" id="optCompact" ${prefOn("compact")?"checked":""}></label>
@@ -766,7 +777,7 @@ function showSettings(){
     <div class="actions"><button class="btn danger" id="disc">Auf diesem Handy trennen</button><button class="btn ghost" id="setClose">Schließen</button></div>`);
   document.getElementById("exp").onclick=exportICS;wireReadLinks();wireBackups();
   {const ib=document.getElementById("installSet");if(ib)ib.onclick=()=>{closeSheet();setTimeout(installApp,200)}}
-  document.getElementById("tourAgain").onclick=()=>{closeSheet();setTimeout(startTour,250)};
+  document.getElementById("tourAgain").onclick=()=>{closeSheet();setTimeout(showHelp,200)};
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{setTheme(b.dataset.themeSet);showSettings()});
   [["optCompact","compact"],["optFold","fold"],["optArrows","arrows"]].forEach(([id,k])=>{const el=document.getElementById(id);if(el)el.onchange=()=>{setPref(k,el.checked);render()}});
   const bp=document.getElementById("bgPick"),bi=document.getElementById("bgIn"),bd=document.getElementById("bgDel");
@@ -790,6 +801,7 @@ function showSettings(){
   document.getElementById("setClose").onclick=closeSheet;
   wirePhotos();
   wirePersons();
+  document.getElementById("persHelp").onclick=ev=>{ev.preventDefault();closeSheet();setTimeout(()=>showHelp("personen"),200)};
   document.getElementById("nmSave").onclick=async()=>{const rows=[...document.querySelectorAll("#persList [data-pkey]")];
     const keys=rows.map(r=>r.dataset.pkey),n=rows.map(r=>r.querySelector("input").value.trim().slice(0,20));
     if(!keys.length){toast("Mindestens eine Person wird gebraucht");return}
@@ -802,7 +814,113 @@ function showSettings(){
   document.getElementById("disc").onclick=async()=>{if(!await askConfirm("Dieses Handy vom Kalender trennen? Die Termine bleiben für die anderen erhalten. Zum erneuten Verbinden brauchst du den Einladungslink.","Trennen"))return;localStorage.removeItem(CFG_KEY);location.reload()};
 }
 document.getElementById("gear").onclick=showSettings;
-document.getElementById("helpBtn").onclick=()=>startTour();
+
+const HELP=[
+["start","🚀","Erste Schritte",`<p>Der Familienkalender ist ein gemeinsamer Kalender für alle im Haushalt. Jede Person hat eine eigene <b>Spalte und Farbe</b>, dazu kommt die Spalte <b>„Gemeinsam“</b> für Familientermine.</p>
+<ol><li>Beim ersten Öffnen trägst du die Namen ein und tippst auf <b>„Neuen Kalender starten“</b>.</li>
+<li>Danach lädst du die Familie ein (siehe „Familie einladen & Rechte“).</li>
+<li>Alles, was jemand einträgt, sehen die anderen sofort.</li></ol>
+<p class="tipp">Oben unter dem Titel steht z. B. „Kalender 8QXY · alles übertragen ✓“. Diese 4 Zeichen müssen bei allen in der Familie gleich sein, sonst seid ihr in verschiedenen Kalendern.</p>`],
+["personen","👨‍👩‍👦","Haushaltsmitglieder hinzufügen",`<ol><li>Oben rechts auf das Symbol mit der <b>Person und dem +</b> tippen (Teilen & Einstellungen).</li>
+<li>Nach unten zu <b>„Personen im Haushalt“</b> scrollen.</li>
+<li><b>„+ Person hinzufügen“</b> tippen, eine neue Zeile erscheint.</li>
+<li>Den Namen eintragen.</li>
+<li><b>„Personen speichern“</b> tippen, fertig.</li></ol>
+<p>Die neue Person bekommt automatisch eine eigene Spalte und Farbe, bei allen in der Familie. Bis zu 12 Personen sind möglich.</p>
+<p><b>Umbenennen:</b> Namen in der Zeile ändern und speichern. <b>Entfernen:</b> auf ✕ neben der Person tippen und speichern. Ihre Einträge bleiben gespeichert und kommen zurück, wenn du sie wieder hinzufügst.</p>
+<p class="tipp">Eine Person im Kalender ist nicht dasselbe wie ein Handy: Auch ein Baby oder die Oma kann eine Spalte haben, ohne die App zu nutzen. Wer selbst mitmachen soll, bekommt zusätzlich einen Einladungslink.</p>`],
+["ansichten","🗓","Ansichten: Tag, Woche, Monat, Jahr",`<ul><li><b>Tag:</b> Zeitstrahl mit allen Terminen des Tages nebeneinander, ganztägige Einträge stehen quer oben.</li>
+<li><b>Woche:</b> jeder Tag als Zeile, jede Person als Spalte. Die Standardansicht.</li>
+<li><b>Monat:</b> der ganze Monat auf einen Blick, Einträge als farbige Balken.</li>
+<li><b>Jahr:</b> farbige Punkte zeigen, wer an welchem Tag etwas hat. Tippe auf einen Monat, um ihn zu öffnen.</li>
+<li><b>Ferien:</b> Berliner Schulferien und Feiertage.</li>
+<li><b>Sterne:</b> Aufgaben und Belohnungen für Kinder.</li></ul>
+<p><b>Blättern:</b> nach links oder rechts wischen oder ‹ › tippen. <b>„Heute“</b> springt zurück zum aktuellen Tag.</p>
+<p><b>Nur eine Person anzeigen:</b> oben auf ihren Namen tippen. Nochmal tippen zeigt wieder alle.</p>`],
+["eintrag","➕","Eintrag anlegen",`<ol><li>Unten auf <b>„+ Eintrag“</b> tippen, oder direkt in ein leeres Feld bei Person und Tag.</li>
+<li>Art wählen: <b>Termin</b>, <b>Arbeit</b>, <b>Urlaub</b> oder <b>Geburtstag</b>.</li>
+<li>Person, Datum und ggf. Uhrzeit wählen. Ohne Uhrzeit gilt der Eintrag den ganzen Tag.</li>
+<li>Für mehrere Tage am Stück ein <b>„Bis Datum“</b> eintragen (bei Urlaub „Letzter Tag“).</li>
+<li><b>Speichern</b> tippen.</li></ol>
+<ul><li><b>❗ Wichtig:</b> Der Eintrag wird hervorgehoben und erscheint in der Tagesübersicht schon Tage vorher.</li>
+<li><b>Geburtstag:</b> kommt jedes Jahr von selbst wieder. Mit Geburtsjahr wird das Alter angezeigt.</li>
+<li>Beim Tippen schlägt die App Titel vor, die ihr schon mal benutzt habt.</li></ul>`],
+["wdh","🔁","Wiederkehrende Termine",`<ol><li>Beim neuen Eintrag unter <b>„Wiederholen“</b> „Jede Woche“ oder „Alle 2 Wochen“ wählen.</li>
+<li>Die <b>Wochentage</b> antippen, z. B. Mo und Mi.</li>
+<li>Bei <b>„Fortlaufend bis“</b> das Enddatum wählen. Darunter siehst du, wie viele Einträge entstehen.</li></ol>
+<p>Einen bestehenden Eintrag kannst du später ebenfalls fortsetzen: Eintrag antippen → dort weiter wöchentlich oder alle 2 Wochen eintragen.</p>
+<p class="tipp">Praktisch für Wechsel-Wochenenden, Training oder feste Schichten.</p>`],
+["erinnerung","🔔","Erinnerung vorher",`<p>Im Eintrag bei <b>„Erinnerung vorher“</b> wählst du 1 Tag, 3 Tage, 1 Woche oder 2 Wochen und dazu einen kurzen Hinweis, z. B. „Geschenk besorgen“.</p>
+<p>Ab dann erscheint die Erinnerung oben in der App in der Box <b>🔔 Erinnerungen</b>. Bei Geburtstagen ist 1 Woche vorher schon eingestellt.</p>
+<p class="tipp">Die Erinnerung zeigt sich, wenn du die App öffnest. Eine Benachrichtigung bei geschlossener App gibt es nicht.</p>`],
+["aendern","✏️","Ändern, löschen, rückgängig",`<ul><li><b>Ändern:</b> auf den Eintrag tippen, anpassen, speichern.</li>
+<li><b>Löschen:</b> im Eintrag unten auf „Löschen“. Die App fragt vorher nach.</li>
+<li><b>Rückgängig:</b> nach dem Löschen erscheint unten kurz „Rückgängig“.</li>
+<li>Bei Serien kannst du nur diesen Eintrag oder die ganze Serie auf einmal löschen.</li></ul>`],
+["foto","📷","Per Foto oder Sprache eintragen",`<p><b>📷 Foto:</b> Terminzettel, Brief oder Dienstplan fotografieren. Die App liest Datum und Uhrzeit heraus und schlägt Einträge vor. Du prüfst und speicherst.</p>
+<p><b>🎤 Sprache:</b> auf das Mikrofon tippen und z. B. sagen: „Donnerstag 15 Uhr Elternabend“ oder „morgen Arbeit von 6 bis 14 Uhr“. Nennst du einen Namen, landet der Eintrag in seiner Spalte.</p>`],
+["warn","⚠️","Überschneidungen",`<p>Liegen zwei Termine einer Person zur gleichen Zeit, zeigt die App beim Speichern eine Warnung. Im Kalender sind solche Einträge mit ⚠️ markiert. Du kannst trotzdem speichern.</p>`],
+["boxen","📰","Tagesübersicht, Neu und Als Nächstes",`<ul><li><b>Heute:</b> alles für heute plus wichtige Termine der nächsten Tage. „Gelesen ✓“ blendet die Box für heute aus.</li>
+<li><b>🌙 Morgen:</b> ab 17 Uhr eine Vorschau auf den nächsten Tag.</li>
+<li><b>Neu:</b> was die anderen neu eingetragen oder geändert haben.</li>
+<li><b>⏭ Als Nächstes:</b> der nächste anstehende Termin mit Countdown.</li>
+<li><b>🔍 Suche</b> (oben): findet Einträge nach Stichwort.</li></ul>`],
+["einladen","👪","Familie einladen & Rechte",`<ol><li>Oben rechts auf das Symbol mit der <b>Person und dem +</b> tippen.</li>
+<li>Bei <b>„Familie einladen“</b> wählen: <b>👁️ Nur lesen</b> oder <b>✏️ Darf mitschreiben</b>.</li>
+<li>Link kopieren oder direkt per WhatsApp schicken.</li>
+<li>Die Person öffnet den Link und ist sofort verbunden.</li></ol>
+<p>Unter <b>„Mitglieder & Rechte“</b> siehst du alle verbundenen Handys. Tippe bei jedem auf ✏️ (darf eintragen, ändern, löschen) oder 👁️ (sieht alles, kann nichts ändern). Mindestens eine Person muss schreiben dürfen.</p>
+<p class="tipp">Öffnet jemand den Link in WhatsApp, startet er im WhatsApp-Browser. Besser über ⋮ → „In Chrome öffnen“, dann bleibt die Verbindung erhalten.</p>`],
+["lesen","🔗","Nur-Lese-Links (z. B. für Verwandte)",`<p>Für Menschen außerhalb des Haushalts, die nur einzelne Spalten sehen sollen, z. B. den anderen Elternteil oder die Großeltern.</p>
+<ol><li>Einstellungen → <b>„Nur-Lese-Links“</b>.</li>
+<li>Bei „Für wen?“ einen Namen eintragen und die Spalten ankreuzen, die die Person sehen darf.</li>
+<li><b>„Nur-Lese-Link erstellen“</b> und den Link verschicken.</li></ol>
+<p>Die Person sieht nur diese Spalten, kann nichts ändern und sieht keine anderen Namen. Sie kann euch aber <b>Wünsche</b> schicken (z. B. „Kann er am Samstag zu mir?“). Die erscheinen bei euch als Karte zum Annehmen oder Ablehnen. Den Link kannst du jederzeit löschen, dann sieht die Person nichts mehr.</p>`],
+["bilder","🖼","Bilder der Personen",`<p>Einstellungen → <b>„Bilder der Personen“</b> → auf einen Kreis tippen und ein Foto wählen. Das Bild erscheint bei allen über dem Namen.</p>`],
+["sterne","⭐","Sterne: Aufgaben & Belohnungen",`<ol><li>Reiter <b>„Sterne“</b> öffnen.</li>
+<li><b>Aufgabe anlegen</b>, z. B. „Zimmer aufräumen“ für ein Kind mit 2 Sternen.</li>
+<li>Ist sie erledigt, auf den Kreis tippen, die Sterne werden gutgeschrieben.</li>
+<li><b>Belohnungen</b> anlegen, z. B. „Kinobesuch“ für 40 Sterne. Reichen die Sterne, kann man sie einlösen.</li></ol>`],
+["ferien","🏖","Ferien & Feiertage",`<p>Unter <b>„Ferien“</b> stehen alle Berliner Schulferien und Feiertage der nächsten Jahre. In Woche und Monat sind Ferientage farbig markiert.</p>`],
+["design","🎨","Darstellung anpassen",`<p>In den Einstellungen unter <b>„Darstellung“</b>:</p>
+<ul><li>🌙 Dunkel, ☀️ Hell oder 📱 wie das Handy</li>
+<li>Kompakt-Modus: mehr auf einen Blick</li>
+<li>Leere Tage schmal anzeigen</li>
+<li>Pfeile zusätzlich zum Wischen</li>
+<li>Eigenes Hintergrundbild oben, z. B. ein Familienfoto</li></ul>
+<p>Diese Einstellungen gelten nur für dein Handy.</p>`],
+["sperr","📱","Bild für den Sperrbildschirm",`<p>In der Tagesübersicht auf <b>🖼</b> tippen (oder Einstellungen → „Sperrbildschirm“). Die App erstellt ein Bild mit den heutigen Terminen. Speichern und in den Handy-Einstellungen als Sperrbildschirm festlegen.</p>`],
+["app","📲","Als App installieren",`<p>Oben erscheint der Hinweis <b>„Als App aufs Handy holen“</b> → „Installieren“. Oder: Einstellungen → <b>„📲 Als App installieren“</b>.</p>
+<p>Danach hast du ein eigenes Symbol auf dem Startbildschirm, und die App startet ohne Browserleiste.</p>
+<p class="tipp">Am iPhone: in Safari auf Teilen → „Zum Home-Bildschirm“.</p>`],
+["offline","📶","Ohne Internet & Updates",`<p>Die App funktioniert auch offline. Neue Einträge werden gespeichert und automatisch übertragen, sobald wieder Internet da ist. Oben steht dann „alles übertragen ✓“.</p>
+<p>Neue Versionen der App laden sich von selbst, sobald du online bist.</p>`],
+["sicherung","💾","Sicherungen & Export",`<ul><li><b>Automatisch:</b> täglich auf dem Handy (letzte 7 Tage) und wöchentlich in der Cloud (letzte 4 Wochen).</li>
+<li><b>Wiederherstellen:</b> Einstellungen → „Sicherungen“ → Sicherung antippen. Gelöschte Einträge kommen zurück, vorhandene bleiben unverändert.</li>
+<li><b>Als Datei:</b> „Als Datei speichern“ zum Aufheben, „Aus Datei wiederherstellen“ zum Zurückholen.</li>
+<li><b>Export (.ics):</b> alle Termine für Google Kalender oder andere Kalender-Apps.</li></ul>`],
+["probleme","🛠","Probleme lösen",`<ul><li><b>Einträge der anderen fehlen:</b> oben die Kalender-Nummer vergleichen. Ist sie verschieden, den Einladungslink nochmal öffnen.</li>
+<li><b>„Du hast nur Leserechte“:</b> jemand mit Schreibrechten muss dich unter „Mitglieder & Rechte“ auf ✏️ stellen.</li>
+<li><b>Etwas sieht alt aus:</b> App schließen und neu öffnen, dann lädt die neue Version.</li>
+<li><b>„Änderungen werden übertragen …“ bleibt stehen:</b> Internet prüfen. Nichts geht verloren.</li></ul>`]
+];
+function showHelp(open){
+  sheet("Hilfe & Anleitung",`<div class="help">
+    <p class="hint">Tippe auf ein Thema, um es aufzuklappen.</p>
+    <button class="btn" id="hTour" style="width:100%">▶️ Geführte Tour starten (1 Minute)</button>
+    <label class="f hsearch">Suchen<input id="hQ" type="search" placeholder="z. B. Person, Link, Geburtstag …"></label>
+    <div id="hList">${HELP.map(([k,ic,t,b])=>`<details data-hk="${k}"${k===open?" open":""}><summary>${ic} ${t}</summary><div class="hb">${b}</div></details>`).join("")}</div>
+    <p class="hint" id="hNone" hidden>Nichts gefunden. Probier ein anderes Wort.</p>
+    <div class="actions"><button class="btn ghost" id="hClose">Schließen</button></div></div>`);
+  document.getElementById("hTour").onclick=()=>{closeSheet();setTimeout(startTour,250)};
+  document.getElementById("hClose").onclick=closeSheet;
+  const q=document.getElementById("hQ");
+  q.oninput=()=>{const v=q.value.trim().toLowerCase();let n=0;
+    document.querySelectorAll("#hList details").forEach(d=>{const hit=!v||d.textContent.toLowerCase().includes(v);d.hidden=!hit;if(hit)n++;d.open=!!v&&hit&&n<=3});
+    document.getElementById("hNone").hidden=n>0};
+  if(open){const d=document.querySelector(`#hList [data-hk="${open}"]`);if(d)setTimeout(()=>d.scrollIntoView({block:"start",behavior:"smooth"}),150)}
+}
+document.getElementById("helpBtn").onclick=()=>{if(IS_READER_SITE||(READONLY&&!getCfg()?.code))startTour();else showHelp()};
 async function wipeAll(){
   try{await store.wipe()}catch(e){toast("Löschen hat nicht geklappt. Bitte Internetverbindung prüfen.");return}
   try{localStorage.removeItem(CFG_KEY);localStorage.removeItem("fk-namen")}catch(e){}
@@ -1148,6 +1266,7 @@ function showReaderSettings(){
   sheet("Einstellungen",`<div class="rolebox">👁️ <b>Du kannst Kalender ${calNr()} nur ansehen.</b><br><span class="hint">Eintragen und Ändern geht erst, wenn dir jemand mit Schreibrechten das freischaltet (Einstellungen → Mitglieder & Rechte).</span></div>
     ${nameBox()}
     ${isStandalone()?"":`<button class="btn" id="installSet">📲 Als App installieren</button>`}
+    <button class="btn ghost" id="rHelp">❓ Hilfe & Anleitung</button>
     <h4 class="sub">Darstellung</h4>
     <div class="seg" style="--n:3">${[["dark","🌙 Dunkel"],["light","☀️ Hell"],["auto","📱 Wie Handy"]].map(([k,n])=>`<button class="typ" data-theme-set="${k}" aria-pressed="${themeNow()===k}">${n}</button>`).join("")}</div>
     <div class="rw">
@@ -1161,7 +1280,7 @@ function showReaderSettings(){
     ${joinBox()}
     <p class="hint"><a href="datenschutz.html">Datenschutz, Impressum & Nutzungshinweise</a></p>
     <div class="actions"><button class="btn danger" id="disc">Auf diesem Handy trennen</button><button class="btn ghost" id="setClose">Schließen</button></div>`);
-  wireNameBox(null);wireJoin();
+  wireNameBox(null);wireJoin();document.getElementById("rHelp").onclick=()=>{closeSheet();setTimeout(showHelp,200)};
   {const ib=document.getElementById("installSet");if(ib)ib.onclick=()=>{closeSheet();setTimeout(installApp,200)}}
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{setTheme(b.dataset.themeSet);showSettings()});
   [["optCompact","compact"],["optFold","fold"],["optArrows","arrows"]].forEach(([id,k])=>{const el=document.getElementById(id);if(el)el.onchange=()=>{setPref(k,el.checked);render()}});
@@ -2219,7 +2338,7 @@ window.addEventListener("online",()=>{
 if(!navigator.onLine)document.body.classList.add("offline");
 /* ---------- Anleitung (Tutorial) ---------- */
 const TOUR=[
-  {t:"Willkommen im Familienkalender! 👋",p:"In einer Minute zeige ich dir, wie alles funktioniert. Du kannst jederzeit überspringen und die Anleitung später über das ?-Symbol oben wieder starten."},
+  {t:"Willkommen im Familienkalender! 👋",p:"In einer Minute zeige ich dir, wie alles funktioniert. Du kannst jederzeit überspringen und die Anleitung später über das ?-Symbol oben wieder starten. Dort findest du auch die ausführliche Hilfe zu allen Funktionen."},
   {s:".tabs",t:"Ansichten",p:"Hier wechselst du zwischen Tag (mit Zeitstrahl), Woche, Monat und Jahr. Unter „Ferien“ stehen alle Berliner Schulferien und Feiertage, unter „Sterne“ Aufgaben und Belohnungen für die Kinder."},
   {s:".legend",v:"woche",t:"Eine Spalte pro Person",p:"Jede Person hat ihre eigene Spalte und Farbe. „Gemeinsam“ ist für Familientermine. Die Namen kannst du in den Einstellungen ändern."},
   {s:"#days .cell",v:"woche",t:"Schnell eintragen",p:"Tippe einfach in ein Feld. Dann ist der Eintrag gleich für diese Person und diesen Tag vorbereitet."},
@@ -2232,7 +2351,7 @@ const TOUR=[
   {s:"#navbar",v:"woche",t:"Blättern",p:"Mit ‹ und › gehst du eine Woche vor oder zurück. „Heute“ bringt dich zurück zum aktuellen Tag."},
   {s:"#status",t:"Alles übertragen?",p:"Hier siehst du, ob deine Einträge bei allen angekommen sind. Ohne Internet kannst du trotzdem eintragen, alles wird später automatisch übertragen."},
   {s:"#gear",t:"Teilen & Einstellungen",p:"Hier lädst du die Familie ein, erstellst Nur-Lese-Links (z. B. für Papa), änderst Namen und Darstellung, findest Sicherungen und den Export."},
-  {t:"Fertig! 🎉",p:"Das war's. Viel Spaß – und keine Ausreden mehr, dass jemand einen Termin nicht wusste. 😉 Die Anleitung findest du jederzeit wieder über das ?-Symbol oben."}
+  {t:"Fertig! 🎉",p:"Das war's. Viel Spaß – und keine Ausreden mehr, dass jemand einen Termin nicht wusste. 😉 Ausführliche Erklärungen zu allen Funktionen findest du jederzeit über das ?-Symbol oben."}
 ];
 let tourI=0,tourEls=null;
 function visibleEl(sel){const el=document.querySelector(sel);if(!el)return null;if(el.hidden||el.closest("[hidden]"))return null;const r=el.getBoundingClientRect();return r.width>0&&r.height>0?el:null}
