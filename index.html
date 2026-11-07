@@ -203,9 +203,18 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .cdialog{background:var(--surface);border-radius:16px;padding:18px;max-width:360px;width:100%;display:flex;flex-direction:column;gap:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
 .cdialog p{margin:0;font-size:1rem;font-weight:600}
 .btn.danger.solid{background:var(--c-christin);color:#fff;border-color:var(--c-christin)}
-body.ro .foot,body.ro .fabs,body.ro #gear,body.ro [data-view="sterne"],body.ro .plus,body.ro .empty-note,body.ro #mImg{display:none!important}
+body.ro .foot,body.ro .fabs,body.ro:not(.romem) #gear,body.ro [data-view="sterne"],body.ro .plus,body.ro .empty-note,body.ro #mImg{display:none!important}
 body.ro .tabs{grid-template-columns:repeat(5,minmax(0,1fr))}
 body.ro .cell{cursor:default}
+.rolebox{border:1px solid var(--line);border-radius:14px;padding:12px 14px;background:var(--surface);line-height:1.45}
+.mrow{display:grid;grid-template-columns:1fr auto auto;gap:8px;align-items:center}
+.mrow .mname{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.mrow .mmeta{font-size:12px;opacity:.7}
+.mrow .seg{min-width:104px;margin:0}
+.mrow .seg .typ{padding:6px 0;font-size:16px}
+.mdel{border:1px solid var(--line);background:transparent;border-radius:10px;width:36px;height:36px;color:inherit}
+.nameq{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
+.nameq button{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:999px;padding:8px 14px;font:inherit}
 label.pick{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;font-size:.85rem;font-weight:600}
 label.pick input{width:18px;height:18px}
 ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
@@ -583,18 +592,22 @@ function setCfg(c){try{localStorage.setItem(CFG_KEY,JSON.stringify(c))}catch(e){
 const b64e=s=>btoa(unescape(encodeURIComponent(s))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
 const b64d=s=>decodeURIComponent(escape(atob(s.replace(/-/g,"+").replace(/_/g,"/"))));
 function inviteLink(c){return location.origin+location.pathname+"#join="+c.code}
+const writeLink=(c,t)=>inviteLink(c)+"&w="+t;
 function newCode(){const a=new Uint8Array(18);crypto.getRandomValues(a);return Array.from(a,x=>"abcdefghijkmnpqrstuvwxyz23456789"[x%32]).join("")}
 function parseFirebaseConfig(txt){
   const o={};const re=/(apiKey|authDomain|projectId|storageBucket|messagingSenderId|appId|measurementId)["']?\s*:\s*["']([^"']+)["']/g;let m;
   while((m=re.exec(txt)))o[m[1]]=m[2];
   return o.apiKey&&o.projectId&&o.appId?o:null;
 }
-function joinCode(c){const old=getCfg();if(old&&old.code&&old.code!==c){try{sessionStorage.setItem("fk-oldcode",old.code)}catch(e){}}setCfg({firebase:DEFAULT_FIREBASE,code:c})}
+function joinCode(c,wt){const old=getCfg();if(old&&old.code&&old.code!==c){try{sessionStorage.setItem("fk-oldcode",old.code)}catch(e){}}
+  const ok=wt&&/^[a-z2-9]{18,}$/.test(wt);const same=old&&old.code===c;
+  setCfg({firebase:DEFAULT_FIREBASE,code:c,...(ok?{wtok:wt}:{})});
+  if(!same||ok){try{sessionStorage.setItem("fk-joined",ok?"schreiben":"lesen")}catch(e){}}}
 function checkJoin(){
   const h=location.hash;
   if(h.startsWith("#lesen=")){const v=h.slice(7);if(/^[a-z2-9]{18,}$/.test(v)){const old=getCfg();if(!old||!old.code)setCfg({firebase:DEFAULT_FIREBASE,lesen:v});else sessionStorage.setItem("fk-lesen-own",v)}history.replaceState(null,"",location.pathname);return}
   if(!h.startsWith("#join="))return;
-  const v=h.slice(6);try{if(/^[a-z2-9]{18,}$/.test(v)){joinCode(v);toast("Mit dem Familienkalender verbunden")}else{const j=JSON.parse(b64d(v));if(j&&j.c){joinCode(j.c);toast("Mit dem Familienkalender verbunden")}}}catch(e){toast("Der Einladungslink ist unvollständig")}
+  const [v,wt]=h.slice(6).split("&w=");try{if(/^[a-z2-9]{18,}$/.test(v)){joinCode(v,wt);toast("Mit dem Familienkalender verbunden")}else{const j=JSON.parse(b64d(v));if(j&&j.c){joinCode(j.c);toast("Mit dem Familienkalender verbunden")}}}catch(e){toast("Der Einladungslink ist unvollständig")}
   history.replaceState(null,"",location.pathname);
 }
 async function init(){
@@ -617,22 +630,25 @@ async function init(){
     FS=fs;
   }catch(e){store=localStore();setStatus("Verbindung fehlerhaft · Einstellungen prüfen");render();return}
   const failed=e=>{console.error(e);toast("Nicht gespeichert: "+(e&&e.code==="permission-denied"?"kein Zugriff auf diesen Kalender":"Verbindungsproblem")+". Bitte App neu laden.")};
+  const roBlock=()=>{if(ROLE==="lesen"){toast("Du hast in diesem Kalender nur Leserechte");return true}return false};
   store={mode:"db",
-    add(o){col.add(stampNew(o)).catch(failed)},
-    set(id,o){col.doc(id).set(stampEdit(id,o)).catch(failed)},
-    del(id){col.doc(id).delete().catch(failed)},
-    async names(n,keys){await col.doc("_config").set({typ:"config",namen:n,personen:keys||SLOTS},{merge:true})},
-    async conf(o){await col.doc("_config").set({typ:"config",...o},{merge:true})},
-    async wipe(){const snap=await col.get();let b=col.firestore.batch(),n=0;for(const d of snap.docs){b.delete(d.ref);if(++n%400===0){await b.commit();b=col.firestore.batch()}}await b.commit()}};
+    add(o){if(roBlock())return;col.add(stampNew(o)).catch(failed)},
+    set(id,o){if(roBlock())return;col.doc(id).set(stampEdit(id,o)).catch(failed)},
+    del(id){if(roBlock())return;col.doc(id).delete().catch(failed)},
+    async names(n,keys){if(roBlock())return;await col.doc("_config").set({typ:"config",namen:n,personen:keys||SLOTS},{merge:true})},
+    async conf(o){if(roBlock())return;await col.doc("_config").set({typ:"config",...o},{merge:true})},
+    async wipe(){if(roBlock())throw new Error("ro");const snap=await col.get();let b=col.firestore.batch(),n=0;for(const d of snap.docs){b.delete(d.ref);if(++n%400===0){await b.commit();b=col.firestore.batch()}}await b.commit()}};
+  {let r=null;try{r=localStorage.getItem("fk-rolle-"+cfg.code)}catch(e){}if(r)applyRole(r)}
+  await Promise.race([ensureMember(cfg),new Promise(r=>setTimeout(r,5000))]);
   try{const nn=sessionStorage.getItem("fk-namen-neu");if(nn){sessionStorage.removeItem("fk-namen-neu");await store.names(JSON.parse(nn))}}catch(e){}
   // Beim Wechsel in einen anderen Kalender: Einträge aus dem bisherigen Kalender mitnehmen
-  try{const oc=sessionStorage.getItem("fk-oldcode");if(oc&&oc!==cfg.code){sessionStorage.removeItem("fk-oldcode");
+  try{const oc=sessionStorage.getItem("fk-oldcode");if(oc&&oc!==cfg.code&&ROLE!=="lesen"){sessionStorage.removeItem("fk-oldcode");
     const old=await col.firestore.collection(`familien/${oc}/eintraege`).get();let n=0;
     for(const d of old.docs){if(d.id==="_config")continue;await col.add(d.data());n++}
     if(n)toast(`${n} Einträge aus dem vorherigen Kalender übernommen`)}}catch(e){}
   // Einträge, die vorher nur auf diesem Gerät lagen, einmalig hochladen
   try{const loc=JSON.parse(localStorage.getItem("familienkalender-lokal")||"[]");
-    if(loc.length){for(const e of loc){const{id,...o}=e;await col.add(o)}localStorage.removeItem("familienkalender-lokal");toast(`${loc.length} Einträge übernommen`)}}catch(e){}
+    if(loc.length&&ROLE!=="lesen"){for(const e of loc){const{id,...o}=e;await col.add(o)}localStorage.removeItem("familienkalender-lokal");toast(`${loc.length} Einträge übernommen`)}}catch(e){}
   const timer=setTimeout(()=>setStatus("Offline · Änderungen werden später übertragen"),10000);
   ensureMember(cfg);
   try{if(sessionStorage.getItem("fk-invite")){sessionStorage.removeItem("fk-invite");setTimeout(showSettings,400)}}catch(e){}
@@ -643,7 +659,7 @@ async function init(){
     if(conf&&conf.data().bilder)setPhotos(conf.data().bilder);
     watchWishes();
     splitData(snap.docs.filter(d=>d.id!=="_config").map(d=>({...d.data(),id:d.id})));
-    const nr=calNr();
+    const nr=calNr()+(ROLE==="lesen"?" · 👁️ nur lesen":"");
     if(snap.metadata.hasPendingWrites)setStatus(`Kalender ${nr} · Änderungen werden übertragen …`);
     else if(!snap.metadata.fromCache){clearTimeout(timer);setStatus(`Kalender ${nr} · alles übertragen ✓`)}
     else setStatus(`Kalender ${nr} · offline, zeigt gespeicherten Stand`);
@@ -678,7 +694,7 @@ function showSetup(){
     <div class="actions"><button class="btn ghost" id="cfgLocal">Erst mal nur auf diesem Handy</button><button class="btn ghost" id="cfgLater">Schließen</button></div>`);
   document.getElementById("cfgNew").onclick=()=>{
     const n=readNames();if(!n.some(Boolean)){toast("Bitte mindestens einen Namen eintragen");return}
-    try{sessionStorage.setItem("fk-namen-neu",JSON.stringify(n));localStorage.setItem("fk-namen",JSON.stringify(n));sessionStorage.setItem("fk-invite","1")}catch(e){}
+    try{sessionStorage.setItem("fk-joined","schreiben");sessionStorage.setItem("fk-namen-neu",JSON.stringify(n));localStorage.setItem("fk-namen",JSON.stringify(n));sessionStorage.setItem("fk-invite","1")}catch(e){}
     setCfg({firebase:DEFAULT_FIREBASE,code:newCode()});location.reload();
   };
   document.getElementById("cfgLocal").onclick=()=>{const n=readNames();if(n.some(Boolean)){try{localStorage.setItem("fk-namen",JSON.stringify(n))}catch(e){}}setCfg({local:true});closeSheet();location.reload()};
@@ -687,13 +703,21 @@ function showSetup(){
 function showSettings(){
   const c=getCfg();
   if(!c||c.local){if(c&&c.local){localStorage.removeItem(CFG_KEY)}showSetup();return}
-  const link=inviteLink(c);
+  if(ROLE==="lesen"){showReaderSettings();return}
+  const link=inviteLink(c);let curLink=link;
   const appLink=location.origin+location.pathname;
   sheet("Teilen & Einstellungen",`<p class="hint">Dieses Handy ist mit <b>Kalender ${calNr()}</b> verbunden. Bei allen in der Familie muss hier dieselbe Nummer stehen.</p>
-    <h4 class="sub">Familie einladen</h4><p class="hint">Wer diesen Link öffnet, ist sofort mit <b>diesem</b> Kalender verbunden und sieht alle Einträge. Gib ihn nur an die Familie weiter.</p>
+    <h4 class="sub">Familie einladen</h4><p class="hint">Wähle zuerst, was die eingeladene Person darf. Gib die Links nur an die Familie weiter.</p>
+    <div class="seg" style="--n:2"><button class="typ" data-inv="lesen" aria-pressed="true">👁️ Nur lesen</button><button class="typ" data-inv="schreiben" aria-pressed="false">✏️ Darf mitschreiben</button></div>
     <div class="linkbox" id="inv">${esc(link)}</div>
+    <p class="hint" id="invHint">Wer diesen Link öffnet, sieht alle Einträge, kann aber nichts ändern. Freischalten kannst du die Person jederzeit unten.</p>
     <div class="actions"><button class="btn" id="invCopy">Link kopieren</button><button class="btn ghost" id="invShare">Teilen …</button></div>
-    <a class="btn ghost" style="text-align:center;text-decoration:none" href="https://wa.me/?text=${encodeURIComponent("Unser Familienkalender: "+link)}" target="_blank" rel="noopener">Per WhatsApp schicken</a>
+    <a class="btn ghost" id="invWa" style="text-align:center;text-decoration:none" href="https://wa.me/?text=${encodeURIComponent("Unser Familienkalender: "+link)}" target="_blank" rel="noopener">Per WhatsApp schicken</a>
+    <h4 class="sub">Mitglieder & Rechte</h4>
+    <p class="hint">✏️ darf eintragen, ändern und löschen · 👁️ sieht alles, kann aber nichts ändern. Tippe zum Umstellen. Die Nur-Lese-Links weiter unten sind davon nicht betroffen.</p>
+    <div id="memList" class="tasklist"><p class="hint">Lade Mitglieder …</p></div>
+    ${nameBox()}
+    <button class="btn ghost" id="tokWipe">Alte Mitschreib-Links ungültig machen</button>
     ${readLinkSection()}
     <h4 class="sub">Mit einem anderen Kalender verbinden</h4>
     ${joinBox()}
@@ -752,9 +776,17 @@ function showSettings(){
   document.getElementById("setImg").onclick=()=>showWidgetImage();wireJoin();
   document.getElementById("wipe").onclick=async()=>{if(!await askConfirm("Den ganzen Kalender mit allen Einträgen, Aufgaben und Sternen für ALLE löschen? Das lässt sich nicht rückgängig machen.","Endgültig löschen"))return;
     if(!await askConfirm("Bist du ganz sicher?","Ja, alles löschen"))return;wipeAll()};
-  document.getElementById("invCopy").onclick=async()=>{try{await navigator.clipboard.writeText(link);toast("Link kopiert")}catch(e){const r=document.createRange();r.selectNodeContents(document.getElementById("inv"));const s=getSelection();s.removeAllRanges();s.addRange(r);toast("Link markiert, jetzt kopieren")}};
+  loadMembers();wireNameBox(loadMembers);document.getElementById("tokWipe").onclick=wipeWriteTokens;
+  document.querySelectorAll("[data-inv]").forEach(b=>b.onclick=async()=>{
+    const w=b.dataset.inv==="schreiben";
+    if(w){try{curLink=writeLink(c,await getWriteToken())}catch(e){console.warn(e);toast(e&&e.code==="permission-denied"?"Bitte erst die neuen Firebase-Regeln veröffentlichen":"Gerade keine Verbindung");return}}else curLink=link;
+    document.querySelectorAll("[data-inv]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
+    document.getElementById("inv").textContent=curLink;
+    document.getElementById("invHint").innerHTML=w?"Wer diesen Link öffnet, kann sofort <b>Einträge anlegen, ändern und löschen</b>.":"Wer diesen Link öffnet, sieht alle Einträge, kann aber nichts ändern. Freischalten kannst du die Person jederzeit unten.";
+    document.getElementById("invWa").href="https://wa.me/?text="+encodeURIComponent("Unser Familienkalender: "+curLink)});
+  document.getElementById("invCopy").onclick=async()=>{try{await navigator.clipboard.writeText(curLink);toast("Link kopiert")}catch(e){const r=document.createRange();r.selectNodeContents(document.getElementById("inv"));const s=getSelection();s.removeAllRanges();s.addRange(r);toast("Link markiert, jetzt kopieren")}};
   const sh=document.getElementById("invShare");
-  if(navigator.share)sh.onclick=()=>navigator.share({title:"Familienkalender",text:"Unser Familienkalender",url:link}).catch(()=>{});else sh.hidden=true;
+  if(navigator.share)sh.onclick=()=>navigator.share({title:"Familienkalender",text:"Unser Familienkalender",url:curLink}).catch(()=>{});else sh.hidden=true;
   document.getElementById("setClose").onclick=closeSheet;
   wirePhotos();
   wirePersons();
@@ -1004,16 +1036,139 @@ function openRewardSheet(r){
 
 /* ---------- Nur-Lese-Links ---------- */
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
-async function ensureMember(cfg){
-  if(memberOK)return true;
+/* ---------- Mitglieder & Rechte ---------- */
+let ROLE=null,MY_UID="",MY_MEMBER=null,memberSub=null,memberP=null,RULES_OLD=false;
+function applyRole(r){
+  ROLE=r;const c=getCfg();try{if(r&&c&&c.code)localStorage.setItem("fk-rolle-"+c.code,r)}catch(e){}
+  const ro=r==="lesen";
+  if(READONLY!==ro){READONLY=ro;document.body.classList.toggle("ro",ro);document.body.classList.toggle("romem",ro);if(ro&&view==="sterne")view="woche";render()}
+}
+function ensureMember(cfg){
+  if(memberOK)return Promise.resolve(true);
+  if(!memberP)memberP=_ensureMember(cfg).finally(()=>{memberP=null});
+  return memberP;
+}
+async function _ensureMember(cfg){
   try{
     if(!firebase.auth)throw{code:"no-auth"};
     const a=firebase.auth();
     const cur=await new Promise(res=>{const un=a.onAuthStateChanged(u=>{un();res(u)})});
     if(!cur)await a.signInAnonymously();
-    await FS.doc(`familien/${cfg.code}/mitglieder/${a.currentUser.uid}`).set({seit:today},{merge:true});
-    memberOK=true;scheduleMirror();return true;
+    const uid=a.currentUser.uid;MY_UID=uid;
+    const ref=FS.doc(`familien/${cfg.code}/mitglieder/${uid}`);
+    let intent="";try{intent=sessionStorage.getItem("fk-joined")||""}catch(e){}
+    let snap=null;RULES_OLD=false;
+    try{snap=await ref.get({source:"server"})}catch(e){if(e&&e.code==="permission-denied")RULES_OLD=true;else throw e}
+    const base={zuletzt:today,geraet:DEVICE_ID};
+    if(RULES_OLD){ // Regeln noch alt: Liste nicht lesbar, Rolle nur auf dem Gerät
+      await ref.set(intent?{...base,seit:today,rolle:intent}:{...base,seit:today},{merge:true});
+      if(intent)applyRole(intent);else if(!ROLE)applyRole("schreiben");
+    }else if(snap.exists){
+      await ref.set(base,{merge:true});
+    }else{
+      const tok=cfg.wtok||"";
+      const o={...base,seit:today,name:"",rolle:(tok||intent==="schreiben")?"schreiben":"lesen"};
+      if(tok)o.token=tok;
+      try{await ref.set(o)}catch(e){if(o.rolle!=="schreiben")throw e;o.rolle="lesen";delete o.token;await ref.set(o);toast("Der Mitschreib-Link gilt nicht mehr · du kannst erst mal nur lesen")}
+    }
+    try{sessionStorage.removeItem("fk-joined")}catch(e){}
+    if(cfg.wtok){const c2=getCfg();if(c2){delete c2.wtok;setCfg(c2)}}
+    if(!RULES_OLD&&!memberSub)memberSub=ref.onSnapshot(s=>{if(!s.exists)return;MY_MEMBER=s.data();applyRole(MY_MEMBER.rolle==="lesen"?"lesen":"schreiben");setTimeout(maybeAskName,3500)},()=>{});
+    memberOK=true;if(ROLE!=="lesen")scheduleMirror();return true;
   }catch(e){memberOK=false;memberErr=e&&e.code||"";console.warn("Mitglied",e);return false}
+}
+const dmy=x=>x?x.slice(8,10)+"."+x.slice(5,7)+"."+x.slice(0,4):"";
+function nameBox(){return `<label class="f">Dein Name (für die Mitgliederliste)<input id="myName" maxlength="20" value="${esc(MY_MEMBER&&MY_MEMBER.name||"")}" placeholder="z. B. Mama"></label>
+  <button class="btn ghost" id="myNameSave">Namen speichern</button>`}
+async function saveMyName(v){
+  const c=getCfg();v=String(v||"").trim().slice(0,20);if(!v){toast("Bitte einen Namen eintragen");return false}
+  if(!MY_UID||!FS){toast("Gerade keine Verbindung");return false}
+  try{await FS.doc(`familien/${c.code}/mitglieder/${MY_UID}`).set({name:v},{merge:true});if(MY_MEMBER)MY_MEMBER.name=v;toast("Name gespeichert");return true}
+  catch(e){toast("Speichern hat nicht geklappt");return false}
+}
+function wireNameBox(after){const b=document.getElementById("myNameSave");if(b)b.onclick=async()=>{if(await saveMyName(document.getElementById("myName").value)&&after)after()}}
+function maybeAskName(){
+  const c=getCfg();if(!c||!c.code||!MY_MEMBER||MY_MEMBER.name)return;
+  const k="fk-askname-"+c.code;try{if(localStorage.getItem(k))return}catch(e){return}
+  if(document.querySelector(".backdrop")||document.querySelector(".cbackdrop")||tourEls){setTimeout(maybeAskName,5000);return}
+  try{localStorage.setItem(k,"1")}catch(e){}
+  const quick=NAMES.filter(Boolean);
+  sheet("Wie heißt du?",`<p class="hint">Damit die anderen in der Mitgliederliste sehen, wer dieses Handy benutzt.</p>
+    ${quick.length?`<div class="nameq">${quick.map(n=>`<button data-qn="${esc(n)}">${esc(n)}</button>`).join("")}</div>`:""}
+    ${nameBox()}<button class="btn ghost" id="nqLater">Später</button>`);
+  document.querySelectorAll("[data-qn]").forEach(b=>b.onclick=async()=>{if(await saveMyName(b.dataset.qn))closeSheet()});
+  wireNameBox(closeSheet);document.getElementById("nqLater").onclick=closeSheet;
+}
+async function getWriteToken(){
+  const c=getCfg();const k="fk-wtok-"+c.code;let t="";try{t=localStorage.getItem(k)||""}catch(e){}
+  if(t)return t;
+  if(!await ensureMember(c))throw{code:"no-member"};
+  t=newCode();await FS.doc(`familien/${c.code}/einladungen/${t}`).set({erstellt:nowISO(),von:MY_UID});
+  try{localStorage.setItem(k,t)}catch(e){}return t;
+}
+function rulesHint(){return `<p class="hint">⚠️ Damit die Rechte wirklich geschützt sind, müssen einmal die <b>neuen Firebase-Regeln</b> veröffentlicht werden.</p><button class="btn ghost" id="rulesHelp">So geht's</button>`}
+async function loadMembers(){
+  const box=document.getElementById("memList");if(!box)return;
+  const c=getCfg();
+  if(!await ensureMember(c)||RULES_OLD){box.innerHTML=rulesHint();const b=document.getElementById("rulesHelp");if(b)b.onclick=showAuthHelp;return}
+  let list=[];
+  try{const sn=await FS.collection(`familien/${c.code}/mitglieder`).get({source:"server"});list=sn.docs.map(d=>({...d.data(),id:d.id}))}
+  catch(e){box.innerHTML=e&&e.code==="permission-denied"?rulesHint():`<p class="hint">Mitgliederliste gerade nicht erreichbar (offline?).</p>`;const b=document.getElementById("rulesHelp");if(b)b.onclick=showAuthHelp;return}
+  list.sort((a,b)=>((a.rolle==="lesen")-(b.rolle==="lesen"))||(a.id===MY_UID?-1:b.id===MY_UID?1:0)||String(a.name||"~").localeCompare(String(b.name||"~")));
+  box.innerHTML=list.map(m=>{const me=m.id===MY_UID,w=m.rolle!=="lesen";
+    return `<div class="task mrow" data-uid="${esc(m.id)}"><div class="mname"><b>${esc(m.name||"Gerät ohne Namen")}</b>${me?" · <i>dieses Handy</i>":""}
+      <div class="mmeta">${w?"✏️ darf schreiben":"👁️ nur lesen"}${m.seit?" · seit "+dmy(m.seit):""}${m.zuletzt&&m.zuletzt!==m.seit?" · zuletzt "+dmy(m.zuletzt):""}</div></div>
+      <div class="seg" style="--n:2"><button class="typ" data-role="schreiben" aria-pressed="${w}" aria-label="Darf schreiben">✏️</button><button class="typ" data-role="lesen" aria-pressed="${!w}" aria-label="Nur lesen">👁️</button></div>
+      ${me?"<span></span>":`<button class="mdel" data-mdel aria-label="Aus der Liste entfernen">🗑</button>`}</div>`}).join("")||`<p class="hint">Noch keine Mitglieder.</p>`;
+  box.onclick=async ev=>{
+    const row=ev.target.closest("[data-uid]");if(!row)return;const uid=row.dataset.uid,m=list.find(x=>x.id===uid);if(!m)return;
+    const nm=m.name||"dieses Gerät";
+    const rb=ev.target.closest("[data-role]");
+    if(rb){const r=rb.dataset.role;if((m.rolle==="lesen"?"lesen":"schreiben")===r)return;
+      const writers=list.filter(x=>x.rolle!=="lesen");
+      if(r==="lesen"&&writers.length<=1){toast("Mindestens eine Person muss schreiben dürfen");return}
+      if(uid===MY_UID&&r==="lesen"&&!await askConfirm("Dir selbst die Schreibrechte nehmen? Zurückgeben kann sie dir dann nur jemand anderes.","Ja, nur noch lesen"))return;
+      if(r==="schreiben"&&!await askConfirm(`${nm} Schreibrechte geben? Dann kann ${m.name?"die Person":"es"} Einträge anlegen, ändern und löschen.`,"Schreibrechte geben",false))return;
+      try{await FS.doc(`familien/${c.code}/mitglieder/${uid}`).set({rolle:r},{merge:true});toast(r==="lesen"?`${nm}: nur noch lesen`:`${nm} darf jetzt schreiben`)}catch(e){toast("Ändern hat nicht geklappt")}
+      loadMembers();return}
+    if(ev.target.closest("[data-mdel]")){
+      if(!await askConfirm(`${nm} aus der Liste entfernen? Öffnet das Handy den Kalender wieder, kann es nur noch lesen.`,"Entfernen"))return;
+      try{await FS.doc(`familien/${c.code}/mitglieder/${uid}`).delete();toast("Entfernt")}catch(e){toast("Entfernen hat nicht geklappt")}
+      loadMembers()}
+  };
+}
+async function wipeWriteTokens(){
+  if(!await askConfirm("Alle bisher verschickten Mitschreib-Links ungültig machen? Wer schon verbunden ist, behält seine Rechte.","Ungültig machen"))return;
+  const c=getCfg();
+  try{const sn=await FS.collection(`familien/${c.code}/einladungen`).get({source:"server"});for(const d of sn.docs)await d.ref.delete();
+    try{localStorage.removeItem("fk-wtok-"+c.code)}catch(e){}toast("Alte Mitschreib-Links gelten nicht mehr");showSettings()}
+  catch(e){toast(e&&e.code==="permission-denied"?"Bitte erst die neuen Firebase-Regeln veröffentlichen":"Hat nicht geklappt")}
+}
+function showReaderSettings(){
+  sheet("Einstellungen",`<div class="rolebox">👁️ <b>Du kannst Kalender ${calNr()} nur ansehen.</b><br><span class="hint">Eintragen und Ändern geht erst, wenn dir jemand mit Schreibrechten das freischaltet (Einstellungen → Mitglieder & Rechte).</span></div>
+    ${nameBox()}
+    ${isStandalone()?"":`<button class="btn" id="installSet">📲 Als App installieren</button>`}
+    <h4 class="sub">Darstellung</h4>
+    <div class="seg" style="--n:3">${[["dark","🌙 Dunkel"],["light","☀️ Hell"],["auto","📱 Wie Handy"]].map(([k,n])=>`<button class="typ" data-theme-set="${k}" aria-pressed="${themeNow()===k}">${n}</button>`).join("")}</div>
+    <div class="rw">
+      <label class="pick" style="justify-content:space-between"><span>Kompakt-Modus (mehr auf einen Blick)</span><input type="checkbox" id="optCompact" ${prefOn("compact")?"checked":""}></label>
+      <label class="pick" style="justify-content:space-between"><span>Leere Tage in der Woche schmal anzeigen</span><input type="checkbox" id="optFold" ${prefOn("fold")?"checked":""}></label>
+      <label class="pick" style="justify-content:space-between"><span>Pfeile zusätzlich zum Wischen zeigen</span><input type="checkbox" id="optArrows" ${prefOn("arrows")?"checked":""}></label>
+    </div>
+    <button class="btn ghost" id="setImg">🖼 Bild mit den heutigen Terminen erstellen</button>
+    <button class="btn ghost" id="exp">Alle Termine exportieren (.ics)</button>
+    <h4 class="sub">Mit einem anderen Kalender verbinden</h4>
+    ${joinBox()}
+    <p class="hint"><a href="datenschutz.html">Datenschutz, Impressum & Nutzungshinweise</a></p>
+    <div class="actions"><button class="btn danger" id="disc">Auf diesem Handy trennen</button><button class="btn ghost" id="setClose">Schließen</button></div>`);
+  wireNameBox(null);wireJoin();
+  {const ib=document.getElementById("installSet");if(ib)ib.onclick=()=>{closeSheet();setTimeout(installApp,200)}}
+  document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{setTheme(b.dataset.themeSet);showSettings()});
+  [["optCompact","compact"],["optFold","fold"],["optArrows","arrows"]].forEach(([id,k])=>{const el=document.getElementById(id);if(el)el.onchange=()=>{setPref(k,el.checked);render()}});
+  document.getElementById("setImg").onclick=()=>showWidgetImage();
+  document.getElementById("exp").onclick=exportICS;
+  document.getElementById("setClose").onclick=closeSheet;
+  document.getElementById("disc").onclick=async()=>{if(!await askConfirm("Dieses Handy vom Kalender trennen? Zum erneuten Verbinden brauchst du den Einladungslink.","Trennen"))return;localStorage.removeItem(CFG_KEY);location.reload()};
 }
 function mirrorData(l){
   const sp=l.spalten||[];
@@ -1023,7 +1178,7 @@ function mirrorData(l){
 }
 function scheduleMirror(){clearTimeout(mirrorTimer);mirrorTimer=setTimeout(syncMirrors,2500)}
 async function syncMirrors(){
-  if(!memberOK||!FS||!LESE.length)return;
+  if(ROLE==="lesen"||!memberOK||!FS||!LESE.length)return;
   for(const l of LESE){
     const body={personen:SLOTS,namen:SLOTS.map((k,i)=>(l.spalten||[]).includes(k)?NAMES[i]:""),bilder:Object.fromEntries(Object.entries(PHOTOS).filter(([k])=>(l.spalten||[]).includes(k))),spalten:l.spalten,name:l.name||"",eintraege:mirrorData(l)};
     const key=JSON.stringify(body);let last="";try{last=localStorage.getItem("fk-mirror-"+l.rc)||""}catch(e){}
@@ -1127,7 +1282,7 @@ function saveLocalBackup(force){
   return false;
 }
 async function saveCloudBackup(force){
-  if(!store||store.mode!=="db")return false;
+  if(!store||store.mode!=="db"||ROLE==="lesen")return false;
   const newest=backups.map(b=>b.datum).sort().pop()||"";
   if(!force&&newest&&diffDays(newest,today)<7)return false;
   const data=snapshotData();if(!data.eintraege.length)return false;
@@ -1229,9 +1384,9 @@ function wirePhotos(){
 }
 
 function calNr(){const c=getCfg();return c&&c.code?c.code.slice(0,4).toUpperCase():"–"}
-function joinFromText(t){const m=String(t||"").match(/#join=([^\s&]+)/);const v=m?m[1]:String(t||"").trim().toLowerCase();
+function joinFromText(t){const m=String(t||"").match(/#join=([^\s&]+)(?:&w=([a-z2-9]+))?/);const v=m?m[1]:String(t||"").trim().toLowerCase();const wt=m&&m[2]?m[2]:"";
   if(!/^[a-z2-9]{18,}$/.test(v)&&!m){toast("Das ist kein gültiger Einladungslink");return}
-  location.hash="join="+v;location.reload()}
+  location.hash="join="+v+(wt?"&w="+wt:"");location.reload()}
 function joinBox(){return `<label class="f">Einladungslink einfügen<input id="joinIn" placeholder="https://…/familienkalender/#join=…"></label><button class="btn ghost" id="joinGo">Mit diesem Kalender verbinden</button>`}
 function wireJoin(){const b=document.getElementById("joinGo");if(b)b.onclick=()=>joinFromText(document.getElementById("joinIn").value)}
 function setStatus(t){document.getElementById("status").textContent=t}
