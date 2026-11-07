@@ -1,9 +1,9 @@
 // Offline-Unterstützung
 // - App-Dateien: immer zuerst die neueste Version aus dem Netz, sonst aus dem Speicher
 // - Programmbibliotheken (Firebase, Texterkennung): einmal laden, dann aus dem Speicher
-const CACHE = "familienkalender-v36";
+const CACHE = "familienkalender-v37";
 const LIB = "familienkalender-lib-v1";
-const FILES = ["./", "index.html", "manifest.webmanifest", "icon-192.png", "icon-512.png"];
+const FILES = ["./", "index.html",  "manifest.webmanifest", "icon-192.png", "icon-512.png"];
 const CDN = [
   "https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js",
   "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js",

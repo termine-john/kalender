@@ -347,6 +347,12 @@ body.fold .day.empty .day-head{border-bottom:0}
 #myWishes #wishNew{padding:8px 14px;font-size:.88rem}
 .clashbox{background:color-mix(in srgb,var(--star) 18%,var(--surface));border:1px solid var(--star);border-radius:10px;padding:10px 12px;font-size:.88rem;font-weight:600;line-height:1.45}
 .chip.clash{box-shadow:inset 0 0 0 2px var(--star)}
+.installbar{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 30%,var(--surface)),var(--surface));border:1px solid var(--accent);border-radius:14px;padding:10px 12px}
+.installbar .ib-ico{font-size:1.6rem}
+.installbar .ib-t{min-width:0;font-size:.92rem}
+.installbar .meta{font-size:.78rem;color:var(--muted)}
+.installbar .btn{padding:9px 12px;font-size:.88rem}
+.installbar .ib-x{color:var(--muted);font-size:1rem;padding:6px}
 .sec{font-family:var(--f-display);font-size:1.05rem;margin:6px 0 0}
 .empty-note{font-size:.85rem;color:var(--muted);text-align:center;padding:4px}
 
@@ -416,6 +422,11 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
     <button role="tab" data-view="tag">Tag</button><button role="tab" data-view="woche">Woche</button><button role="tab" data-view="monat">Monat</button><button role="tab" data-view="jahr">Jahr</button><button role="tab" data-view="ferien">Ferien</button><button role="tab" data-view="sterne">Sterne</button>
   </div>
   </header>
+
+  <section class="installbar" id="installBar" hidden>
+    <span class="ib-ico">📲</span><span class="ib-t"><b>Als App aufs Handy holen</b><br><span class="meta">Mit eigenem Symbol, startet wie eine richtige App.</span></span>
+    <button class="btn" id="installBtn">Installieren</button><button class="ib-x" id="installX" aria-label="Hinweis schließen">✕</button>
+  </section>
 
   <button class="nextcard" id="nextCard" hidden></button>
 
@@ -701,6 +712,7 @@ function showSettings(){
     <div class="linkbox" id="appl">${esc(appLink)}</div>
     <button class="btn ghost" id="applCopy">App-Link kopieren</button>
     <p class="hint">Tipp: Im Browser-Menü „Zum Startbildschirm hinzufügen“ wählen, dann hat jeder die App als Symbol auf dem Handy.</p>
+    ${isStandalone()?"":`<button class="btn" id="installSet">📲 Als App installieren</button>`}
     <button class="btn ghost" id="tourAgain">📖 Anleitung ansehen</button>
     <h4 class="sub">Darstellung</h4>
     <div class="rw">
@@ -729,6 +741,7 @@ function showSettings(){
     <p class="hint"><a href="datenschutz.html">Datenschutz, Impressum & Nutzungshinweise</a></p>
     <div class="actions"><button class="btn danger" id="disc">Auf diesem Handy trennen</button><button class="btn ghost" id="setClose">Schließen</button></div>`);
   document.getElementById("exp").onclick=exportICS;wireReadLinks();wireBackups();
+  {const ib=document.getElementById("installSet");if(ib)ib.onclick=()=>{closeSheet();setTimeout(installApp,200)}}
   document.getElementById("tourAgain").onclick=()=>{closeSheet();setTimeout(startTour,250)};
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{setTheme(b.dataset.themeSet);showSettings()});
   [["optCompact","compact"],["optFold","fold"],["optArrows","arrows"]].forEach(([id,k])=>{const el=document.getElementById(id);if(el)el.onchange=()=>{setPref(k,el.checked);render()}});
@@ -2120,6 +2133,31 @@ function maybeAutoTour(){
   if(done||READONLY||!getCfg())return;
   setTimeout(()=>{if(!document.querySelector(".backdrop")&&!document.querySelector(".cbackdrop")&&!tourEls)startTour()},1200);
 }
+
+/* ---------- Als App installieren ---------- */
+let installEvt=null;
+const isStandalone=()=>matchMedia("(display-mode: standalone)").matches||navigator.standalone===true;
+const isIOS=()=>/iphone|ipad|ipod/i.test(navigator.userAgent);
+function showInstallBar(){
+  const bar=document.getElementById("installBar");if(!bar)return;
+  let dis=false;try{dis=localStorage.getItem("fk-install-x")==="1"}catch(e){}
+  bar.hidden=isStandalone()||dis||!(installEvt||isIOS());
+}
+window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;showInstallBar()});
+window.addEventListener("appinstalled",()=>{installEvt=null;document.getElementById("installBar").hidden=true;toast("Installiert 🎉 Du findest die App jetzt auf deinem Startbildschirm.")});
+async function installApp(){
+  if(isStandalone()){toast("Die App ist schon installiert ✓");return}
+  if(installEvt){installEvt.prompt();try{const r=await installEvt.userChoice;if(r&&r.outcome==="accepted")document.getElementById("installBar").hidden=true}catch(e){}installEvt=null;return}
+  const ios=isIOS();
+  sheet("Als App installieren",ios
+    ?`<ol class="steps"><li>Unten in Safari auf <b>Teilen</b> tippen (Quadrat mit Pfeil nach oben).</li><li><b>„Zum Home-Bildschirm“</b> wählen.</li><li>Oben rechts auf <b>„Hinzufügen“</b> tippen.</li></ol>`
+    :`<ol class="steps"><li>Oben rechts im Browser auf <b>⋮</b> (drei Punkte) tippen.</li><li><b>„App installieren“</b> oder <b>„Zum Startbildschirm hinzufügen“</b> wählen.</li><li>Mit <b>„Installieren“</b> bestätigen.</li></ol><p class="hint">Im Samsung-Browser: unten auf ☰ tippen → „Seite hinzufügen zu“ → „Startbildschirm“.</p>`
+    +`<p class="hint">Danach findest du den Kalender als eigenes Symbol auf deinem Handy.</p><div class="actions"><button class="btn" id="instOk">Alles klar</button></div>`);
+  document.getElementById("instOk").onclick=closeSheet;
+}
+document.getElementById("installBtn").onclick=installApp;
+document.getElementById("installX").onclick=()=>{try{localStorage.setItem("fk-install-x","1")}catch(e){}document.getElementById("installBar").hidden=true;toast("Installieren geht auch später unter Einstellungen")};
+setTimeout(showInstallBar,1500);
 
 applyPrefs();
 init();
