@@ -1324,7 +1324,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v55";
+const APP_VER="v56";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -3024,13 +3024,16 @@ function greetUser(){
 setTimeout(greetUser,2600);
 
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
-// Neue Einträge immer OBEN anfügen. v = eindeutige Kennung, d = Datum.
+// Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
-  {v:"2026-11-07f",d:"2026-11-07",t:"Termine schützen & Sichtbarkeit",items:[
-    "🔒 Termine schützen: Wer einen Termin eingetragen hat, kann ihn so sperren, dass nur er selbst ihn löschen kann (im Termin „Vor dem Löschen durch andere schützen“)",
-    "👋 Persönliche Begrüßung beim Öffnen und neuer 3D-Kopfbereich",
+  {v:"2026-11-07g",d:"2026-11-07",t:"Begrüßung, 3D-Design & Sprachen",items:[
+    "👋 Persönliche Begrüßung beim Öffnen der App",
+    "✨ Neuer Kopfbereich in 3D mit Kalender-Symbol und aktuellem Jahr",
     "🌐 Weitere Sprachen: English, Türkçe, Polski, Українська (Einstellungen → Darstellung)",
     "✅ Angenommene Wünsche von Nur-Lese-Seiten werden automatisch eingetragen, auf Wunsch in mehreren Spalten",
+    "🔑 Die Kalender-Nummer steht jetzt in den Einstellungen statt oben"]},
+  {v:"2026-11-07f",d:"2026-11-07",t:"Termine schützen & Sichtbarkeit",items:[
+    "🔒 Termine schützen: Wer einen Termin eingetragen hat, kann ihn so sperren, dass nur er selbst ihn löschen kann (im Termin „Vor dem Löschen durch andere schützen“)",
     "👥 Sichtbarkeit: Beim Eintragen festlegen, welche Familienmitglieder einen Termin sehen dürfen (im Termin „Wer darf diesen Termin sehen?“)"]},
   {v:"2026-11-07e",d:"2026-11-07",t:"Ideen-Wand & Umfragen",items:[
     "💡 Ideen-Wand: Wünsche für die App vorschlagen und mit 👍 abstimmen (Einstellungen → Ideen-Wand)",
