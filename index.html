@@ -428,6 +428,11 @@ body.haspbg::after{background:var(--bg);opacity:var(--pdim,.55)}
 .pbgrid button[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
 .pbgrid button span{background:rgba(0,0,0,.45);color:#fff;border-radius:6px;padding:1px 5px}
 .pbrange{width:100%}
+.pcol{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);padding:0;cursor:pointer;flex:none}
+.palette{display:flex;flex-wrap:wrap;gap:8px;padding:8px 2px 4px;grid-column:1/-1}
+.palette button{width:30px;height:30px;border-radius:50%;border:2px solid transparent;padding:0}
+.palette button[aria-pressed="true"]{border-color:var(--fg);box-shadow:0 0 0 2px var(--bg) inset}
+.palette .pdef{width:auto;border-radius:15px;padding:0 10px;border:1px solid var(--line);background:var(--surface);color:var(--fg);font-size:12px}
 body.haspbg .nav{background:color-mix(in srgb,var(--bg) 70%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
 .gear .badge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:#e5484d;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px}
 .supmsg{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface);margin:8px 0;line-height:1.45}
@@ -542,9 +547,20 @@ try{const ps=JSON.parse(localStorage.getItem("fk-personen")||"null");if(Array.is
 // Farben für weitere Personen (funktionieren in hell und dunkel)
 const EXTRA_COLORS=["#3d8fe0","#e0873d","#9a6be0","#2fae74","#c9a227","#e05aa8","#5a73e0","#36aaaa","#b5651d","#7f9c2b"];
 const persons=()=>PEOPLE.filter(([k])=>k!=="gemeinsam");
-function personColor(k){const i=SLOTS.indexOf(k)-BASE_SLOTS.length;return i>=0?EXTRA_COLORS[(SLOTS.filter(x=>!BASE_SLOTS.includes(x)).indexOf(k))%EXTRA_COLORS.length]:null}
+const PALETTE=["#e0457b","#f08aaa","#e5484d","#f2994a","#f0b26b","#e0b43d","#8bc34a","#2fae74","#36aaaa","#6fd1c2","#3d8fe0","#5a73e0","#a99bf2","#9a6be0","#c06be0","#b5651d","#8a9aa8"];
+let FARBEN={};try{FARBEN=JSON.parse(localStorage.getItem("fk-farben")||"{}")||{}}catch(e){FARBEN={}}
+const okCol=c=>typeof c==="string"&&/^#[0-9a-f]{6}$/i.test(c);
+function setFarben(o){FARBEN={};for(const[k,v] of Object.entries(o||{}))if(okCol(v)&&/^[a-z0-9]{2,12}$/.test(k))FARBEN[k]=v;try{localStorage.setItem("fk-farben",JSON.stringify(FARBEN))}catch(e){}applyPersonStyles()}
+const BASEVAR={christin:"christin",john:"john",robert:"robert",gemeinsam:"gem"};
+function defaultColor(k){if(BASEVAR[k]){const st=document.getElementById("dynPersons");if(st)st.disabled=true;const v=getComputedStyle(document.documentElement).getPropertyValue("--c-"+BASEVAR[k]).trim()||"#888888";if(st)st.disabled=false;return v}const i=SLOTS.filter(x=>!BASE_SLOTS.includes(x)).indexOf(k);return EXTRA_COLORS[(i<0?0:i)%EXTRA_COLORS.length]}
+function shownColor(k){return okCol(FARBEN[k])?FARBEN[k]:defaultColor(k)}
+function personColor(k){if(okCol(FARBEN[k]))return FARBEN[k];const i=SLOTS.indexOf(k)-BASE_SLOTS.length;return i>=0?EXTRA_COLORS[(SLOTS.filter(x=>!BASE_SLOTS.includes(x)).indexOf(k))%EXTRA_COLORS.length]:null}
 function applyPersonStyles(){
-  let css="";for(const k of SLOTS){if(BASE_SLOTS.includes(k))continue;const c=personColor(k);if(!c)continue;
+  let css="",vars="";
+  for(const[k,v] of Object.entries(BASEVAR)){const c=FARBEN[k];if(!okCol(c))continue;
+    vars+=`--c-${v}:${c};--c-${v}-bg:color-mix(in srgb,${c} 22%,var(--surface));`;if(typeof WCOL!=="undefined")WCOL[k]=c}
+  if(vars)css+=`:root:root:root{${vars}}`;
+  for(const k of SLOTS){if(BASE_SLOTS.includes(k))continue;const c=personColor(k);if(!c)continue;
     css+=`.p-${k},.chip.termin.${k},.mbar.${k},.dblk.${k}{color:${c};background:color-mix(in srgb,${c} 18%,var(--surface))}.dband.${k}{color:${c};background:color-mix(in srgb,${c} 12%,transparent)}.pd .${k},.kd.${k}{background:${c}}`;
     if(typeof WCOL!=="undefined")WCOL[k]=c}
   let el=document.getElementById("dynPersons");if(!el){el=document.createElement("style");el.id="dynPersons";document.head.appendChild(el)}el.textContent=css}
@@ -691,6 +707,7 @@ async function init(){
     if(conf){const n=conf.data().namen,ks=conf.data().personen;if(Array.isArray(n)){setPersons(Array.isArray(ks)&&ks.length===n.length?ks:BASE_SLOTS.slice(0,n.length),n);try{localStorage.setItem("fk-namen",JSON.stringify(n))}catch(e){}}}
     LESE=conf?(conf.data().lesen||[]):[];
     if(conf&&conf.data().bilder)setPhotos(conf.data().bilder);
+    if(conf)setFarben(conf.data().farben||{});
     watchWishes();
     splitData(snap.docs.filter(d=>d.id!=="_config").map(d=>({...d.data(),id:d.id})));
     const nr=calNr()+(ROLE==="lesen"?" · 👁️ nur lesen":"");
@@ -705,11 +722,18 @@ async function init(){
 /* ---------- Einrichtung & Einladen ---------- */
 function sheet(title,html){document.getElementById("sheetHost").innerHTML=`<div class="backdrop" id="bd"><div class="sheet" role="dialog" aria-modal="true" aria-label="${title}"><h3>${title}</h3>${html}</div></div>`;draft={setup:true};
   document.getElementById("bd").onclick=ev=>{if(ev.target.id==="bd")closeSheet()}}
-function personRow(k,n){return `<div class="task prow" data-pkey="${k}" style="grid-template-columns:auto 1fr auto"><span class="kd ${k}" style="width:14px;height:14px"></span><input maxlength="20" value="${esc(n||"")}" placeholder="Name" aria-label="Name"><button class="btn ghost" data-prm="${k}" aria-label="Person entfernen">✕</button></div>`}
+function paletteHTML(k){const cur=FARBEN[k]||"";return `<div class="palette" data-palfor="${k}" hidden>${PALETTE.map(c=>`<button data-pc="${c}" style="background:${c}" aria-pressed="${cur===c}" aria-label="Farbe ${c}"></button>`).join("")}<button class="pdef" data-pc="" aria-pressed="${!cur}">Standard</button></div>`}
+function personRow(k,n){return `<div class="task prow" data-pkey="${k}" data-col="${esc(FARBEN[k]||"")}" style="grid-template-columns:auto 1fr auto"><button class="pcol" data-pcolbtn="${k}" style="background:${shownColor(k)}" aria-label="Farbe wählen"></button><input maxlength="20" value="${esc(n||"")}" placeholder="Name" aria-label="Name"><button class="btn ghost" data-prm="${k}" aria-label="Person entfernen">✕</button>${paletteHTML(k)}</div>`}
 let removedKeys=[];
 function wirePersons(){
   const list=document.getElementById("persList");if(!list)return;
-  list.onclick=ev=>{const b=ev.target.closest("[data-prm]");if(!b)return;if(list.querySelectorAll("[data-pkey]").length<=1){toast("Mindestens eine Person wird gebraucht");return}b.closest("[data-pkey]").remove();toast("Zum Übernehmen „Speichern“ tippen")};
+  const gr=document.getElementById("gemRow");if(gr)setTimeout(()=>{gr.onclick=list.onclick});
+  list.onclick=ev=>{
+    const cb=ev.target.closest("[data-pcolbtn]");if(cb){const row=cb.closest("[data-pkey]");const pal=row.querySelector(".palette");list.querySelectorAll(".palette").forEach(x=>{if(x!==pal)x.hidden=true});pal.hidden=!pal.hidden;return}
+    const pc=ev.target.closest("[data-pc]");if(pc){const row=pc.closest("[data-pkey]");const k=row.dataset.pkey,c=pc.dataset.pc;row.dataset.col=c;
+      row.querySelector(".pcol").style.background=c||defaultColor(k);
+      row.querySelectorAll("[data-pc]").forEach(x=>x.setAttribute("aria-pressed",String(x===pc)));row.querySelector(".palette").hidden=true;toast("Zum Übernehmen „Personen speichern“ tippen");return}
+    const b=ev.target.closest("[data-prm]");if(!b)return;if(list.querySelectorAll("[data-pkey]").length<=1){toast("Mindestens eine Person wird gebraucht");return}b.closest("[data-pkey]").remove();toast("Zum Übernehmen „Speichern“ tippen")};
   document.getElementById("persAdd").onclick=()=>{if(list.querySelectorAll("[data-pkey]").length>=12){toast("Höchstens 12 Personen");return}
     let k;do{k="p"+Math.random().toString(36).slice(2,6)}while(SLOTS.includes(k)||list.querySelector(`[data-pkey="${k}"]`));
     const tmp=document.createElement("div");tmp.innerHTML=personRow(k,"");const row=tmp.firstChild;list.appendChild(row);
@@ -762,8 +786,9 @@ function showSettings(){
     <p class="hint">Tippe auf einen Kreis und wähle ein Foto. Es wird verkleinert und erscheint bei allen über dem Namen.</p>
     <h4 class="sub">Personen im Haushalt</h4>
     <div id="persList" class="tasklist">${SLOTS.map((k,i)=>personRow(k,NAMES[i])).join("")}</div>
+    <div class="tasklist" id="gemRow">${`<div class="task prow" data-pkey="gemeinsam" data-col="${esc(FARBEN.gemeinsam||"")}" style="grid-template-columns:auto 1fr"><button class="pcol" data-pcolbtn="gemeinsam" style="background:${shownColor("gemeinsam")}" aria-label="Farbe wählen"></button><span style="align-self:center">Gemeinsam <span class="hint">(nur Farbe)</span></span>${paletteHTML("gemeinsam")}</div>`}</div>
     <button class="btn ghost" id="persAdd">+ Person hinzufügen</button>
-    <p class="hint">Jede Person bekommt eine eigene Spalte und Farbe. „Gemeinsam“ gibt es immer dazu. <a href="#" id="persHelp">Wie geht das genau?</a></p>
+    <p class="hint">Jede Person bekommt eine eigene Spalte und Farbe. Tippe auf den farbigen Kreis, um die Farbe zu ändern. „Gemeinsam“ gibt es immer dazu. <a href="#" id="persHelp">Wie geht das genau?</a></p>
     <button class="btn" id="nmSave">Personen speichern</button>
     <h4 class="sub">Für Freunde: eigenen Kalender</h4>
     <p class="hint">Mit diesem Link können andere die App nutzen und legen dabei ihren <b>eigenen, getrennten</b> Kalender an. Deine Termine sehen sie nicht.</p>
@@ -836,7 +861,8 @@ function showSettings(){
     if(n.some(x=>!x)){toast("Bitte jeder Person einen Namen geben");return}
     const removed=SLOTS.filter(k=>!keys.includes(k)),cnt=entries.filter(e=>removed.includes(e.person)).length;
     if(removed.length&&!await askConfirm(`${removed.map(k=>PNAME[k]).join(", ")} entfernen?${cnt?` ${cnt} Einträge dieser Person werden dann nicht mehr angezeigt (sie bleiben gespeichert und kommen zurück, wenn du die Person wieder hinzufügst).`:""}`,"Entfernen"))return;
-    try{await store.names(n,keys);setPersons(keys,n);render();toast("Gespeichert");showSettings()}catch(e){toast("Speichern hat nicht geklappt")}};
+    const far={};for(const r of [...rows,...document.querySelectorAll("#gemRow [data-pkey]")]){const c=r.dataset.col;if(okCol(c))far[r.dataset.pkey]=c}
+    try{await store.names(n,keys);if(store.conf)await store.conf({farben:far});setFarben(far);setPersons(keys,n);render();toast("Gespeichert");showSettings()}catch(e){toast("Speichern hat nicht geklappt")}};
   if(false)document.getElementById("nmSave").onclick=async()=>{const n=readNames();if(!n.some(Boolean)){toast("Bitte mindestens einen Namen eintragen");return}try{await store.names(n);applyNames(n);render();toast("Namen gespeichert")}catch(e){toast("Speichern hat nicht geklappt")}};
   document.getElementById("applCopy").onclick=async()=>{try{await navigator.clipboard.writeText(appLink);toast("App-Link kopiert")}catch(e){const r=document.createRange();r.selectNodeContents(document.getElementById("appl"));const x=getSelection();x.removeAllRanges();x.addRange(r);toast("Link markiert, jetzt kopieren")}};
   document.getElementById("disc").onclick=async()=>{if(!await askConfirm("Dieses Handy vom Kalender trennen? Die Termine bleiben für die anderen erhalten. Zum erneuten Verbinden brauchst du den Einladungslink.","Trennen"))return;localStorage.removeItem(CFG_KEY);location.reload()};
@@ -855,6 +881,7 @@ const HELP=[
 <li>Den Namen eintragen.</li>
 <li><b>„Personen speichern“</b> tippen, fertig.</li></ol>
 <p>Die neue Person bekommt automatisch eine eigene Spalte und Farbe, bei allen in der Familie. Bis zu 12 Personen sind möglich.</p>
+<p><b>Farbe ändern:</b> auf den farbigen Kreis vor dem Namen tippen, eine Farbe wählen und „Personen speichern“. Die Farbe gilt dann bei allen in der Familie. Auch „Gemeinsam“ kann eine eigene Farbe bekommen, „Standard“ setzt sie zurück.</p>
 <p><b>Umbenennen:</b> Namen in der Zeile ändern und speichern. <b>Entfernen:</b> auf ✕ neben der Person tippen und speichern. Ihre Einträge bleiben gespeichert und kommen zurück, wenn du sie wieder hinzufügst.</p>
 <p class="tipp">Eine Person im Kalender ist nicht dasselbe wie ein Handy: Auch ein Baby oder die Oma kann eine Spalte haben, ohne die App zu nutzen. Wer selbst mitmachen soll, bekommt zusätzlich einen Einladungslink.</p>`],
 ["ansichten","🗓","Ansichten: Tag, Woche, Monat, Jahr",`<ul><li><b>Tag:</b> Zeitstrahl mit allen Terminen des Tages nebeneinander, ganztägige Einträge stehen quer oben.</li>
@@ -1444,7 +1471,7 @@ function scheduleMirror(){clearTimeout(mirrorTimer);mirrorTimer=setTimeout(syncM
 async function syncMirrors(){
   if(ROLE==="lesen"||!memberOK||!FS||!LESE.length)return;
   for(const l of LESE){
-    const body={personen:SLOTS,namen:SLOTS.map((k,i)=>(l.spalten||[]).includes(k)?NAMES[i]:""),bilder:Object.fromEntries(Object.entries(PHOTOS).filter(([k])=>(l.spalten||[]).includes(k))),spalten:l.spalten,name:l.name||"",eintraege:mirrorData(l)};
+    const body={farben:Object.fromEntries(Object.entries(FARBEN).filter(([k])=>(l.spalten||[]).includes(k))),personen:SLOTS,namen:SLOTS.map((k,i)=>(l.spalten||[]).includes(k)?NAMES[i]:""),bilder:Object.fromEntries(Object.entries(PHOTOS).filter(([k])=>(l.spalten||[]).includes(k))),spalten:l.spalten,name:l.name||"",eintraege:mirrorData(l)};
     const key=JSON.stringify(body);let last="";try{last=localStorage.getItem("fk-mirror-"+l.rc)||""}catch(e){}
     if(key===last)continue;
     try{await FS.doc(`lesen/${l.rc}`).set({...body,stand:new Date().toISOString()});try{localStorage.setItem("fk-mirror-"+l.rc,key)}catch(e){}}catch(e){console.warn("Spiegel",e)}
@@ -1515,7 +1542,7 @@ function startReader(cfg){
     fs.collection(`lesen/${cfg.lesen}/wuensche`).onSnapshot(sn=>{MYWISHES=sn.docs.map(x=>({...x.data(),id:x.id}));renderWishes()},()=>{});
     fs.doc(`lesen/${cfg.lesen}`).onSnapshot(doc=>{
       if(!doc.exists){entries=[];render();setStatus("Dieser Link ist nicht mehr gültig.");return}
-      const d=doc.data();if(Array.isArray(d.namen)){if(Array.isArray(d.personen)&&d.personen.length===d.namen.length){SLOTS=d.personen;applyPersonStyles()}applyNames(d.namen)}
+      const d=doc.data();setFarben(d.farben||{});if(Array.isArray(d.namen)){if(Array.isArray(d.personen)&&d.personen.length===d.namen.length){SLOTS=d.personen;applyPersonStyles()}applyNames(d.namen)}
       const sp=Array.isArray(d.spalten)&&d.spalten.length?d.spalten:PEOPLE.map(([k])=>k);
       PEOPLE=PEOPLE.filter(([k])=>sp.includes(k));
       document.documentElement.style.setProperty("--ncol",String(PEOPLE.length));
