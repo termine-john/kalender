@@ -377,6 +377,24 @@ body.fold .day.empty .day-head{border-bottom:0}
 .clog{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:10px 14px;margin:8px 0}
 .clog h4{margin:0 0 4px;font-size:15px}.clog .cd{font-size:12px;opacity:.7;font-weight:400;margin-left:6px}
 .clog ul{margin:4px 0;padding-left:20px;line-height:1.45}.clog li{margin:3px 0}
+#adminCards{display:contents}
+.acard{grid-template-columns:auto 1fr auto;align-items:start}
+.acard .ib-t{white-space:pre-wrap;word-break:break-word}
+.acard.warn{border-color:#e0b43d;background:color-mix(in srgb,#e0b43d 18%,var(--surface))}
+.acard.alarm{border-color:#e5484d;background:color-mix(in srgb,#e5484d 20%,var(--surface))}
+.acard .opts{display:flex;flex-wrap:wrap;gap:6px;margin-top:6px}
+.acard .opts button{border:1px solid var(--accent);background:var(--surface);color:var(--fg);border-radius:999px;padding:7px 12px;font:inherit;font-size:.88rem}
+.acard .quote{opacity:.75;font-size:.85rem;border-left:3px solid var(--line);padding-left:8px;margin:4px 0}
+body.off-foto #photoBtn,body.off-sprache #micBtn,body.off-sprache #voiceIn,body.off-sterne [data-view="sterne"],body.off-support #supBtn,body.off-support #rSup,body.off-support #hSupport,body.off-ideen #ideaBtn,body.off-ideen #rIdea,body.off-ideen #hIdea{display:none!important}
+.atabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px;scrollbar-width:none}
+.atabs button{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:7px 12px;font:inherit;font-size:.85rem;white-space:nowrap}
+.atabs button[aria-pressed="true"]{background:var(--accent);color:#06222e;border-color:var(--accent)}
+.idea{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface);margin:8px 0;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
+.idea .it{white-space:pre-wrap;word-break:break-word}
+.idea .ist{font-size:12px;opacity:.75}
+.idea .vote{border:1px solid var(--accent);background:transparent;color:var(--fg);border-radius:12px;padding:6px 10px;font:inherit;min-width:54px}
+.idea .vote[disabled]{opacity:.55}
+.bar{height:10px;border-radius:5px;background:var(--accent);margin:3px 0 8px}
 .installbar .ib-t{min-width:0;font-size:.92rem}
 .installbar .meta{font-size:.78rem;color:var(--muted)}
 .installbar .btn{padding:9px 12px;font-size:.88rem}
@@ -474,6 +492,7 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
   </div>
   </header>
 
+  <div id="adminCards"></div>
   <section class="installbar newcard" id="newCard" hidden>
     <span class="ib-ico">✨</span><span class="ib-t" id="newTxt"></span><button class="ib-x" id="newX" aria-label="Neuigkeiten schließen">✕</button>
   </section>
@@ -808,6 +827,7 @@ function showSettings(){
     <button class="btn ghost" id="tourAgain">❓ Hilfe & Anleitung</button>
     <button class="btn ghost" id="clBtn">✨ Was ist neu? (alle Updates)</button>
     <button class="btn ghost" id="supBtn">💬 Support · Nachricht an den Entwickler</button>
+    <button class="btn ghost" id="ideaBtn">💡 Ideen-Wand · Wünsche für die App</button>
     <div id="adminBox"></div>
     <h4 class="sub">Darstellung</h4>
     <div class="rw">
@@ -840,6 +860,7 @@ function showSettings(){
   {const ib=document.getElementById("installSet");if(ib)ib.onclick=()=>{closeSheet();setTimeout(installApp,200)}}
   document.getElementById("tourAgain").onclick=()=>{closeSheet();setTimeout(showHelp,200)};
   document.getElementById("clBtn").onclick=()=>{closeSheet();setTimeout(showChangelog,200)};
+  document.getElementById("ideaBtn").onclick=()=>{closeSheet();setTimeout(showIdeas,200)};
   document.getElementById("supBtn").onclick=()=>{closeSheet();setTimeout(showSupport,200)};adminBoxFill();
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{setTheme(b.dataset.themeSet);showSettings()});
   [["optCompact","compact"],["optFold","fold"],["optArrows","arrows"]].forEach(([id,k])=>{const el=document.getElementById(id);if(el)el.onchange=()=>{setPref(k,el.checked);render()}});
@@ -966,8 +987,10 @@ const HELP=[
 <li><b>Wiederherstellen:</b> Einstellungen → „Sicherungen“ → Sicherung antippen. Gelöschte Einträge kommen zurück, vorhandene bleiben unverändert.</li>
 <li><b>Als Datei:</b> „Als Datei speichern“ zum Aufheben, „Aus Datei wiederherstellen“ zum Zurückholen.</li>
 <li><b>Export (.ics):</b> alle Termine für Google Kalender oder andere Kalender-Apps.</li></ul>`],
+["ideen","💡","Ideen-Wand & Umfragen",`<p>Unter Einstellungen → <b>„💡 Ideen-Wand“</b> siehst du, was sich andere für die App wünschen. Mit 👍 stimmst du für eine Idee, unten schlägst du eigene vor. Neue Ideen erscheinen nach einer kurzen Prüfung.</p>
+<p>Ab und zu erscheint oben eine <b>📊 Umfrage</b>. Ein Tipp auf eine Antwort genügt, mit ✕ blendest du sie aus.</p>`],
 ["support","💬","Support & Feedback",`<p>Frage, Fehler oder Idee? In den Einstellungen oder ganz unten in dieser Hilfe auf <b>„💬 Nachricht an den Entwickler“</b> tippen, Art wählen, Nachricht schreiben, absenden.</p>
-<p>Wenn du eine Antwort möchtest, trag eine E-Mail-Adresse oder Handynummer ein. Die Nachricht sieht nur der Entwickler.</p>`],
+<p>Die Antwort erscheint oben in der App als Karte „💬 Antwort vom Entwickler“. Die Nachricht sieht nur der Entwickler.</p>`],
 ["probleme","🛠","Probleme lösen",`<ul><li><b>Einträge der anderen fehlen:</b> oben die Kalender-Nummer vergleichen. Ist sie verschieden, den Einladungslink nochmal öffnen.</li>
 <li><b>„Du hast nur Leserechte“:</b> jemand mit Schreibrechten muss dich unter „Mitglieder & Rechte“ auf ✏️ stellen.</li>
 <li><b>Etwas sieht alt aus:</b> App schließen und neu öffnen, dann lädt die neue Version.</li>
@@ -983,8 +1006,10 @@ function showHelp(open){
     <p class="hint" id="hNone" hidden>Nichts gefunden. Probier ein anderes Wort.</p>
     <h4 class="sub">Nicht weitergekommen?</h4>
     <button class="btn" id="hSupport" style="width:100%">💬 Nachricht an den Entwickler</button>
+    <button class="btn ghost" id="hIdea" style="width:100%">💡 Ideen-Wand</button>
     <div class="actions"><button class="btn ghost" id="hClose">Schließen</button></div></div>`);
   document.getElementById("hSupport").onclick=()=>{closeSheet();setTimeout(showSupport,200)};
+  document.getElementById("hIdea").onclick=()=>{closeSheet();setTimeout(showIdeas,200)};
   document.getElementById("hTour").onclick=()=>{closeSheet();setTimeout(startTour,250)};
   document.getElementById("hNews").onclick=()=>{closeSheet();setTimeout(showChangelog,200)};
   document.getElementById("hClose").onclick=closeSheet;
@@ -1230,7 +1255,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v40";
+const APP_VER="v45";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -1246,7 +1271,7 @@ function showSupport(){
       <label class="f">Deine Nachricht<textarea id="supT" rows="6" maxlength="1000" placeholder="${art==="fehler"?"Was ist passiert? Was hast du vorher gemacht?":art==="idee"?"Was würde dir die App erleichtern?":"Wobei kann ich helfen?"}">${esc(draft.supT||"")}</textarea></label>
       <label class="f">Dein Name (optional)<input id="supN" maxlength="60" value="${esc(draft.supN||"")}"></label>
       <label class="f">Wie kann ich dir antworten? (optional)<input id="supK" maxlength="100" value="${esc(draft.supK||"")}" placeholder="E-Mail oder Handynummer"></label>
-      <p class="hint">Ohne Kontaktangabe kann ich nicht antworten. Mitgeschickt werden nur App-Version und Gerätetyp, keine Termine. Mehr dazu im <a href="datenschutz.html">Datenschutz</a>.</p>
+      <p class="hint">Meine Antwort erscheint hier in der App. Möchtest du sie zusätzlich per E-Mail oder WhatsApp, trag einen Kontakt ein. Mitgeschickt werden nur App-Version und Gerätetyp, keine Termine. Mehr dazu im <a href="datenschutz.html">Datenschutz</a>.</p>
       <div class="actions"><button class="btn" id="supGo">Absenden</button><button class="btn ghost" id="supX">Abbrechen</button></div>`);
     const keep=()=>{draft.supT=document.getElementById("supT").value;draft.supN=document.getElementById("supN").value;draft.supK=document.getElementById("supK").value};
     document.querySelectorAll("[data-art]").forEach(b=>b.onclick=()=>{keep();art=b.dataset.art;const d={...draft};draw();Object.assign(draft,d)});
@@ -1261,8 +1286,9 @@ function showSupport(){
       const o={art,text:t.slice(0,1000),name:(draft.supN||"").trim().slice(0,60),kontakt:(draft.supK||"").trim().slice(0,100),
         info:`${APP_VER} · ${dev} · ${br}${isStandalone()?" · installiert":""} · ${location.hostname}`.slice(0,300),zeit:nowISO(),status:"neu"};
       const btn=document.getElementById("supGo");btn.disabled=true;btn.textContent="Wird gesendet …";
-      try{await Promise.race([db.collection("support").add(o),new Promise((_,j)=>setTimeout(()=>j({code:"timeout"}),12000))]);
-        try{localStorage.setItem("fk-sup-last",String(Date.now()))}catch(e){}
+      const sref=db.collection("support").doc();
+      try{await Promise.race([sref.set(o),new Promise((_,j)=>setTimeout(()=>j({code:"timeout"}),12000))]);
+        try{localStorage.setItem("fk-sup-last",String(Date.now()));const ids=JSON.parse(localStorage.getItem("fk-sup-ids")||"[]");ids.push(sref.id);localStorage.setItem("fk-sup-ids",JSON.stringify(ids.slice(-10)))}catch(e){}
         draft.supT="";closeSheet();toast("Danke! Deine Nachricht ist angekommen 💌")}
       catch(e){console.warn(e);btn.disabled=false;btn.textContent="Absenden";toast(e&&e.code==="permission-denied"?"Senden ist gerade nicht möglich (Regeln fehlen)":"Senden hat nicht geklappt. Bitte später nochmal.")}
     };
@@ -1275,14 +1301,19 @@ async function checkAdmin(){
   ADMIN_ERR="";
   try{if(!FS||!firebase.auth){ADMIN_ERR="offline";return}const u=firebase.auth().currentUser;if(!u){ADMIN_ERR="offline";return}
     const a=await FS.doc(`admins/${u.uid}`).get({source:"server"});IS_ADMIN=a.exists;if(!IS_ADMIN){ADMIN_ERR="fehlt";return}
-    const sn=await FS.collection("support").where("status","==","neu").get({source:"server"});SUP_NEW=sn.size;markGear();
-    if(SUP_NEW)toast(`📬 ${SUP_NEW} neue Support-${SUP_NEW===1?"Nachricht":"Nachrichten"}`);
+    const sn=await FS.collection("support").where("status","==","neu").get({source:"server"});
+    let errSeen="";try{errSeen=localStorage.getItem("fk-err-seen")||""}catch(e){}
+    let ne=0,ni=0;try{ne=(await FS.collection("fehler").where("zeit",">",errSeen).get({source:"server"})).size}catch(e){}
+    try{ni=(await FS.collection("ideen").where("status","==","neu").get({source:"server"})).size}catch(e){}
+    SUP_NEW=sn.size+ne+ni;markGear();
+    const parts=[sn.size?`${sn.size} Nachricht${sn.size===1?"":"en"}`:"",ne?`${ne} Fehlerbericht${ne===1?"":"e"}`:"",ni?`${ni} neue Idee${ni===1?"":"n"}`:""].filter(Boolean);
+    if(parts.length)toast("🛠 Neu im Admin-Bereich: "+parts.join(", "));
   }catch(e){IS_ADMIN=false;ADMIN_ERR=e&&e.code==="permission-denied"?"regeln":"offline"}
 }
 function markGear(){const g=document.getElementById("gear");if(!g)return;let b=g.querySelector(".badge");if(!SUP_NEW){if(b)b.remove();return}if(!b){b=document.createElement("span");b.className="badge";g.appendChild(b)}b.textContent=SUP_NEW}
 function adminBoxFill(){
   const box=document.getElementById("adminBox");if(!box)return;
-  if(IS_ADMIN){box.innerHTML=`<button class="btn" id="inboxBtn">📬 Postfach & 📢 Nachricht an alle${SUP_NEW?` (${SUP_NEW} neu)`:""}</button>`;document.getElementById("inboxBtn").onclick=()=>{closeSheet();setTimeout(showInbox,200)};return}
+  if(IS_ADMIN){box.innerHTML=`<button class="btn" id="inboxBtn">🛠 Admin-Bereich${SUP_NEW?` (${SUP_NEW} neu)`:""}</button>`;document.getElementById("inboxBtn").onclick=()=>{closeSheet();setTimeout(showInbox,200)};return}
   if(!IS_MAIN_SITE)return;
   let uid="";try{uid=firebase.auth().currentUser.uid}catch(e){}
   if(!uid)return;
@@ -1299,43 +1330,141 @@ function adminBoxFill(){
   document.getElementById("admRe").onclick=st;st();
   document.getElementById("uidCopy").onclick=async()=>{try{await navigator.clipboard.writeText(uid);toast("Code kopiert")}catch(e){toast("Bitte den Code markieren und kopieren")}};
 }
-async function showInbox(){
+async function showInbox(){showAdmin("post")}
+const ATABS=[["post","📬 Postfach"],["fehler","🐞 Fehler"],["alle","📢 An alle"],["familie","👪 An Familie"],["umfrage","📊 Umfrage"],["ideen","💡 Ideen"],["steuer","⚙️ Steuerung"],["sperren","🚫 Sperren"]];
+function showAdmin(tab){
+  tab=tab||"post";
+  sheet("🛠 Admin-Bereich",`<div class="atabs">${ATABS.map(([k,n])=>`<button data-at="${k}" aria-pressed="${k===tab}">${n}</button>`).join("")}</div><div id="aBody"><p class="hint">Lade …</p></div>
+    <div class="actions"><button class="btn ghost" id="aClose">Schließen</button></div>`);
+  document.getElementById("aClose").onclick=closeSheet;
+  document.querySelectorAll("[data-at]").forEach(b=>b.onclick=()=>showAdmin(b.dataset.at));
+  const body=document.getElementById("aBody");
+  const fn={post:admPost,fehler:admErr,alle:admAll,familie:admFam,umfrage:admPoll,ideen:admIdeas,steuer:admCtl,sperren:admBlock}[tab];
+  fn(body).catch(e=>{console.warn(e);body.innerHTML=`<p class="hint">Konnte nicht geladen werden${e&&e.code==="permission-denied"?" · bitte die neuen Regeln veröffentlichen":""}.</p>`});
+}
+const $v=id=>{const el=document.getElementById(id);return el?el.value.trim():""};
+const fmtZ=z=>esc(String(z||"").slice(0,16).replace("T"," "));
+async function admPost(body){
+  const sn=await FS.collection("support").orderBy("zeit","desc").limit(100).get({source:"server"});let list=sn.docs.map(d=>({...d.data(),id:d.id}));
+  const AR={frage:"❓ Frage",fehler:"🐞 Fehler",idee:"💡 Idee"};
+  const link=k=>{k=String(k||"");if(/@/.test(k))return `<a href="mailto:${esc(k)}">${esc(k)}</a>`;const n=k.replace(/[^\d+]/g,"");if(n.length>=6){const w=n.replace(/^\+/,"").replace(/^0/,"49");return `${esc(k)} · <a href="tel:${esc(n)}">anrufen</a> · <a href="https://wa.me/${esc(w)}" target="_blank" rel="noopener">WhatsApp</a>`}return esc(k)};
+  const draw=()=>{body.innerHTML=list.length?list.map(m=>`<div class="supmsg${m.status==="neu"?" neu":""}" data-sid="${esc(m.id)}">
+      <div class="sm-h"><span>${AR[m.art]||"Nachricht"}${m.status==="neu"?" · <b>neu</b>":""}</span><span>${fmtZ(m.zeit)}</span></div>
+      <div class="sm-t">${esc(m.text||"")}</div>
+      <div class="hint" style="margin:6px 0 0">${m.name?"Von: <b>"+esc(m.name)+"</b>":"Ohne Namen"}${m.kontakt?" · "+link(m.kontakt):""}<br>${esc(m.info||"")}</div>
+      ${m.antwort?`<div class="quote" style="margin-top:6px">↩️ Deine Antwort (${fmtZ(m.antwortZeit)}): ${esc(m.antwort)}</div>`:""}
+      <label class="f" style="margin-top:6px">${m.antwort?"Antwort ändern":"In der App antworten"}<textarea rows="2" maxlength="1000" data-ans>${esc(m.antwort||"")}</textarea></label>
+      <div class="rw-btns"><button data-sans>↩️ Antwort senden</button>${m.status==="neu"?'<button data-sdone>✓ Erledigt</button>':""}<button data-sdel>Löschen</button></div></div>`).join(""):`<p class="hint">Keine Nachrichten. 🎉</p>`};
+  draw();
+  body.onclick=async ev=>{const c=ev.target.closest("[data-sid]");if(!c)return;const id=c.dataset.sid;
+    if(ev.target.closest("[data-sans]")){const a=c.querySelector("[data-ans]").value.trim();if(a.length<2){toast("Bitte eine Antwort schreiben");return}
+      try{await FS.doc(`support/${id}`).update({antwort:a.slice(0,1000),antwortZeit:nowISO(),status:"erledigt"});list=list.map(m=>m.id===id?{...m,antwort:a,antwortZeit:nowISO(),status:"erledigt"}:m);draw();toast("Antwort gesendet · erscheint beim Absender in der App")}catch(e){toast("Hat nicht geklappt")}}
+    if(ev.target.closest("[data-sdone]")){try{await FS.doc(`support/${id}`).update({status:"erledigt"});list=list.map(m=>m.id===id?{...m,status:"erledigt"}:m);draw()}catch(e){toast("Hat nicht geklappt")}}
+    if(ev.target.closest("[data-sdel]")){if(!await askConfirm("Diese Nachricht löschen?"))return;try{await FS.doc(`support/${id}`).delete();list=list.filter(m=>m.id!==id);draw()}catch(e){toast("Hat nicht geklappt")}}};
+}
+async function admErr(body){
+  const sn=await FS.collection("fehler").orderBy("zeit","desc").limit(200).get({source:"server"});const docs=sn.docs.map(d=>({...d.data(),id:d.id}));
+  try{localStorage.setItem("fk-err-seen",nowISO())}catch(e){}
+  const g={};for(const d of docs){const k=(d.msg||"")+"|"+(d.ort||"");(g[k]||(g[k]={...d,n:0,ids:[]})).n++;g[k].ids.push(d.id)}
+  const groups=Object.values(g).sort((a,b)=>b.n-a.n);
+  body.innerHTML=`<p class="hint">Fehler, die bei Nutzern aufgetreten sind (ohne Termine oder Namen). Gleiche Fehler sind zusammengefasst.</p>
+    ${groups.length?groups.map(x=>`<div class="supmsg"><div class="sm-h"><span><b>${x.n}×</b></span><span>zuletzt ${fmtZ(x.zeit)}</span></div><div class="sm-t">${esc(x.msg)}</div><div class="hint" style="margin:4px 0 0">${esc(x.ort||"")}<br>${esc(x.info||"")}</div></div>`).join("")+`<button class="btn danger" id="errWipe">Alle Fehlerberichte löschen</button>`:`<p class="hint">Keine Fehler gemeldet. 🎉</p>`}`;
+  const w=document.getElementById("errWipe");if(w)w.onclick=async()=>{if(!await askConfirm(`Alle ${docs.length} Fehlerberichte löschen?`))return;for(const d of docs){try{await FS.doc(`fehler/${d.id}`).delete()}catch(e){}}toast("Gelöscht");showAdmin("fehler")};
+}
+async function admAll(body){
   const a=ANN&&ANN.id&&ANN.text?ANN:null;
-  sheet("📬 Postfach & Mitteilungen",`<div class="rw"><b>📢 Nachricht an alle Nutzer</b>
-      <p class="hint" style="margin:0">Erscheint bei allen beim nächsten Öffnen der App oben als Karte. Jeder kann sie mit ✕ ausblenden.</p>
-      ${a?`<p class="hint" style="margin:0">Gerade aktiv: <b>${esc(a.titel||a.text.slice(0,40))}</b>${a.bis?" · bis "+dmy(a.bis):""}</p>`:""}
+  body.innerHTML=`<p class="hint">Erscheint bei allen Nutzern beim nächsten Öffnen der App oben als Karte. Jeder kann sie mit ✕ ausblenden.</p>
+      ${a?`<p class="hint">Gerade aktiv: <b>${esc(a.titel||a.text.slice(0,40))}</b>${a.bis?" · bis "+dmy(a.bis):""}</p>`:""}
       <label class="f">Überschrift (optional)<input id="anT" maxlength="60" value="${esc(a&&a.titel||"")}" placeholder="z. B. 🎉 Neu in der App"></label>
       <label class="f">Text<textarea id="anX" rows="4" maxlength="500" placeholder="Was möchtest du allen sagen?">${esc(a&&a.text||"")}</textarea></label>
       <label class="f">Anzeigen bis (optional)<input type="date" id="anB" value="${esc(a&&a.bis||"")}"></label>
       <label class="pick" style="justify-content:space-between"><span>Auch auf Nur-Lese-Seiten zeigen (z. B. Papa)</span><input type="checkbox" id="anP" ${a&&a.papa?"checked":""}></label>
-      <div class="rw-btns"><button id="anGo">📢 An alle senden</button>${a?'<button id="anDel">Zurückziehen</button>':""}</div></div>
-    <h4 class="sub">Support-Nachrichten</h4>
-    <div id="inbox"><p class="hint">Lade Nachrichten …</p></div><div class="actions"><button class="btn ghost" id="ibClose">Schließen</button></div>`);
-  document.getElementById("ibClose").onclick=closeSheet;
+      <div class="rw-btns"><button id="anGo">📢 An alle senden</button>${a?'<button id="anDel">Zurückziehen</button>':""}</div>`;
   document.getElementById("anGo").onclick=async()=>{
-    const t=document.getElementById("anT").value.trim().slice(0,60),x=document.getElementById("anX").value.trim().slice(0,500),b=document.getElementById("anB").value,pp=document.getElementById("anP").checked;
-    if(x.length<3){toast("Bitte einen Text schreiben");return}
-    if(b&&b<today){toast("Das Datum liegt in der Vergangenheit");return}
+    const t=$v("anT").slice(0,60),x=$v("anX").slice(0,500),b=$v("anB"),pp=document.getElementById("anP").checked;
+    if(x.length<3){toast("Bitte einen Text schreiben");return}if(b&&b<today){toast("Das Datum liegt in der Vergangenheit");return}
     if(!await askConfirm("Diese Nachricht jetzt an alle Nutzer der App senden?","An alle senden",false))return;
-    try{await FS.doc("info/aktuell").set({id:"a"+Date.now(),titel:t,text:x,bis:b||"",papa:pp,zeit:nowISO()});try{localStorage.removeItem("fk-ann-x")}catch(e){}toast("📢 Nachricht ist raus");closeSheet()}
-    catch(e){toast(e&&e.code==="permission-denied"?"Keine Berechtigung · Regeln aktualisieren":"Senden hat nicht geklappt")}};
-  {const d=document.getElementById("anDel");if(d)d.onclick=async()=>{if(!await askConfirm("Die Nachricht für alle zurückziehen?","Zurückziehen"))return;
-    try{await FS.doc("info/aktuell").delete();toast("Zurückgezogen");closeSheet()}catch(e){toast("Hat nicht geklappt")}}}
-  let list=[];
-  try{const sn=await FS.collection("support").orderBy("zeit","desc").limit(100).get({source:"server"});list=sn.docs.map(d=>({...d.data(),id:d.id}))}
-  catch(e){document.getElementById("inbox").innerHTML=`<p class="hint">Postfach nicht erreichbar.</p>`;return}
-  const AR={frage:"❓ Frage",fehler:"🐞 Fehler",idee:"💡 Idee"};
-  const link=k=>{k=String(k||"");if(/@/.test(k))return `<a href="mailto:${esc(k)}">${esc(k)}</a>`;const n=k.replace(/[^\d+]/g,"");if(n.length>=6){const w=n.replace(/^\+/,"").replace(/^0/,"49");return `${esc(k)} · <a href="tel:${esc(n)}">anrufen</a> · <a href="https://wa.me/${esc(w)}" target="_blank" rel="noopener">WhatsApp</a>`}return esc(k)};
-  const draw=()=>{SUP_NEW=list.filter(m=>m.status==="neu").length;markGear();
-    document.getElementById("inbox").innerHTML=list.length?list.map(m=>`<div class="supmsg${m.status==="neu"?" neu":""}" data-sid="${esc(m.id)}">
-      <div class="sm-h"><span>${AR[m.art]||"Nachricht"}${m.status==="neu"?" · <b>neu</b>":""}</span><span>${esc(String(m.zeit||"").slice(0,16).replace("T"," "))}</span></div>
-      <div class="sm-t">${esc(m.text||"")}</div>
-      <div class="hint" style="margin:6px 0 0">${m.name?"Von: <b>"+esc(m.name)+"</b>":"Ohne Namen"}${m.kontakt?" · "+link(m.kontakt):""}<br>${esc(m.info||"")}</div>
-      <div class="rw-btns">${m.status==="neu"?'<button data-sdone>✓ Erledigt</button>':""}<button data-sdel>Löschen</button></div></div>`).join(""):`<p class="hint">Keine Nachrichten. 🎉</p>`;};
-  draw();
-  document.getElementById("inbox").onclick=async ev=>{const c=ev.target.closest("[data-sid]");if(!c)return;const id=c.dataset.sid;
-    if(ev.target.closest("[data-sdone]")){try{await FS.doc(`support/${id}`).update({status:"erledigt"});list=list.map(m=>m.id===id?{...m,status:"erledigt"}:m);draw()}catch(e){toast("Hat nicht geklappt")}}
-    if(ev.target.closest("[data-sdel]")){if(!await askConfirm("Diese Nachricht löschen?"))return;try{await FS.doc(`support/${id}`).delete();list=list.filter(m=>m.id!==id);draw()}catch(e){toast("Hat nicht geklappt")}}};
+    try{await FS.doc("info/aktuell").set({id:"a"+Date.now(),titel:t,text:x,bis:b||"",papa:pp,zeit:nowISO()});try{localStorage.removeItem("fk-ann-x")}catch(e){}toast("📢 Nachricht ist raus");showAdmin("alle")}catch(e){toast("Senden hat nicht geklappt")}};
+  const d=document.getElementById("anDel");if(d)d.onclick=async()=>{if(!await askConfirm("Die Nachricht für alle zurückziehen?","Zurückziehen"))return;try{await FS.doc("info/aktuell").delete();toast("Zurückgezogen");showAdmin("alle")}catch(e){toast("Hat nicht geklappt")}};
+}
+async function admFam(body){
+  const sn=await FS.collection("famhinweis").get({source:"server"});const list=sn.docs.map(d=>({...d.data(),nr:d.id}));
+  body.innerHTML=`<p class="hint">Nachricht nur an einen Kalender. Die Kalender-Nummer (4 Zeichen, z. B. 8QXY) steht bei der Familie oben unter dem Titel. Du siehst dabei keine Termine.</p>
+    <label class="f">Kalender-Nummer<input id="fmN" maxlength="4" placeholder="z. B. 8QXY" style="text-transform:uppercase"></label>
+    <label class="f">Nachricht<textarea id="fmX" rows="3" maxlength="500"></textarea></label>
+    <label class="f">Anzeigen bis (optional)<input type="date" id="fmB"></label>
+    <button class="btn" id="fmGo">👪 Senden</button>
+    <h4 class="sub">Aktive Familien-Nachrichten</h4>
+    ${list.length?list.map(m=>`<div class="supmsg"><div class="sm-h"><span><b>${esc(m.nr)}</b></span><span>${fmtZ(m.zeit)}${m.bis?" · bis "+dmy(m.bis):""}</span></div><div class="sm-t">${esc(m.text||"")}</div><div class="rw-btns"><button data-fdel="${esc(m.nr)}">Zurückziehen</button></div></div>`).join(""):`<p class="hint">Keine.</p>`}`;
+  document.getElementById("fmGo").onclick=async()=>{const nr=$v("fmN").toUpperCase(),x=$v("fmX"),b=$v("fmB");
+    if(!/^[A-Z2-9]{4}$/.test(nr)){toast("Bitte die 4-stellige Kalender-Nummer eintragen");return}if(x.length<3){toast("Bitte eine Nachricht schreiben");return}
+    try{await FS.doc(`famhinweis/${nr}`).set({id:"f"+Date.now(),text:x.slice(0,500),bis:b||"",zeit:nowISO()});toast(`Gesendet an Kalender ${nr}`);showAdmin("familie")}catch(e){toast("Hat nicht geklappt")}};
+  body.querySelectorAll("[data-fdel]").forEach(b=>b.onclick=async()=>{try{await FS.doc(`famhinweis/${b.dataset.fdel}`).delete();showAdmin("familie")}catch(e){toast("Hat nicht geklappt")}});
+}
+async function admPoll(body){
+  const u=CTL.umfrage;let res="";
+  if(u&&u.id){const sn=await FS.collection(`umfragen/${u.id}/stimmen`).get({source:"server"});const cnt=(u.optionen||[]).map(()=>0);sn.docs.forEach(d=>{const w=d.data().wahl;if(cnt[w]!==undefined)cnt[w]++});const tot=sn.size||1;
+    res=`<div class="rw"><b>Aktuelle Umfrage: ${esc(u.frage)}</b><span class="hint">${sn.size} Stimme${sn.size===1?"":"n"}${u.bis?" · bis "+dmy(u.bis):""}</span>
+      ${(u.optionen||[]).map((o,i)=>`<div>${esc(o)} · <b>${cnt[i]}</b> (${Math.round(cnt[i]*100/tot)} %)</div><div class="bar" style="width:${Math.max(2,cnt[i]*100/tot)}%"></div>`).join("")}
+      <button class="btn danger" id="plEnd">Umfrage beenden</button></div>`}
+  body.innerHTML=`${res}<p class="hint">${u&&u.id?"Eine neue Umfrage ersetzt die aktuelle.":"Erscheint bei allen oben als Karte. Jeder kann einmal abstimmen."}</p>
+    <label class="f">Frage<input id="plQ" maxlength="120" placeholder="z. B. Welche Funktion wünscht ihr euch als Nächstes?"></label>
+    <label class="f">Antworten (eine pro Zeile, 2 bis 6)<textarea id="plO" rows="4" placeholder="Einkaufsliste&#10;Essensplan&#10;Wer holt ab?"></textarea></label>
+    <label class="f">Läuft bis (optional)<input type="date" id="plB"></label>
+    <button class="btn" id="plGo">📊 Umfrage starten</button>`;
+  document.getElementById("plGo").onclick=async()=>{const q=$v("plQ"),o=$v("plO").split("\n").map(x=>x.trim()).filter(Boolean).slice(0,6).map(x=>x.slice(0,60)),b=$v("plB");
+    if(q.length<3){toast("Bitte eine Frage eintragen");return}if(o.length<2){toast("Bitte mindestens 2 Antworten eintragen");return}
+    if(!await askConfirm("Umfrage an alle Nutzer starten?","Starten",false))return;
+    try{await FS.doc("info/umfrage").set({id:"u"+Date.now(),frage:q.slice(0,120),optionen:o,bis:b||"",zeit:nowISO()});toast("📊 Umfrage läuft");setTimeout(()=>showAdmin("umfrage"),600)}catch(e){toast("Hat nicht geklappt")}};
+  const e=document.getElementById("plEnd");if(e)e.onclick=async()=>{if(!await askConfirm("Umfrage beenden? Die Karte verschwindet bei allen.","Beenden"))return;try{await FS.doc("info/umfrage").delete();toast("Beendet");setTimeout(()=>showAdmin("umfrage"),600)}catch(x){toast("Hat nicht geklappt")}};
+}
+async function admIdeas(body){
+  const sn=await FS.collection("ideen").get({source:"server"});let list=sn.docs.map(d=>({...d.data(),id:d.id}));
+  const ST={neu:"🆕 wartet auf Freigabe",offen:"👍 sichtbar",geplant:"📌 geplant",umgesetzt:"✅ umgesetzt"};
+  list.sort((a,b)=>((a.status==="neu")?-1:0)-((b.status==="neu")?-1:0)||(b.stimmen||0)-(a.stimmen||0));
+  body.innerHTML=`<p class="hint">Neue Ideen sind erst nach deiner Freigabe für alle sichtbar.</p>`+(list.length?list.map(x=>`<div class="supmsg${x.status==="neu"?" neu":""}" data-iid="${esc(x.id)}">
+    <div class="sm-h"><span>${ST[x.status]||x.status} · 👍 ${x.stimmen||0}</span><span>${fmtZ(x.zeit)}</span></div><div class="sm-t">${esc(x.text)}</div>
+    <div class="rw-btns">${x.status!=="offen"?'<button data-ist="offen">👍 Freigeben</button>':""}${x.status!=="geplant"?'<button data-ist="geplant">📌 Geplant</button>':""}${x.status!=="umgesetzt"?'<button data-ist="umgesetzt">✅ Umgesetzt</button>':""}<button data-idel>Löschen</button></div></div>`).join(""):`<p class="hint">Noch keine Ideen.</p>`);
+  body.onclick=async ev=>{const c=ev.target.closest("[data-iid]");if(!c)return;const id=c.dataset.iid;
+    const st=ev.target.closest("[data-ist]");if(st){try{await FS.doc(`ideen/${id}`).update({status:st.dataset.ist});showAdmin("ideen")}catch(e){toast("Hat nicht geklappt")}}
+    if(ev.target.closest("[data-idel]")){if(!await askConfirm("Diese Idee löschen?"))return;try{await FS.doc(`ideen/${id}`).delete();showAdmin("ideen")}catch(e){toast("Hat nicht geklappt")}}};
+}
+const FLAGS=[["foto","📷 Termin per Foto"],["sprache","🎤 Termin per Sprache"],["sterne","⭐ Sterne & Aufgaben"],["support","💬 Support-Button"],["ideen","💡 Ideen-Wand"]];
+async function admCtl(body){
+  const c=CTL.steuerung||{};const aus=c.aus||{};const w=c.wartung||{};
+  body.innerHTML=`<div class="rw"><b>🔄 Update erzwingen</b><p class="hint" style="margin:0">Aktuelle Version: <b>${APP_VER}</b>. Wer eine ältere Version als die Mindestversion hat, bekommt „Bitte neu laden“.</p>
+      <label class="f">Mindestversion (Zahl, z. B. ${parseInt(APP_VER.slice(1))})<input id="ctMin" type="number" inputmode="numeric" value="${esc(c.minVer||"")}"></label></div>
+    <div class="rw"><b>🚧 Wartungshinweis</b><label class="f">Text (leer = aus)<textarea id="ctW" rows="2" maxlength="300">${esc(w.text||"")}</textarea></label>
+      <div class="seg" style="--n:2"><button class="typ" data-wf="gelb" aria-pressed="${w.farbe!=="rot"}">🟡 Hinweis</button><button class="typ" data-wf="rot" aria-pressed="${w.farbe==="rot"}">🔴 Störung</button></div>
+      <label class="f">Anzeigen bis (optional)<input type="date" id="ctWB" value="${esc(w.bis||"")}"></label></div>
+    <div class="rw"><b>🎛 Funktionen für alle</b>${FLAGS.map(([k,n])=>`<label class="pick" style="justify-content:space-between"><span>${n}</span><input type="checkbox" data-fl="${k}" ${aus[k]?"":"checked"}></label>`).join("")}
+      <p class="hint" style="margin:0">Haken weg = Funktion bei allen ausgeblendet, bis du sie wieder einschaltest.</p></div>
+    <button class="btn" id="ctSave">Speichern</button>`;
+  let farbe=w.farbe==="rot"?"rot":"gelb";
+  body.querySelectorAll("[data-wf]").forEach(b=>b.onclick=()=>{farbe=b.dataset.wf;body.querySelectorAll("[data-wf]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)))});
+  document.getElementById("ctSave").onclick=async()=>{
+    const mv=$v("ctMin"),wt=$v("ctW").slice(0,300),wb=$v("ctWB");const a={};body.querySelectorAll("[data-fl]").forEach(x=>{if(!x.checked)a[x.dataset.fl]=true});
+    if(mv&&+mv>parseInt(APP_VER.slice(1))){toast(`Höher als die aktuelle Version ${APP_VER} geht nicht`);return}
+    try{await FS.doc("info/steuerung").set({minVer:mv?String(+mv):"",wartung:wt?{text:wt,farbe,bis:wb||"",id:"w"+Date.now()}:{},aus:a,zeit:nowISO()});toast("Gespeichert · gilt sofort für alle")}catch(e){toast("Hat nicht geklappt")}};
+}
+const codeFrom=t=>{const m=String(t||"").match(/#join=([a-z2-9]{18,})/);const v=m?m[1]:String(t||"").trim().toLowerCase();return /^[a-z2-9]{18,}$/.test(v)?v:""};
+async function admBlock(body){
+  const sn=await FS.collection("gesperrt").get({source:"server"});const list=sn.docs.map(d=>({...d.data(),code:d.id}));
+  body.innerHTML=`<p class="hint">Für Missbrauch oder Löschwünsche. Dafür brauchst du den <b>Einladungslink</b> oder den vollständigen Code des Kalenders (z. B. per Support geschickt). Termine werden dir dabei nicht angezeigt.</p>
+    <label class="f">Einladungslink oder Code<input id="bkC" placeholder="https://…#join=…"></label>
+    <label class="f">Grund (optional, sieht die Familie)<input id="bkG" maxlength="120"></label>
+    <div class="rw-btns"><button id="bkLock">🚫 Sperren</button><button id="bkDel">🗑 Alle Einträge löschen</button></div>
+    <h4 class="sub">Gesperrte Kalender</h4>
+    ${list.length?list.map(x=>`<div class="supmsg"><div class="sm-h"><span><b>${esc(x.code.slice(0,4).toUpperCase())}</b> · ${esc(x.code)}</span><span>${fmtZ(x.zeit)}</span></div>${x.grund?`<div class="sm-t">${esc(x.grund)}</div>`:""}<div class="rw-btns"><button data-unl="${esc(x.code)}">Entsperren</button></div></div>`).join(""):`<p class="hint">Keine.</p>`}`;
+  document.getElementById("bkLock").onclick=async()=>{const c=codeFrom($v("bkC"));if(!c){toast("Kein gültiger Link oder Code");return}
+    if(!await askConfirm(`Kalender ${c.slice(0,4).toUpperCase()} sperren? Danach kann dort niemand mehr etwas sehen oder eintragen.`,"Sperren"))return;
+    try{await FS.doc(`gesperrt/${c}`).set({grund:$v("bkG").slice(0,120),zeit:nowISO()});toast("Gesperrt");showAdmin("sperren")}catch(e){toast("Hat nicht geklappt")}};
+  document.getElementById("bkDel").onclick=async()=>{const c=codeFrom($v("bkC"));if(!c){toast("Kein gültiger Link oder Code");return}
+    if(!await askConfirm(`ALLE Einträge von Kalender ${c.slice(0,4).toUpperCase()} endgültig löschen? Das lässt sich nicht rückgängig machen.`,"Endgültig löschen"))return;
+    if(!await askConfirm("Bist du ganz sicher?","Ja, löschen"))return;
+    try{let n=0;for(;;){const s2=await FS.collection(`familien/${c}/eintraege`).limit(300).get({source:"server"});if(!s2.size)break;const b=FS.batch();s2.docs.forEach(d=>b.delete(d.ref));await b.commit();n+=s2.size}toast(`${n} Einträge gelöscht`)}
+    catch(e){toast(e&&e.code==="permission-denied"?"Keine Berechtigung · Regeln aktualisieren":"Hat nicht geklappt")}};
+  body.querySelectorAll("[data-unl]").forEach(b=>b.onclick=async()=>{try{await FS.doc(`gesperrt/${b.dataset.unl}`).delete();toast("Entsperrt");showAdmin("sperren")}catch(e){toast("Hat nicht geklappt")}});
 }
 /* ---------- Mitglieder & Rechte ---------- */
 let ROLE=null,MY_UID="",MY_MEMBER=null,memberSub=null,memberP=null,RULES_OLD=false;
@@ -1451,6 +1580,7 @@ function showReaderSettings(){
     ${isStandalone()?"":`<button class="btn" id="installSet">📲 Als App installieren</button>`}
     <button class="btn ghost" id="rHelp">❓ Hilfe & Anleitung</button>
     <button class="btn ghost" id="rSup">💬 Support · Nachricht an den Entwickler</button>
+    <button class="btn ghost" id="rIdea">💡 Ideen-Wand</button>
     <h4 class="sub">Darstellung</h4>
     <div class="seg" style="--n:3">${[["dark","🌙 Dunkel"],["light","☀️ Hell"],["auto","📱 Wie Handy"]].map(([k,n])=>`<button class="typ" data-theme-set="${k}" aria-pressed="${themeNow()===k}">${n}</button>`).join("")}</div>
     <div class="rw">
@@ -1465,7 +1595,7 @@ function showReaderSettings(){
     ${joinBox()}
     <p class="hint"><a href="datenschutz.html">Datenschutz, Impressum & Nutzungshinweise</a></p>
     <div class="actions"><button class="btn danger" id="disc">Auf diesem Handy trennen</button><button class="btn ghost" id="setClose">Schließen</button></div>`);
-  wireNameBox(null);wireJoin();wirePbg(showSettings);document.getElementById("rHelp").onclick=()=>{closeSheet();setTimeout(showHelp,200)};document.getElementById("rSup").onclick=()=>{closeSheet();setTimeout(showSupport,200)};
+  wireNameBox(null);wireJoin();wirePbg(showSettings);document.getElementById("rHelp").onclick=()=>{closeSheet();setTimeout(showHelp,200)};document.getElementById("rSup").onclick=()=>{closeSheet();setTimeout(showSupport,200)};document.getElementById("rIdea").onclick=()=>{closeSheet();setTimeout(showIdeas,200)};
   {const ib=document.getElementById("installSet");if(ib)ib.onclick=()=>{closeSheet();setTimeout(installApp,200)}}
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{setTheme(b.dataset.themeSet);showSettings()});
   [["optCompact","compact"],["optFold","fold"],["optArrows","arrows"]].forEach(([id,k])=>{const el=document.getElementById(id);if(el)el.onchange=()=>{setPref(k,el.checked);render()}});
@@ -2664,18 +2794,99 @@ function renderAnn(){
   el.hidden=!ok;if(!ok)return;
   document.getElementById("annTxt").innerHTML=`${a.titel?`<b>${esc(a.titel)}</b><br>`:""}<span>${esc(a.text)}</span>`;
 }
+const CTL={umfrage:null,steuerung:null,fam:null};
 function watchAnn(){
   if(annSub)return;
   let db=FS||(typeof FSR!=="undefined"&&FSR)||null;
   try{if(!db)db=supDB()}catch(e){}
   if(!db)return;
-  annSub=db.doc("info/aktuell").onSnapshot(d=>{ANN=d.exists?d.data():null;renderAnn()},()=>{});
+  annSub=db.collection("info").onSnapshot(sn=>{const m={};sn.docs.forEach(d=>m[d.id]=d.data());
+    ANN=m.aktuell||null;CTL.umfrage=m.umfrage||null;CTL.steuerung=m.steuerung||null;renderAnn();applyFlags();renderAdminCards()},()=>{});
+  const c=getCfg();if(c&&c.code)db.doc(`famhinweis/${c.code.slice(0,4).toUpperCase()}`).onSnapshot(d=>{CTL.fam=d.exists?d.data():null;renderAdminCards()},()=>{});
+  setTimeout(()=>checkReplies(db),3000);
+  if(c&&c.code)db.doc(`gesperrt/${c.code}`).get().then(d=>{if(d.exists){CTL.gesperrt=d.data();setStatus("🚫 Dieser Kalender wurde vom Betreiber gesperrt"+(d.data().grund?": "+d.data().grund:""));renderAdminCards()}}).catch(()=>{});
 }
+function applyFlags(){const aus=(CTL.steuerung&&CTL.steuerung.aus)||{};
+  for(const[k] of FLAGS)document.body.classList.toggle("off-"+k,!!aus[k]);
+  if(aus.sterne&&view==="sterne")setView("woche")}
+let REPLY=null;
+async function checkReplies(db){
+  let ids=[],read=[];try{ids=JSON.parse(localStorage.getItem("fk-sup-ids")||"[]");read=JSON.parse(localStorage.getItem("fk-sup-read")||"[]")}catch(e){}
+  for(const id of ids.slice().reverse()){if(read.includes(id))continue;
+    try{const d=await db.doc(`support/${id}`).get({source:"server"});if(d.exists&&d.data().antwort){REPLY={...d.data(),id};renderAdminCards();return}}catch(e){}}
+}
+const lsGet=k=>{try{return localStorage.getItem(k)||""}catch(e){return ""}};
+const lsSet=(k,v)=>{try{localStorage.setItem(k,v)}catch(e){}};
+function renderAdminCards(){
+  const host=document.getElementById("adminCards");if(!host)return;let h="";
+  const st=CTL.steuerung||{};const reader=annReader();
+  if(CTL.gesperrt)h+=`<section class="installbar acard alarm"><span class="ib-ico">🚫</span><span class="ib-t"><b>Dieser Kalender wurde gesperrt.</b>${CTL.gesperrt.grund?"<br>"+esc(CTL.gesperrt.grund):""}<br><span class="meta">Bei Fragen: Einstellungen → Support.</span></span><span></span></section>`;
+  if(st.minVer&&parseInt(APP_VER.slice(1))<+st.minVer)h+=`<section class="installbar acard alarm"><span class="ib-ico">🔄</span><span class="ib-t"><b>Bitte die App neu laden</b><br>Es gibt eine wichtige neue Version.<br><button class="btn" id="acReload">Jetzt neu laden</button></span><span></span></section>`;
+  const w=st.wartung||{};if(w.text&&(!w.bis||w.bis>=today)&&lsGet("fk-w-x")!==w.id)h+=`<section class="installbar acard ${w.farbe==="rot"?"alarm":"warn"}"><span class="ib-ico">${w.farbe==="rot"?"🔴":"🚧"}</span><span class="ib-t">${esc(w.text)}</span>${w.farbe==="rot"?"<span></span>":'<button class="ib-x" data-acx="fk-w-x" data-acid="'+esc(w.id||"")+'" aria-label="Schließen">✕</button>'}</section>`;
+  const f=CTL.fam;if(f&&f.text&&!reader&&(!f.bis||f.bis>=today)&&lsGet("fk-fam-x")!==f.id)h+=`<section class="installbar acard"><span class="ib-ico">📬</span><span class="ib-t"><b>Nachricht vom Entwickler an euren Kalender</b><br>${esc(f.text)}</span><button class="ib-x" data-acx="fk-fam-x" data-acid="${esc(f.id)}" aria-label="Schließen">✕</button></section>`;
+  if(REPLY)h+=`<section class="installbar acard"><span class="ib-ico">💬</span><span class="ib-t"><b>Antwort vom Entwickler</b><div class="quote">Du: ${esc(String(REPLY.text||"").slice(0,140))}${String(REPLY.text||"").length>140?"…":""}</div>${esc(REPLY.antwort)}</span><button class="ib-x" id="acReplyX" aria-label="Gelesen">✕</button></section>`;
+  const u=CTL.umfrage;if(u&&u.id&&!reader&&(!u.bis||u.bis>=today)&&!lsGet("fk-poll-"+u.id))h+=`<section class="installbar acard"><span class="ib-ico">📊</span><span class="ib-t"><b>Kurze Umfrage</b><br>${esc(u.frage)}<div class="opts">${(u.optionen||[]).map((o,i)=>`<button data-vote="${i}">${esc(o)}</button>`).join("")}</div></span><button class="ib-x" data-acx="fk-poll-${esc(u.id)}" data-acid="x" aria-label="Später">✕</button></section>`;
+  host.innerHTML=h;
+  host.querySelectorAll("[data-acx]").forEach(b=>b.onclick=()=>{lsSet(b.dataset.acx,b.dataset.acid);renderAdminCards()});
+  const rl=document.getElementById("acReload");if(rl)rl.onclick=async()=>{try{if(swReg)await swReg.update();const ks=await caches.keys();await Promise.all(ks.map(k=>caches.delete(k)))}catch(e){}location.reload()};
+  const rx=document.getElementById("acReplyX");if(rx)rx.onclick=()=>{let r=[];try{r=JSON.parse(lsGet("fk-sup-read")||"[]")}catch(e){}r.push(REPLY.id);lsSet("fk-sup-read",JSON.stringify(r.slice(-20)));REPLY=null;renderAdminCards();const db=FS||(typeof FSR!=="undefined"&&FSR)||supDB();if(db)checkReplies(db)};
+  host.querySelectorAll("[data-vote]").forEach(b=>b.onclick=async()=>{const u2=CTL.umfrage;if(!u2)return;
+    try{const uid=await ensureAuth();await supDB().doc(`umfragen/${u2.id}/stimmen/${uid}`).set({wahl:+b.dataset.vote,zeit:nowISO()});lsSet("fk-poll-"+u2.id,"v");toast("Danke für deine Stimme! 🙏");renderAdminCards()}
+    catch(e){if(e&&e.code==="permission-denied"){lsSet("fk-poll-"+u2.id,"v");toast("Du hast schon abgestimmt");renderAdminCards()}else toast("Abstimmen hat nicht geklappt")}});
+}
+async function ensureAuth(){const db=supDB();if(!db||!firebase.auth)throw{code:"no-auth"};const a=firebase.auth();
+  let u=a.currentUser||await new Promise(r=>{const un=a.onAuthStateChanged(x=>{un();r(x)})});if(!u){await a.signInAnonymously();u=a.currentUser}return u.uid}
+/* Ideen-Wand */
+async function showIdeas(){
+  sheet("💡 Ideen-Wand",`<p class="hint">Was soll die App als Nächstes können? Stimme mit 👍 für Ideen, die dir gefallen, oder schlag selbst etwas vor.</p>
+    <div id="idList"><p class="hint">Lade Ideen …</p></div>
+    <h4 class="sub">Eigene Idee vorschlagen</h4>
+    <label class="f">Deine Idee<textarea id="idT" rows="3" maxlength="200" placeholder="z. B. Eine gemeinsame Einkaufsliste"></textarea></label>
+    <button class="btn" id="idGo">💡 Vorschlagen</button>
+    <p class="hint">Neue Ideen erscheinen, sobald der Entwickler sie freigegeben hat. Bitte keine Namen oder privaten Angaben.</p>
+    <div class="actions"><button class="btn ghost" id="idClose">Schließen</button></div>`);
+  document.getElementById("idClose").onclick=closeSheet;
+  const db=supDB();const box=document.getElementById("idList");
+  if(!db){box.innerHTML=`<p class="hint">Gerade keine Verbindung.</p>`;return}
+  let voted=[];try{voted=JSON.parse(lsGet("fk-ideas-voted")||"[]")}catch(e){}
+  let list=[];
+  const draw=()=>{const ST={geplant:"📌 geplant",umgesetzt:"✅ umgesetzt"};
+    list.sort((a,b)=>((a.status==="umgesetzt")-(b.status==="umgesetzt"))||(b.stimmen||0)-(a.stimmen||0));
+    box.innerHTML=list.length?list.map(x=>`<div class="idea"><div><div class="it">${esc(x.text)}</div>${ST[x.status]?`<div class="ist">${ST[x.status]}</div>`:""}</div><button class="vote" data-iv="${esc(x.id)}" ${voted.includes(x.id)||x.status==="umgesetzt"?"disabled":""}>👍 ${x.stimmen||0}</button></div>`).join(""):`<p class="hint">Noch keine Ideen. Sei der Erste! 🙂</p>`};
+  try{const sn=await db.collection("ideen").where("status","in",["offen","geplant","umgesetzt"]).get();list=sn.docs.map(d=>({...d.data(),id:d.id}));draw()}
+  catch(e){box.innerHTML=`<p class="hint">Ideen gerade nicht erreichbar.</p>`}
+  box.onclick=async ev=>{const b=ev.target.closest("[data-iv]");if(!b||b.disabled)return;const id=b.dataset.iv;b.disabled=true;
+    try{const uid=await ensureAuth();const bt=db.batch();bt.set(db.doc(`ideen/${id}/votes/${uid}`),{zeit:nowISO()});bt.update(db.doc(`ideen/${id}`),{stimmen:firebase.firestore.FieldValue.increment(1)});await bt.commit();
+      voted.push(id);lsSet("fk-ideas-voted",JSON.stringify(voted));list=list.map(x=>x.id===id?{...x,stimmen:(x.stimmen||0)+1}:x);draw()}
+    catch(e){if(e&&e.code==="permission-denied"){voted.push(id);lsSet("fk-ideas-voted",JSON.stringify(voted));toast("Du hast hier schon abgestimmt");draw()}else{b.disabled=false;toast("Hat nicht geklappt")}}};
+  document.getElementById("idGo").onclick=async()=>{const t=$v("idT");if(t.length<3){toast("Bitte deine Idee beschreiben");return}
+    let last=+lsGet("fk-idea-last")||0;if(Date.now()-last<60000){toast("Bitte kurz warten");return}
+    try{await ensureAuth();await db.collection("ideen").add({text:t.slice(0,200),zeit:nowISO(),stimmen:0,status:"neu"});lsSet("fk-idea-last",String(Date.now()));document.getElementById("idT").value="";toast("Danke! Deine Idee erscheint nach der Freigabe 💡")}
+    catch(e){toast("Senden hat nicht geklappt")}};
+}
+/* Automatische Fehlerberichte (ohne Termine oder Namen) */
+(function(){let n=0;
+  function report(msg,ort){try{
+    msg=String(msg||"").replace(/https?:\/\/\S+/g,"[url]").slice(0,300);ort=String(ort||"").slice(0,200);
+    if(!msg||/^Script error\.?$/i.test(msg)||/ResizeObserver|Failed to fetch|NetworkError|Load failed|offline|unavailable|permission-denied|Missing or insufficient permissions/i.test(msg))return;
+    if(++n>5||!navigator.onLine)return;
+    const key="fk-err-"+today+"-"+(msg+ort).length+"-"+msg.slice(0,40);if(lsGet(key))return;lsSet(key,"1");
+    setTimeout(()=>{try{const db=supDB();if(!db)return;const ua=navigator.userAgent;const dev=/Android/.test(ua)?"Android":/iPhone|iPad/.test(ua)?"iPhone/iPad":"Computer";
+      db.collection("fehler").add({msg,ort,info:`${APP_VER} · ${dev} · ${location.hostname}`.slice(0,300),zeit:nowISO()}).catch(()=>{})}catch(e){}},1500);
+  }catch(e){}}
+  window.addEventListener("error",e=>report(e.message,`${String(e.filename||"").split("/").pop()}:${e.lineno||0}:${e.colno||0}`));
+  window.addEventListener("unhandledrejection",e=>{const r=e.reason;report(r&&r.message||String(r),"promise"+(r&&r.stack?" · "+String(r.stack).split("\n")[1]?.trim():""))});
+})();
 document.getElementById("annX").onclick=()=>{if(ANN&&ANN.id){try{localStorage.setItem("fk-ann-x",ANN.id)}catch(e){}}document.getElementById("annCard").hidden=true};
 setTimeout(watchAnn,2500);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN anfügen. v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-07e",d:"2026-11-07",t:"Ideen-Wand & Umfragen",items:[
+    "💡 Ideen-Wand: Wünsche für die App vorschlagen und mit 👍 abstimmen (Einstellungen → Ideen-Wand)",
+    "📊 Kurze Umfragen erscheinen oben als Karte, ein Tipp zum Abstimmen",
+    "💬 Antworten auf Support-Nachrichten erscheinen jetzt direkt in der App",
+    "🛠 Fehler werden automatisch gemeldet, damit sie schneller behoben werden (ohne Termine oder Namen)"]},
   {v:"2026-11-07d",d:"2026-11-07",t:"Farben & Neuigkeiten",items:[
     "🎨 Eigene Farbe für jede Person: Einstellungen → Personen im Haushalt → auf den farbigen Kreis tippen",
     "✨ Diese Übersicht „Was ist neu?“: Neue Funktionen erscheinen nach jedem Update automatisch oben"]},
