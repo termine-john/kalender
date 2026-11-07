@@ -1,0 +1,1344 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Familienkalender</title>
+<link rel="manifest" href="manifest.webmanifest">
+<meta name="theme-color" content="#15394b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+html{-webkit-text-size-adjust:100%}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}
+/* Layout: Wochenansicht, je Tag eine Zeile mit 4 Spalten , Morgen-Übersicht oben, Eingabe im Bottom-Sheet */
+:root{
+  --bg:#cdd7dd; --surface:#e9eef1; --fg:#0f181e; --muted:#43525b; --line:#b3c0c8;
+  --accent:#174a61; --band:#15394b; --on-band:#eef6fa; --on-band-dim:#a9c4d2;
+  --c-christin:#b3305c; --c-christin-bg:#f2d0dc;
+  --c-john:#156a5f; --c-john-bg:#c6e6de;
+  --c-robert:#a35a10; --c-robert-bg:#f1d9bb;
+  --c-gem:#4d3ea3; --c-gem-bg:#d8d1f3;
+  --work:#25343d; --work-bg:#d0d9de;
+  --vac:#246b27; --vac-bg:#cbe5c6;
+  --today:#f3e2a3; --bday:#8a4b00; --bday-bg:#ffe1a8; --star:#c98a00; --fer:#bfd8ee; --fer-fg:#164e78; --feier:#b02a1c;
+  /* Systemschriften: keine Verbindung zu Google Fonts nötig (Datenschutz) */
+  --f-display:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  --f-body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0d1418; --surface:#162026; --fg:#e6edf1; --muted:#97a7b0; --line:#28353e; --accent:#6bb7d6; --band:#1b3442; --on-band:#eef6fa; --on-band-dim:#9ab6c4;
+  --c-christin:#f08aaa; --c-christin-bg:#3a1f2a; --c-john:#6fd1c2; --c-john-bg:#16332f;
+  --c-robert:#f0b26b; --c-robert-bg:#3a2a17; --c-gem:#a99bf2; --c-gem-bg:#2a2548;
+  --work:#c9d4da; --work-bg:#26333b; --vac:#8bd08e; --vac-bg:#1d3320; --today:#2c2a1a; --bday:#ffd27a; --bday-bg:#3d2d10; --star:#ffcc4d; --fer:#17324a; --fer-fg:#9ccbf0; --feier:#ff8a7a; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0d1418; --surface:#162026; --fg:#e6edf1; --muted:#97a7b0; --line:#28353e; --accent:#6bb7d6; --band:#1b3442; --on-band:#eef6fa; --on-band-dim:#9ab6c4;
+  --c-christin:#f08aaa; --c-christin-bg:#3a1f2a; --c-john:#6fd1c2; --c-john-bg:#16332f;
+  --c-robert:#f0b26b; --c-robert-bg:#3a2a17; --c-gem:#a99bf2; --c-gem-bg:#2a2548;
+  --work:#c9d4da; --work-bg:#26333b; --vac:#8bd08e; --vac-bg:#1d3320; --today:#2c2a1a; --bday:#ffd27a; --bday-bg:#3d2d10; --star:#ffcc4d; --fer:#17324a; --fer-fg:#9ccbf0; --feier:#ff8a7a; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.4;
+  padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));padding-block:12px 96px}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
+.wrap{max-width:900px;margin:0 auto;display:flex;flex-direction:column;gap:14px}
+h1{font-family:var(--f-display);font-weight:700;font-size:1.6rem;margin:0;letter-spacing:-.01em;text-wrap:balance}
+.top{display:flex;justify-content:space-between;align-items:flex-end;gap:12px;flex-wrap:wrap}
+.status{font-size:.8rem;color:var(--muted)}
+.appbar{background:var(--band);color:var(--on-band);border-radius:18px;padding:14px 14px 10px;display:flex;flex-direction:column;gap:12px;box-shadow:0 6px 18px rgba(8,25,35,.22)}
+.appbar .top{align-items:center;flex-wrap:nowrap}
+.appbar h1{font-size:1.45rem}
+.appbar .status{color:var(--on-band-dim)}
+.appbar .gear{background:rgba(255,255,255,.12);border:0;color:var(--on-band);flex:none}
+.appbar .tabs{background:rgba(0,0,0,.18);border:0}
+.appbar .tabs button{color:var(--on-band-dim)}
+.appbar .tabs button[aria-selected="true"]{background:var(--on-band);color:var(--band)}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+
+/* Morgen-Übersicht */
+.morning{background:var(--surface);border-left:5px solid var(--accent);border-radius:14px;padding:12px 14px;display:grid;grid-template-columns:1fr auto;gap:8px 12px;align-items:center}
+.morning ul{grid-column:1/-1}
+.morning #mAck{padding:8px 14px;font-size:.88rem}
+.morning h2{font-family:var(--f-display);font-size:1.15rem;margin:0}
+.morning ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.morning li{display:flex;gap:8px;align-items:baseline}
+.morning .who{font-weight:600;min-width:78px;font-size:.85rem}
+.btn{background:var(--accent);color:var(--surface);padding:11px 16px;border-radius:10px;font-weight:600}
+.btn.ghost{background:transparent;color:var(--fg);border:1px solid var(--line)}
+.btn.danger{background:transparent;color:var(--c-christin);border:1px solid var(--c-christin)}
+
+/* Wochennavigation */
+.nav{display:flex;align-items:center;gap:8px;position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);padding-block:6px}
+.nav .lbl{flex:1;text-align:center;font-family:var(--f-display);font-weight:500}
+.nav .arrow{width:42px;height:42px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:1.2rem}
+.nav .today-btn{padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);font-size:.85rem}
+
+.legend{display:grid;grid-template-columns:repeat(var(--ncol,4),minmax(0,1fr));gap:4px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 56px);z-index:4;background:var(--bg);padding-bottom:4px}
+.legend div{text-align:center;font-size:.75rem;font-weight:600;padding:5px 2px;border-radius:8px;letter-spacing:.02em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.p-christin{color:var(--c-christin);background:var(--c-christin-bg)}
+.p-john{color:var(--c-john);background:var(--c-john-bg)}
+.p-robert{color:var(--c-robert);background:var(--c-robert-bg)}
+.p-gemeinsam{color:var(--c-gem);background:var(--c-gem-bg)}
+
+.days{display:flex;flex-direction:column;gap:10px}
+.day{background:var(--surface);border-radius:12px;border:1px solid var(--line);overflow:hidden}
+.day.is-today{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.day-head{display:flex;justify-content:space-between;align-items:baseline;padding:8px 10px;border-bottom:1px solid var(--line)}
+.day.is-today .day-head{background:var(--today)}
+.day-head b{font-family:var(--f-display);font-weight:700}
+.day-head span{font-size:.78rem;color:var(--muted)}
+.cols{display:grid;grid-template-columns:repeat(var(--ncol,4),minmax(0,1fr))}
+.cell{min-height:52px;padding:4px;display:flex;flex-direction:column;gap:4px;border-right:1px solid var(--line);text-align:left;min-width:0}
+.cell:last-child{border-right:0}
+.cell:hover{background:color-mix(in srgb,var(--accent) 6%,transparent)}
+.chip{font-size:.74rem;line-height:1.25;padding:4px 5px;border-radius:6px;border-left:3px solid currentColor;word-break:break-word;min-width:0;width:100%;text-align:left}
+.chip .t{display:block;font-variant-numeric:tabular-nums;font-weight:600;opacity:.85}
+.chip.termin.christin{color:var(--c-christin);background:var(--c-christin-bg)}
+.chip.termin.john{color:var(--c-john);background:var(--c-john-bg)}
+.chip.termin.robert{color:var(--c-robert);background:var(--c-robert-bg)}
+.chip.termin.gemeinsam{color:var(--c-gem);background:var(--c-gem-bg)}
+.chip.arbeit{color:var(--work);background:var(--work-bg);border-left-style:double;border-left-width:4px}
+.chip.geburtstag{color:var(--bday);background:var(--bday-bg)}
+.mbar.geburtstag{background:var(--bday-bg);color:var(--bday)}
+.chip.urlaub{color:var(--vac);background:var(--vac-bg)}
+.chip .rep{font-size:.68rem;opacity:.75}
+.chip-label{color:var(--fg);font-weight:500}
+.plus{color:var(--muted);font-size:.9rem;opacity:.35;align-self:center;margin-top:auto}
+
+.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px}
+.tabs button{padding:9px 4px;border-radius:9px;font-weight:600;font-size:.88rem;color:var(--muted)}
+.tabs button[aria-selected="true"]{background:var(--accent);color:var(--surface)}
+.badge{display:inline-block;font-size:.7rem;font-weight:600;padding:2px 6px;border-radius:6px;margin-left:6px;vertical-align:1px}
+.badge.fer{background:var(--fer);color:var(--fer-fg)}
+.badge.feier{background:color-mix(in srgb,var(--feier) 14%,transparent);color:var(--feier)}
+.day.is-fer .day-head{background:var(--fer)}
+.day.is-today.is-fer .day-head{background:var(--today)}
+.mgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.mhead{font-size:.72rem;font-weight:600;color:var(--muted);text-align:center;padding:2px 0;letter-spacing:.03em}
+.mcell{background:var(--surface);border:1px solid var(--line);border-radius:8px;min-height:74px;padding:3px;display:flex;flex-direction:column;gap:2px;text-align:left;min-width:0;overflow:hidden}
+.mcell.out{opacity:.38}
+.mcell.fer{background:var(--fer)}
+.mcell.today{border:2px solid var(--accent)}
+.mcell .n{font-size:.8rem;font-weight:700;font-variant-numeric:tabular-nums}
+.mcell.feier .n{color:var(--feier)}
+.mcell .fname{font-size:.58rem;color:var(--feier);line-height:1.1;font-weight:600}
+.mbar{font-size:.6rem;line-height:1.2;padding:1px 3px;border-radius:3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mbar.christin{background:var(--c-christin-bg);color:var(--c-christin)}
+.mbar.john{background:var(--c-john-bg);color:var(--c-john)}
+.mbar.robert{background:var(--c-robert-bg);color:var(--c-robert)}
+.mbar.gemeinsam{background:var(--c-gem-bg);color:var(--c-gem)}
+.mbar.arbeit{background:var(--work-bg);color:var(--work)}
+.mbar.urlaub{background:var(--vac-bg);color:var(--vac)}
+.more{font-size:.6rem;color:var(--muted)}
+.ygrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (min-width:640px){.ygrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
+.ymon{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px;display:flex;flex-direction:column;gap:4px;text-align:left;min-width:0}
+.ymon h4{margin:0;font-family:var(--f-display);font-size:.95rem}
+.ydays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:1px;font-size:.66rem;text-align:center;font-variant-numeric:tabular-nums}
+.ydays>span{padding:2px 0;border-radius:4px;position:relative;line-height:1.3}
+.ydays .h{color:var(--muted);font-weight:600}
+.ydays .fer{background:var(--fer);color:var(--fer-fg)}
+.ydays .feier{color:var(--feier);font-weight:700}
+.ydays .today{outline:2px solid var(--accent);outline-offset:-1px}
+.ydays>span{display:flex;flex-direction:column;align-items:center;min-height:22px}
+.pd{display:flex;gap:1px;justify-content:center;height:5px;margin-top:1px}
+.pd i{width:5px;height:5px;border-radius:50%;display:block}
+.pd .christin,.kd.christin{background:var(--c-christin)}.pd .john,.kd.john{background:var(--c-john)}.pd .robert,.kd.robert{background:var(--c-robert)}.pd .gemeinsam,.kd.gemeinsam{background:var(--c-gem)}
+.kd{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:4px;vertical-align:0}
+.key{display:flex;flex-wrap:wrap;gap:12px;font-size:.78rem;color:var(--muted);align-items:center}
+.key i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:4px}
+.flist{display:flex;flex-direction:column;gap:8px}
+.frow{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;display:grid;grid-template-columns:1fr auto;gap:2px 10px;align-items:baseline}
+.frow.now{border-color:var(--fer-fg);box-shadow:0 0 0 1px var(--fer-fg)}
+.frow b{font-family:var(--f-display)}
+.frow .when{font-size:.85rem;font-variant-numeric:tabular-nums}
+.frow .cd{font-size:.8rem;font-weight:600;color:var(--fer-fg);text-align:right}
+.frow .fam{grid-column:1/-1;font-size:.78rem;color:var(--vac)}
+.row3n{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.sub{font-family:var(--f-display);font-size:1rem;margin:6px 0 -4px}
+.foot{text-align:center;font-size:.85rem;padding:8px 0 4px}.foot a{color:var(--muted)}
+.lbl-s{font-size:.82rem;color:var(--muted);font-weight:600;letter-spacing:.02em}
+.wdays{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:4px}
+.wdays button{padding:10px 0;border-radius:10px;border:1px solid var(--line);font-weight:600;font-size:.85rem}
+.wdays button[aria-pressed="true"]{background:var(--accent);color:var(--surface);border-color:var(--accent)}
+@media (max-width:420px){#photoBtn{width:56px;padding:0;justify-content:center;font-size:0;gap:0}#photoBtn svg{width:24px;height:24px}}
+.fab.round{width:56px;padding:0;justify-content:center}
+.mbtns{display:flex;gap:6px}
+.mbtns #mImg{padding:8px 10px;font-size:.95rem}
+.voice-live{min-height:72px;border:1px dashed var(--line);border-radius:12px;padding:12px;font-size:1.05rem}
+.voice-live.on{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 25%,transparent)}
+.wimg{width:100%;max-width:260px;align-self:center;border-radius:16px;border:1px solid var(--line)}
+.starcards{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.starcard{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;min-width:0}
+.starcard .nm{font-weight:700;font-size:.9rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:100%}
+.starcard .big{font-size:1.7rem;font-weight:800;color:var(--star);font-variant-numeric:tabular-nums;line-height:1.1}
+.starcard .wk{font-size:.72rem;color:var(--muted)}
+.starcard.pop{animation:pop .6s ease-out}
+@keyframes pop{30%{transform:scale(1.12)}}
+@media (prefers-reduced-motion:reduce){.starcard.pop{animation:none}}
+.tasklist{display:flex;flex-direction:column;gap:6px}
+.task{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:8px 10px;display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center}
+.task.done{opacity:.6}
+.task.done .tt{text-decoration:line-through}
+.task .chk{width:36px;height:36px;border-radius:50%;border:2px solid var(--line);font-size:1rem;display:flex;align-items:center;justify-content:center}
+.task.done .chk{background:var(--star);border-color:var(--star);color:#1a1200}
+.task .tt{font-weight:600;min-width:0;text-align:left}
+.task .meta{font-size:.75rem;color:var(--muted);font-weight:500}
+.task .st{color:var(--star);font-weight:700;white-space:nowrap}
+.rw{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:6px}
+.rw-head{display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.rw-btns{display:flex;flex-wrap:wrap;gap:6px}
+.rw-btns button{padding:7px 10px;border-radius:9px;border:1px solid var(--line);font-size:.82rem;font-weight:600}
+.rw-btns button:disabled{opacity:.4}
+.cbackdrop{position:fixed;inset:0;background:rgba(5,15,20,.55);z-index:40;display:flex;align-items:center;justify-content:center;padding:20px}
+.cdialog{background:var(--surface);border-radius:16px;padding:18px;max-width:360px;width:100%;display:flex;flex-direction:column;gap:14px;box-shadow:0 10px 30px rgba(0,0,0,.35)}
+.cdialog p{margin:0;font-size:1rem;font-weight:600}
+.btn.danger.solid{background:var(--c-christin);color:#fff;border-color:var(--c-christin)}
+body.ro .foot,body.ro .fabs,body.ro #gear,body.ro [data-view="sterne"],body.ro .plus,body.ro .empty-note,body.ro #mImg{display:none!important}
+body.ro .tabs{grid-template-columns:repeat(4,minmax(0,1fr))}
+body.ro .cell{cursor:default}
+label.pick{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;font-size:.85rem;font-weight:600}
+label.pick input{width:18px;height:18px}
+ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.sec{font-family:var(--f-display);font-size:1.05rem;margin:6px 0 0}
+.empty-note{font-size:.85rem;color:var(--muted);text-align:center;padding:4px}
+
+.fabs{position:fixed;right:calc(18px + env(safe-area-inset-right,0px));bottom:calc(18px + env(safe-area-inset-bottom,0px));display:flex;gap:10px;z-index:8}
+.fab{background:var(--accent);color:var(--surface);height:56px;padding:0 20px;border-radius:28px;font-weight:700;font-size:1rem;box-shadow:0 6px 18px rgba(0,0,0,.25);display:flex;align-items:center;gap:8px}
+.fab.photo{background:var(--surface);color:var(--accent);border:2px solid var(--accent)}
+.fab svg{width:22px;height:22px}
+.scan-prev{max-height:160px;border-radius:10px;object-fit:contain;align-self:flex-start;border:1px solid var(--line)}
+.found{display:flex;flex-direction:column;gap:10px}
+.found-item{border:1px solid var(--line);border-radius:12px;padding:10px;display:flex;flex-direction:column;gap:8px}
+.found-item.off{opacity:.45}
+.found-item .row3{display:grid;grid-template-columns:1.3fr 1fr 1fr;gap:8px}
+.found-item .row3b{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.found-item select,.found-item input{font:inherit;font-size:.9rem;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:8px;width:100%;min-width:0}
+.keep{display:flex;align-items:center;gap:8px;font-size:.85rem;font-weight:600}
+.keep input{width:20px;height:20px}
+.spinner{display:flex;align-items:center;gap:10px;color:var(--muted)}
+.spinner::before{content:"";width:18px;height:18px;border-radius:50%;border:3px solid var(--line);border-top-color:var(--accent);animation:spin .9s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Sheet */
+.backdrop{position:fixed;inset:0;background:rgba(10,20,25,.45);z-index:20;display:flex;align-items:flex-end;justify-content:center}
+.sheet{background:var(--surface);width:100%;max-width:560px;border-radius:18px 18px 0 0;max-height:92vh;overflow:auto;
+  padding:18px max(16px,env(safe-area-inset-right,0px)) calc(18px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:14px}
+.sheet h3{font-family:var(--f-display);margin:0;font-size:1.25rem}
+.seg{display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:6px}
+.seg button{padding:10px 4px;border-radius:10px;border:1px solid var(--line);font-weight:600;font-size:.88rem}
+.seg button[aria-pressed="true"]{border-color:currentColor;border-width:2px}
+.seg .typ[aria-pressed="true"]{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
+label.f{display:flex;flex-direction:column;gap:5px;font-size:.82rem;color:var(--muted);font-weight:600;letter-spacing:.02em}
+label.f input,label.f select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 10px;width:100%;min-width:0}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.actions .btn{flex:1 1 140px}
+.hint{font-size:.8rem;color:var(--muted);margin:0}
+.box{border:1px dashed var(--line);border-radius:12px;padding:12px;display:flex;flex-direction:column;gap:10px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(86px + env(safe-area-inset-bottom,0px));background:var(--fg);color:var(--bg);padding:10px 16px;border-radius:10px;font-size:.88rem;z-index:30;max-width:90vw}
+.confirm{background:var(--c-christin-bg);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:8px}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:up .18s ease-out}@keyframes up{from{transform:translateY(30px);opacity:.6}}}
+@media (min-width:700px){.chip{font-size:.8rem}.legend div{font-size:.85rem}}
+.gear{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center}
+.gear svg{width:22px;height:22px}
+textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;min-height:150px}
+.linkbox{font-family:ui-monospace,monospace;font-size:.72rem;word-break:break-all;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;user-select:all}
+.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:.9rem}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <header class="appbar">
+  <div class="top">
+    <div>
+      <h1>Familienkalender</h1>
+      <div class="status" id="status">Verbinde …</div>
+    </div>
+    <button class="gear" id="gear" aria-label="Einstellungen und Familie einladen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M17 8v6M14 11h6"/></svg></button>
+  </div>
+  <div class="tabs" role="tablist" aria-label="Ansicht">
+    <button role="tab" data-view="woche">Woche</button><button role="tab" data-view="monat">Monat</button><button role="tab" data-view="jahr">Jahr</button><button role="tab" data-view="ferien">Ferien</button><button role="tab" data-view="sterne">Sterne</button>
+  </div>
+  </header>
+
+  <section class="morning" id="morning" hidden>
+    <h2 id="mTitle">Guten Morgen</h2>
+    <div class="mbtns"><button class="btn ghost" id="mImg" aria-label="Bild für den Sperrbildschirm erstellen">🖼</button><button class="btn" id="mAck">Gelesen ✓</button></div>
+    <ul id="mList"></ul>
+  </section>
+  <div class="nav" id="navbar">
+    <button class="arrow" id="prev" aria-label="Zurück">‹</button>
+    <div class="lbl" id="weekLbl"></div>
+    <button class="arrow" id="next" aria-label="Weiter">›</button>
+    <button class="today-btn" id="goToday">Heute</button>
+  </div>
+  <div id="vWoche">
+  <div class="legend">
+    
+  </div>
+  <div class="days" id="days"></div>
+  <p class="empty-note">Tippe in ein Feld, um dort einen Eintrag anzulegen. Arbeitszeiten und Urlaub trägt jeder in seiner eigenen Spalte ein.</p>
+  </div>
+  <div id="vOther" hidden></div>
+  <footer class="foot"><a href="datenschutz.html">Datenschutz, Impressum & Nutzungshinweise</a></footer>
+</div>
+
+<div class="fabs">
+  <button class="fab photo" id="photoBtn" hidden aria-label="Termin abfotografieren"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Foto</button>
+  <button class="fab photo round" id="micBtn" hidden aria-label="Termin per Sprache eintragen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg></button>
+  <button class="fab" id="fab">+ Eintrag</button>
+</div>
+<input type="file" id="photoIn" accept="image/*" capture="environment" hidden>
+<div id="sheetHost"></div>
+<div id="toastHost"></div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script>
+// Die drei Personen-Spalten haben feste interne Schlüssel, die Namen kommen aus den Kalender-Einstellungen
+const SLOTS=["christin","john","robert"];
+const DEFAULT_NAMES=["","",""];
+let NAMES=DEFAULT_NAMES.slice();
+let PEOPLE=[],PNAME={};
+function applyNames(arr){
+  NAMES=SLOTS.map((k,i)=>String((arr&&arr[i])||"").trim().slice(0,20)||`Person ${i+1}`);
+  PEOPLE=[...SLOTS.map((k,i)=>[k,NAMES[i]]),["gemeinsam","Gemeinsam"]];
+  PNAME=Object.fromEntries(PEOPLE);
+  const lg=document.querySelector(".legend");
+  if(lg)lg.innerHTML=PEOPLE.map(([k,n])=>`<div class="p-${k}">${esc(n)}</div>`).join("");
+}
+
+const WD=["So","Mo","Di","Mi","Do","Fr","Sa"];
+const WDL=["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+const MON=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
+const TYPN={termin:"Termin",arbeit:"Arbeit",urlaub:"Urlaub",geburtstag:"Geburtstag"};
+const CAL_TYPES=["termin","arbeit","urlaub","geburtstag"];
+let tasks=[],taskLogs=[],rewards=[],redeems=[];
+function splitData(all){
+  entries=all.filter(e=>!e.typ||CAL_TYPES.includes(e.typ));
+  tasks=all.filter(e=>e.typ==="aufgabe");
+  taskLogs=all.filter(e=>e.typ==="erledigt");
+  rewards=all.filter(e=>e.typ==="belohnung");
+  redeems=all.filter(e=>e.typ==="einloesung");
+}
+
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+const parse=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
+const addDays=(s,n)=>{const d=parse(s);d.setDate(d.getDate()+n);return iso(d)};
+const diffDays=(a,b)=>Math.round((parse(b)-parse(a))/864e5);
+const mondayOf=s=>{const d=parse(s);const w=(d.getDay()+6)%7;d.setDate(d.getDate()-w);return iso(d)};
+const fmt=s=>{const d=parse(s);return `${WD[d.getDay()]} ${d.getDate()}. ${MON[d.getMonth()]}`};
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let _ln=null;try{_ln=JSON.parse(localStorage.getItem("fk-namen")||"null")}catch(e){}
+applyNames(_ln||DEFAULT_NAMES);
+
+let today=iso(new Date());
+let weekStart=mondayOf(today);
+let entries=[];       // {id,typ,person,titel,datum,endDatum,von,bis,serie,intervall}
+let store=null;       // {add,set,del,mode}
+
+/* ---------- Speicher ---------- */
+function localStore(){
+  const K="familienkalender-lokal";
+  const load=()=>{try{return JSON.parse(localStorage.getItem(K)||"[]")}catch(e){return[]}};
+  const save=a=>{try{localStorage.setItem(K,JSON.stringify(a))}catch(e){}};
+  let all=load();splitData(all);
+  const upd=()=>{save(all);splitData(all);render()};
+  return{mode:"lokal",
+    async add(o){const id="l"+Math.random().toString(36).slice(2,10);all.push({...o,id});upd()},
+    async set(id,o){all=all.map(e=>e.id===id?{...o,id}:e);upd()},
+    async del(id){all=all.filter(e=>e.id!==id);upd()},
+    async names(n){try{localStorage.setItem("fk-namen",JSON.stringify(n))}catch(e){}applyNames(n);render()},
+    async wipe(){all=[];save(all);splitData(all);try{localStorage.removeItem("fk-namen")}catch(e){}}};
+}
+/* ---------- Verbindung (Firebase) ---------- */
+const CFG_KEY="fk-config";
+// Firebase-Projekt "familienkalender-86be9" (diese Werte sind öffentlich, der Schutz liegt im geheimen Familien-Code)
+const DEFAULT_FIREBASE={apiKey:"AIzaSyBZmR5S-vw7b7eAIEisM5UOWsDlBUV_b_o",authDomain:"familienkalender-86be9.firebaseapp.com",projectId:"familienkalender-86be9",storageBucket:"familienkalender-86be9.firebasestorage.app",messagingSenderId:"756379292150",appId:"1:756379292150:web:a86daa4c99db72bdacb7d7"};
+function getCfg(){let c=null;try{c=JSON.parse(localStorage.getItem(CFG_KEY)||"null")}catch(e){}if(c&&c.code&&!c.firebase)c.firebase=DEFAULT_FIREBASE;return c}
+function setCfg(c){try{localStorage.setItem(CFG_KEY,JSON.stringify(c))}catch(e){}}
+const b64e=s=>btoa(unescape(encodeURIComponent(s))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+const b64d=s=>decodeURIComponent(escape(atob(s.replace(/-/g,"+").replace(/_/g,"/"))));
+function inviteLink(c){return location.origin+location.pathname+"#join="+c.code}
+function newCode(){const a=new Uint8Array(18);crypto.getRandomValues(a);return Array.from(a,x=>"abcdefghijkmnpqrstuvwxyz23456789"[x%32]).join("")}
+function parseFirebaseConfig(txt){
+  const o={};const re=/(apiKey|authDomain|projectId|storageBucket|messagingSenderId|appId|measurementId)["']?\s*:\s*["']([^"']+)["']/g;let m;
+  while((m=re.exec(txt)))o[m[1]]=m[2];
+  return o.apiKey&&o.projectId&&o.appId?o:null;
+}
+function joinCode(c){const old=getCfg();if(old&&old.code&&old.code!==c){try{sessionStorage.setItem("fk-oldcode",old.code)}catch(e){}}setCfg({firebase:DEFAULT_FIREBASE,code:c})}
+function checkJoin(){
+  const h=location.hash;
+  if(h.startsWith("#lesen=")){const v=h.slice(7);if(/^[a-z2-9]{18,}$/.test(v)){const old=getCfg();if(!old||!old.code)setCfg({firebase:DEFAULT_FIREBASE,lesen:v});else sessionStorage.setItem("fk-lesen-own",v)}history.replaceState(null,"",location.pathname);return}
+  if(!h.startsWith("#join="))return;
+  const v=h.slice(6);try{if(/^[a-z2-9]{18,}$/.test(v)){joinCode(v);toast("Mit dem Familienkalender verbunden")}else{const j=JSON.parse(b64d(v));if(j&&j.c){joinCode(j.c);toast("Mit dem Familienkalender verbunden")}}}catch(e){toast("Der Einladungslink ist unvollständig")}
+  history.replaceState(null,"",location.pathname);
+}
+async function init(){
+  checkJoin();
+  render();
+  initPhoto();
+  if(IS_READER_SITE){const c=getCfg();document.title="Termine";
+    if(c&&c.lesen){startReader(c);return}
+    READONLY=true;document.body.classList.add("ro");entries=[];applyNames([]);render();setStatus("Bitte den vollständigen Link öffnen, den du bekommen hast.");return}
+  const cfg=getCfg();
+  if(!cfg){if(!_ln){applyNames([]);render()}store=localStore();setStatus("Noch nicht eingerichtet · tippe oben rechts");render();showSetup();return}
+  if(cfg.lesen){startReader(cfg);return}
+  if(cfg.local||!window.firebase){store=localStore();setStatus(cfg.local?"Nur auf diesem Gerät gespeichert":"Datenbank nicht erreichbar · nur auf diesem Gerät");render();return}
+  let col;
+  try{
+    const app=firebase.apps.length?firebase.app():firebase.initializeApp(cfg.firebase);
+    const fs=firebase.firestore(app);
+    try{await fs.enablePersistence({synchronizeTabs:true})}catch(e){}
+    col=fs.collection(`familien/${cfg.code}/eintraege`);
+    FS=fs;
+  }catch(e){store=localStore();setStatus("Verbindung fehlerhaft · Einstellungen prüfen");render();return}
+  const failed=e=>{console.error(e);toast("Nicht gespeichert: "+(e&&e.code==="permission-denied"?"kein Zugriff auf diesen Kalender":"Verbindungsproblem")+". Bitte App neu laden.")};
+  store={mode:"db",
+    add(o){col.add(o).catch(failed)},
+    set(id,o){col.doc(id).set(o).catch(failed)},
+    del(id){col.doc(id).delete().catch(failed)},
+    async names(n){await col.doc("_config").set({typ:"config",namen:n},{merge:true})},
+    async conf(o){await col.doc("_config").set({typ:"config",...o},{merge:true})},
+    async wipe(){const snap=await col.get();let b=col.firestore.batch(),n=0;for(const d of snap.docs){b.delete(d.ref);if(++n%400===0){await b.commit();b=col.firestore.batch()}}await b.commit()}};
+  try{const nn=sessionStorage.getItem("fk-namen-neu");if(nn){sessionStorage.removeItem("fk-namen-neu");await store.names(JSON.parse(nn))}}catch(e){}
+  // Beim Wechsel in einen anderen Kalender: Einträge aus dem bisherigen Kalender mitnehmen
+  try{const oc=sessionStorage.getItem("fk-oldcode");if(oc&&oc!==cfg.code){sessionStorage.removeItem("fk-oldcode");
+    const old=await col.firestore.collection(`familien/${oc}/eintraege`).get();let n=0;
+    for(const d of old.docs){if(d.id==="_config")continue;await col.add(d.data());n++}
+    if(n)toast(`${n} Einträge aus dem vorherigen Kalender übernommen`)}}catch(e){}
+  // Einträge, die vorher nur auf diesem Gerät lagen, einmalig hochladen
+  try{const loc=JSON.parse(localStorage.getItem("familienkalender-lokal")||"[]");
+    if(loc.length){for(const e of loc){const{id,...o}=e;await col.add(o)}localStorage.removeItem("familienkalender-lokal");toast(`${loc.length} Einträge übernommen`)}}catch(e){}
+  const timer=setTimeout(()=>setStatus("Offline · Änderungen werden später übertragen"),10000);
+  ensureMember(cfg);
+  try{if(sessionStorage.getItem("fk-invite")){sessionStorage.removeItem("fk-invite");setTimeout(showSettings,400)}}catch(e){}
+  col.onSnapshot({includeMetadataChanges:true},snap=>{
+    const conf=snap.docs.find(d=>d.id==="_config");
+    if(conf){const n=conf.data().namen;if(Array.isArray(n)){applyNames(n);try{localStorage.setItem("fk-namen",JSON.stringify(n))}catch(e){}}}
+    LESE=conf?(conf.data().lesen||[]):[];
+    splitData(snap.docs.filter(d=>d.id!=="_config").map(d=>({...d.data(),id:d.id})));
+    const nr=calNr();
+    if(snap.metadata.hasPendingWrites)setStatus(`Kalender ${nr} · Änderungen werden übertragen …`);
+    else if(!snap.metadata.fromCache){clearTimeout(timer);setStatus(`Kalender ${nr} · alles übertragen ✓`)}
+    else setStatus(`Kalender ${nr} · offline, zeigt gespeicherten Stand`);
+    render();
+    if(!snap.metadata.fromCache&&!snap.metadata.hasPendingWrites)scheduleMirror();
+  },err=>{clearTimeout(timer);setStatus(err&&err.code==="permission-denied"?"Kein Zugriff · Datenbank-Regeln prüfen (Anleitung Schritt 4)":"Fehler beim Laden der Termine");});
+}
+
+/* ---------- Einrichtung & Einladen ---------- */
+function sheet(title,html){document.getElementById("sheetHost").innerHTML=`<div class="backdrop" id="bd"><div class="sheet" role="dialog" aria-modal="true" aria-label="${title}"><h3>${title}</h3>${html}</div></div>`;draft={setup:true};
+  document.getElementById("bd").onclick=ev=>{if(ev.target.id==="bd")closeSheet()}}
+function nameFields(vals){return `<div class="row3n">${SLOTS.map((k,i)=>`<label class="f">Person ${i+1}<input id="nm${i}" maxlength="20" value="${esc(vals[i]||"")}" placeholder="Name"></label>`).join("")}</div>`}
+const readNames=()=>SLOTS.map((k,i)=>(document.getElementById("nm"+i).value||"").trim());
+function showSetup(){
+  sheet("Willkommen",`<p>Hier legst du einen eigenen Kalender für deine Familie an. Trag dafür die Namen ein, die als Spalten erscheinen sollen. Die Spalte „Gemeinsam“ gibt es immer dazu.</p>
+    ${nameFields(["","",""])}
+    <div class="actions"><button class="btn" id="cfgNew">Neuen Kalender starten</button></div>
+    <h4 class="sub">Du hast einen Einladungslink bekommen?</h4>
+    ${joinBox()}
+    <p class="hint">Privates, kostenloses Projekt nur zur eigenen Nutzung, kein Verkauf. Mehr dazu und was gespeichert wird: <a href="datenschutz.html">Datenschutz & Nutzungshinweise</a>.</p>
+    <div class="actions"><button class="btn ghost" id="cfgLocal">Erst mal nur auf diesem Handy</button><button class="btn ghost" id="cfgLater">Schließen</button></div>`);
+  document.getElementById("cfgNew").onclick=()=>{
+    const n=readNames();if(!n.some(Boolean)){toast("Bitte mindestens einen Namen eintragen");return}
+    try{sessionStorage.setItem("fk-namen-neu",JSON.stringify(n));localStorage.setItem("fk-namen",JSON.stringify(n));sessionStorage.setItem("fk-invite","1")}catch(e){}
+    setCfg({firebase:DEFAULT_FIREBASE,code:newCode()});location.reload();
+  };
+  document.getElementById("cfgLocal").onclick=()=>{const n=readNames();if(n.some(Boolean)){try{localStorage.setItem("fk-namen",JSON.stringify(n))}catch(e){}}setCfg({local:true});closeSheet();location.reload()};
+  document.getElementById("cfgLater").onclick=closeSheet;wireJoin();
+}
+function showSettings(){
+  const c=getCfg();
+  if(!c||c.local){if(c&&c.local){localStorage.removeItem(CFG_KEY)}showSetup();return}
+  const link=inviteLink(c);
+  const appLink=location.origin+location.pathname;
+  sheet("Teilen & Einstellungen",`<p class="hint">Dieses Handy ist mit <b>Kalender ${calNr()}</b> verbunden. Bei allen in der Familie muss hier dieselbe Nummer stehen.</p>
+    <h4 class="sub">Familie einladen</h4><p class="hint">Wer diesen Link öffnet, ist sofort mit <b>diesem</b> Kalender verbunden und sieht alle Einträge. Gib ihn nur an die Familie weiter.</p>
+    <div class="linkbox" id="inv">${esc(link)}</div>
+    <div class="actions"><button class="btn" id="invCopy">Link kopieren</button><button class="btn ghost" id="invShare">Teilen …</button></div>
+    <a class="btn ghost" style="text-align:center;text-decoration:none" href="https://wa.me/?text=${encodeURIComponent("Unser Familienkalender: "+link)}" target="_blank" rel="noopener">Per WhatsApp schicken</a>
+    ${readLinkSection()}
+    <h4 class="sub">Mit einem anderen Kalender verbinden</h4>
+    ${joinBox()}
+    <p class="hint">Deine bisherigen Einträge werden dabei in den neuen Kalender übernommen.</p>
+    <h4 class="sub">Namen der Spalten</h4>
+    ${nameFields(NAMES)}
+    <button class="btn ghost" id="nmSave">Namen speichern</button>
+    <h4 class="sub">Für Freunde: eigenen Kalender</h4>
+    <p class="hint">Mit diesem Link können andere die App nutzen und legen dabei ihren <b>eigenen, getrennten</b> Kalender an. Deine Termine sehen sie nicht.</p>
+    <div class="linkbox" id="appl">${esc(appLink)}</div>
+    <button class="btn ghost" id="applCopy">App-Link kopieren</button>
+    <p class="hint">Tipp: Im Browser-Menü „Zum Startbildschirm hinzufügen“ wählen, dann hat jeder die App als Symbol auf dem Handy.</p>
+    <h4 class="sub">Sperrbildschirm</h4>
+    <button class="btn ghost" id="setImg">🖼 Bild mit den heutigen Terminen erstellen</button>
+    <h4 class="sub">Deine Daten</h4>
+    <button class="btn ghost" id="exp">Alle Termine exportieren (.ics)</button>
+    <p class="hint">Die Datei kannst du z. B. in Google Kalender importieren oder als Sicherung aufheben.</p>
+    <button class="btn danger" id="wipe">Kalender endgültig löschen</button>
+    <p class="hint">Löscht alle Einträge und Namen dieses Kalenders für alle Beteiligten. Das lässt sich nicht rückgängig machen.</p>
+    <p class="hint"><a href="datenschutz.html">Datenschutz, Impressum & Nutzungshinweise</a></p>
+    <div class="actions"><button class="btn danger" id="disc">Auf diesem Handy trennen</button><button class="btn ghost" id="setClose">Schließen</button></div>`);
+  document.getElementById("exp").onclick=exportICS;wireReadLinks();
+  document.getElementById("setImg").onclick=()=>showWidgetImage();wireJoin();
+  document.getElementById("wipe").onclick=async()=>{if(!await askConfirm("Den ganzen Kalender mit allen Einträgen, Aufgaben und Sternen für ALLE löschen? Das lässt sich nicht rückgängig machen.","Endgültig löschen"))return;
+    if(!await askConfirm("Bist du ganz sicher?","Ja, alles löschen"))return;wipeAll()};
+  document.getElementById("invCopy").onclick=async()=>{try{await navigator.clipboard.writeText(link);toast("Link kopiert")}catch(e){const r=document.createRange();r.selectNodeContents(document.getElementById("inv"));const s=getSelection();s.removeAllRanges();s.addRange(r);toast("Link markiert, jetzt kopieren")}};
+  const sh=document.getElementById("invShare");
+  if(navigator.share)sh.onclick=()=>navigator.share({title:"Familienkalender",text:"Unser Familienkalender",url:link}).catch(()=>{});else sh.hidden=true;
+  document.getElementById("setClose").onclick=closeSheet;
+  document.getElementById("nmSave").onclick=async()=>{const n=readNames();if(!n.some(Boolean)){toast("Bitte mindestens einen Namen eintragen");return}try{await store.names(n);applyNames(n);render();toast("Namen gespeichert")}catch(e){toast("Speichern hat nicht geklappt")}};
+  document.getElementById("applCopy").onclick=async()=>{try{await navigator.clipboard.writeText(appLink);toast("App-Link kopiert")}catch(e){const r=document.createRange();r.selectNodeContents(document.getElementById("appl"));const x=getSelection();x.removeAllRanges();x.addRange(r);toast("Link markiert, jetzt kopieren")}};
+  document.getElementById("disc").onclick=async()=>{if(!await askConfirm("Dieses Handy vom Kalender trennen? Die Termine bleiben für die anderen erhalten. Zum erneuten Verbinden brauchst du den Einladungslink.","Trennen"))return;localStorage.removeItem(CFG_KEY);location.reload()};
+}
+document.getElementById("gear").onclick=showSettings;
+async function wipeAll(){
+  try{await store.wipe()}catch(e){toast("Löschen hat nicht geklappt. Bitte Internetverbindung prüfen.");return}
+  try{localStorage.removeItem(CFG_KEY);localStorage.removeItem("fk-namen")}catch(e){}
+  toast("Kalender gelöscht");setTimeout(()=>location.reload(),900);
+}
+function exportICS(){
+  const pad=n=>String(n).padStart(2,"0");
+  const now=new Date();const stamp=`${now.getUTCFullYear()}${pad(now.getUTCMonth()+1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}00Z`;
+  const icsEsc=t=>String(t||"").replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n");
+  const d8=s=>s.replace(/-/g,"");
+  const L=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Familienkalender//DE","CALSCALE:GREGORIAN"];
+  for(const e of entries){
+    const end=e.endDatum&&e.endDatum>e.datum?e.endDatum:e.datum;
+    if(e.typ==="geburtstag"){const st=e.geburtsjahr?`${e.geburtsjahr}${e.datum.slice(5).replace("-","")}`:d8(e.datum);
+      L.push("BEGIN:VEVENT",`UID:${e.id}@familienkalender`,`DTSTAMP:${stamp}`,`SUMMARY:${icsEsc("Geburtstag "+e.titel)}`,`DTSTART;VALUE=DATE:${st}`,"RRULE:FREQ=YEARLY","END:VEVENT");continue}
+    const what=e.typ==="arbeit"?`Arbeit${e.titel?" ("+e.titel+")":""}`:e.typ==="urlaub"?`Urlaub${e.titel?" – "+e.titel:""}`:e.titel;
+    L.push("BEGIN:VEVENT",`UID:${e.id}@familienkalender`,`DTSTAMP:${stamp}`,`SUMMARY:${icsEsc((PNAME[e.person]||"")+": "+what)}`);
+    if(e.von&&e.typ!=="urlaub"){
+      const t=x=>x.replace(":","")+"00";
+      let endDay=end,bis=e.bis||e.von;if(e.bis&&e.bis<e.von&&end===e.datum)endDay=addDays(e.datum,1);
+      if(!e.bis){const[h,m]=e.von.split(":").map(Number);const x=new Date(2000,0,1,h+1,m);bis=pad(x.getHours())+":"+pad(x.getMinutes());if(h===23)endDay=addDays(endDay,1)}
+      L.push(`DTSTART:${d8(e.datum)}T${t(e.von)}`,`DTEND:${d8(endDay)}T${t(bis)}`);
+    }else L.push(`DTSTART;VALUE=DATE:${d8(e.datum)}`,`DTEND;VALUE=DATE:${d8(addDays(end,1))}`);
+    L.push("END:VEVENT");
+  }
+  L.push("END:VCALENDAR");
+  const blob=new Blob([L.join("\r\n")],{type:"text/calendar"});
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`familienkalender-${today}.ics`;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast(`${entries.length} Termine exportiert`);
+}
+/* ---------- Termin per Sprache ---------- */
+const SRClass=window.SpeechRecognition||window.webkitSpeechRecognition;
+const voiceOK=()=>!!SRClass;
+let recog=null;
+function startVoice(){
+  if(!SRClass){toast("Spracheingabe geht in diesem Browser nicht. Bitte Chrome verwenden.");return}
+  sheet("Sprich deinen Termin",`<p class="hint">Zum Beispiel: „Donnerstag 15 Uhr Elternabend John“, „Christin Arbeit morgen von 6 bis 14 Uhr“ oder „Geburtstag Oma Helga am 3. März“.</p>
+    <div class="voice-live on" id="vLive" aria-live="polite">Ich höre zu …</div>
+    <div class="actions"><button class="btn ghost" id="vStop">Abbrechen</button></div>`);
+  let finalText="",failed=false;
+  try{recog&&recog.abort()}catch(e){}
+  recog=new SRClass();recog.lang="de-DE";recog.interimResults=true;recog.maxAlternatives=1;recog.continuous=false;
+  recog.onresult=ev=>{let t="";for(const r of ev.results)t+=r[0].transcript;const el=document.getElementById("vLive");if(el)el.textContent=t;finalText=t};
+  recog.onerror=ev=>{failed=true;const el=document.getElementById("vLive");if(!el)return;el.classList.remove("on");
+    el.textContent=ev.error==="not-allowed"||ev.error==="service-not-allowed"?"Das Mikrofon ist nicht erlaubt. Bitte in Chrome bei dieser Seite das Mikrofon freigeben.":ev.error==="no-speech"?"Ich habe nichts gehört. Bitte nochmal versuchen.":"Das hat nicht geklappt. Bitte nochmal versuchen."};
+  recog.onend=()=>{const el=document.getElementById("vLive");if(el)el.classList.remove("on");
+    if(finalText.trim()){applyVoice(finalText.trim())}
+    else if(!failed&&el){el.textContent="Ich habe nichts verstanden. Bitte nochmal versuchen."}
+    const st=document.getElementById("vStop");if(st&&!finalText.trim()){st.textContent="Nochmal sprechen";st.onclick=startVoice}};
+  document.getElementById("vStop").onclick=()=>{try{recog.abort()}catch(e){}closeSheet()};
+  try{recog.start()}catch(e){toast("Spracheingabe konnte nicht starten")}
+}
+const WDN={sonntag:0,montag:1,dienstag:2,mittwoch:3,donnerstag:4,freitag:5,samstag:6,sonnabend:6};
+function parseVoice(text){
+  let t=" "+text.replace(/\s+/g," ")+" ";const low=t.toLowerCase();
+  const typ=/geburtstag/.test(low)?"geburtstag":/urlaub/.test(low)?"urlaub":/(arbeit|arbeite|dienst|schicht)/.test(low)?"arbeit":"termin";
+  let person=typ==="termin"||typ==="geburtstag"?"gemeinsam":"";
+  for(const[k,n] of PEOPLE.slice(0,3)){const re=new RegExp(`(^|[^a-zäöüß])${n.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}([^a-zäöüß]|$)`);if(n.length>1&&re.test(low)&&typ!=="geburtstag"){person=k;t=t.replace(new RegExp(n,"i")," ");break}}
+  if(!person)person=PEOPLE[0][0];
+  let datum="",endDatum="";
+  const {dates,rest}=findDates(t,today);t=rest;
+  if(dates.length){datum=dates[0];if(dates[1]&&dates[1]>dates[0])endDatum=dates[1]}
+  if(!datum){
+    if(/übermorgen/i.test(t)){datum=addDays(today,2);t=t.replace(/übermorgen/ig," ")}
+    else if(/(^|\s)morgen(\s|$)/i.test(t)){datum=addDays(today,1);t=t.replace(/(^|\s)morgen(?=\s|$)/ig," ")}
+    else if(/(^|\s)heute(\s|$)/i.test(t)){datum=today;t=t.replace(/(^|\s)heute(?=\s|$)/ig," ")}
+    const m=t.match(/in (\d+|einer|zwei|drei) (tag|tagen|woche|wochen)/i);
+    if(!datum&&m){const n={einer:1,zwei:2,drei:3}[m[1].toLowerCase()]||+m[1];datum=addDays(today,/woche/i.test(m[2])?7*n:n);t=t.replace(m[0]," ")}
+    const w=t.match(/(?:(nächsten|nächste|kommenden|kommende|diesen|am)\s+)?(sonntag|montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonnabend)/i);
+    if(!datum&&w){const wd=WDN[w[2].toLowerCase()];let diff=(wd-parse(today).getDay()+7)%7;if(diff===0)diff=7;datum=addDays(today,diff);t=t.replace(w[0]," ")}
+  }
+  if(!datum)datum=today;
+  let von="",bis="";
+  const vb=t.match(/(?:von\s+)?(\d{1,2})(?:[:.](\d{2}))?\s*(?:uhr\s*)?(?:bis|-|–)\s*(\d{1,2})(?:[:.](\d{2}))?\s*(?:uhr)?/i);
+  if(vb){von=`${vb[1].padStart(2,"0")}:${vb[2]||"00"}`;bis=`${vb[3].padStart(2,"0")}:${vb[4]||"00"}`;t=t.replace(vb[0]," ")}
+  else{const u=t.match(/(?:um\s+)?(\d{1,2})\s*uhr\s*(\d{1,2})?/i);
+    if(u){von=`${u[1].padStart(2,"0")}:${String(u[2]||"00").padStart(2,"0")}`;t=t.replace(u[0]," ")}
+    else{const ft=findTimes(t);if(ft.times.length){von=ft.times[0];bis=ft.times[1]||"";t=ft.rest}}}
+  const okT=x=>/^([01]\d|2[0-3]):[0-5]\d$/.test(x)?x:"";von=okT(von);bis=okT(bis);
+  let titel=t.replace(/\b(termin|eintragen|bitte|ist|hat|habe|haben|am|um|im|für|fuer|von|bis|uhr|vom|zum|zur|beim|ein|einen|eine|der|die|das|und|neuer|neue|wir|alle|familie|gemeinsam)\b/gi," ")
+    .replace(/\b(geburtstag|urlaub|arbeit|arbeite|dienst|schicht)\b/gi,m=>typ==="arbeit"&&/dienst|schicht/i.test(m)?m:" ")
+    .replace(/[.,;:!?]+/g," ").replace(/\s{2,}/g," ").trim();
+  titel=titel?titel[0].toUpperCase()+titel.slice(1):"";
+  const o={typ,person,titel,datum,endDatum:typ==="urlaub"?(endDatum||datum):endDatum,von:typ==="urlaub"||typ==="geburtstag"?"":von,bis:typ==="urlaub"||typ==="geburtstag"?"":bis};
+  return o;
+}
+function applyVoice(text){
+  const v=parseVoice(text);
+  openSheet(null,{day:v.datum,person:v.person});
+  Object.assign(draft,v,{tage:[parse(v.datum).getDay()],wdhBis:addDays(v.datum,364)});
+  drawSheet();toast(`Verstanden: „${text}“ – bitte prüfen`);
+}
+
+/* ---------- Bild für den Sperrbildschirm ---------- */
+const WCOL={christin:"#f08aaa",john:"#6fd1c2",robert:"#f0b26b",gemeinsam:"#a99bf2",arbeit:"#c9d4da",urlaub:"#8bd08e",geburtstag:"#ffd27a"};
+function rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
+function fitText(g,txt,max){if(g.measureText(txt).width<=max)return txt;while(txt.length>1&&g.measureText(txt+"…").width>max)txt=txt.slice(0,-1);return txt+"…"}
+function entryLine(e,day){const t=timeTxt(e);return e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?`Arbeit ${t}`:e.typ==="urlaub"?`Urlaub${e.titel?" · "+e.titel:""}`:`${t?t+"  ":""}${e.titel}`}
+function makeWidgetCanvas(){
+  const W=1080,H=2400,c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");
+  const grad=g.createLinearGradient(0,0,0,H);grad.addColorStop(0,"#0b1f29");grad.addColorStop(.45,"#15394b");grad.addColorStop(1,"#0a1a22");g.fillStyle=grad;g.fillRect(0,0,W,H);
+  g.fillStyle="rgba(255,255,255,.05)";for(let i=0;i<4;i++){g.beginPath();g.arc(W*(.15+i*.28),H*.2+(i%2)*120,220,0,7);g.fill()}
+  const F='system-ui,-apple-system,"Segoe UI",Roboto,sans-serif';const d=parse(today);let y=980;
+  g.fillStyle="#a9c4d2";g.font=`600 40px ${F}`;g.fillText("FAMILIENKALENDER",80,y-110);
+  g.fillStyle="#ffffff";g.font=`800 92px ${F}`;g.fillText(WDL[d.getDay()],80,y);
+  g.font=`500 60px ${F}`;g.fillStyle="#dbe9f0";g.fillText(`${d.getDate()}. ${MONL[d.getMonth()]} ${d.getFullYear()}`,80,y+80);
+  const extra=[feierOf(today),ferienOf(today)].filter(Boolean).join(" · ");
+  if(extra){g.font=`600 40px ${F}`;g.fillStyle="#ffd27a";g.fillText(fitText(g,extra,W-160),80,y+145)}
+  y+=extra?210:170;
+  const list=entries.filter(e=>onDay(e,today)).sort(sortE);
+  if(!list.length){g.font=`500 50px ${F}`;g.fillStyle="#dbe9f0";g.fillText("Heute steht nichts an. 🌿",80,y+60);y+=120}
+  const show=list.slice(0,7);
+  for(const e of show){
+    const col=e.typ==="termin"?WCOL[e.person]:WCOL[e.typ];
+    g.fillStyle="rgba(255,255,255,.09)";rr(g,60,y,W-120,126,26);g.fill();
+    g.fillStyle=col;rr(g,60,y,14,126,7);g.fill();
+    g.font=`700 34px ${F}`;g.fillStyle=WCOL[e.person]||col;g.fillText(fitText(g,PNAME[e.person]||"",W-220),106,y+48);
+    g.font=`600 46px ${F}`;g.fillStyle="#ffffff";g.fillText(fitText(g,entryLine(e,today),W-210),106,y+104);
+    y+=146;
+  }
+  if(list.length>show.length){g.font=`600 38px ${F}`;g.fillStyle="#a9c4d2";g.fillText(`+ ${list.length-show.length} weitere`,90,y+30);y+=70}
+  const tm=addDays(today,1),l2=entries.filter(e=>onDay(e,tm)).sort(sortE).slice(0,3);
+  if(y<H-380){g.font=`700 42px ${F}`;g.fillStyle="#a9c4d2";g.fillText("Morgen",80,y+50);y+=80;
+    g.font=`500 40px ${F}`;
+    if(!l2.length){g.fillStyle="#dbe9f0";g.fillText("frei",80,y+30);y+=60}
+    for(const e of l2){if(y>H-200)break;g.fillStyle=e.typ==="termin"?WCOL[e.person]:WCOL[e.typ];g.beginPath();g.arc(96,y+16,12,0,7);g.fill();g.fillStyle="#dbe9f0";g.fillText(fitText(g,`${PNAME[e.person]}: ${entryLine(e,tm)}`,W-200),126,y+30);y+=62}}
+  g.font=`500 30px ${F}`;g.fillStyle="rgba(255,255,255,.45)";g.fillText(`Stand: ${fmt(today)}, ${new Date().toTimeString().slice(0,5)} Uhr`,80,H-130);
+  return c;
+}
+function showWidgetImage(){
+  const c=makeWidgetCanvas();const url=c.toDataURL("image/png");
+  sheet("Bild für den Sperrbildschirm",`<img class="wimg" src="${url}" alt="Vorschau mit den heutigen Terminen">
+    <div class="actions"><button class="btn" id="wShare">Teilen / Als Hintergrund</button><button class="btn ghost" id="wSave">Bild speichern</button></div>
+    <p class="hint">So machst du es zum Sperrbildschirm: Bild speichern, in der Galerie öffnen, über ⋮ „Als Hintergrund festlegen“ und dann „Sperrbildschirm“ wählen. Das Bild aktualisiert sich nicht von selbst. Tipp: jeden Morgen nach dem 6-Uhr-Wecker neu erstellen.</p>
+    <div class="actions"><button class="btn ghost" id="wClose">Schließen</button></div>`);
+  document.getElementById("wClose").onclick=closeSheet;
+  const name=`kalender-${today}.png`;
+  const save=()=>{const a=document.createElement("a");a.href=url;a.download=name;document.body.appendChild(a);a.click();a.remove();toast("Bild gespeichert")};
+  document.getElementById("wSave").onclick=save;
+  document.getElementById("wShare").onclick=()=>c.toBlob(async b=>{
+    try{const f=new File([b],name,{type:"image/png"});if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:"Familienkalender heute"});return}}catch(e){if(e&&e.name==="AbortError")return}
+    save()},"image/png");
+}
+
+/* ---------- Aufgaben & Belohnungssterne ---------- */
+const WIED={einmalig:"Einmalig",taeglich:"Jeden Tag",woechentlich:"Jede Woche"};
+function logFor(t){
+  const ls=taskLogs.filter(l=>l.aufgabe===t.id);
+  if(t.wiederholung==="taeglich")return ls.find(l=>l.datum===today);
+  if(t.wiederholung==="woechentlich")return ls.find(l=>mondayOf(l.datum)===mondayOf(today));
+  return ls[0];
+}
+function starBalance(p){return taskLogs.filter(l=>l.person===p).reduce((a,l)=>a+(+l.sterne||0),0)-redeems.filter(r=>r.person===p).reduce((a,r)=>a+(+r.kosten||0),0)}
+function starWeek(p){const m=mondayOf(today);return taskLogs.filter(l=>l.person===p&&mondayOf(l.datum)===m).reduce((a,l)=>a+(+l.sterne||0),0)}
+let popPerson="";
+function renderStars(){
+  const P=PEOPLE.slice(0,3);
+  const cards=P.map(([k,n])=>`<div class="starcard${popPerson===k?" pop":""}"><span class="nm p-${k}" style="background:none">${esc(n)}</span><span class="big">⭐ ${starBalance(k)}</span><span class="wk">diese Woche +${starWeek(k)}</span></div>`).join("");
+  popPerson="";
+  const vis=tasks.filter(t=>{const l=logFor(t);return !(t.wiederholung==="einmalig"&&l&&l.datum<today)});
+  vis.sort((a,b)=>(!!logFor(a))-(!!logFor(b))||String(a.person).localeCompare(b.person));
+  const tl=vis.map(t=>{const l=logFor(t);return `<div class="task${l?" done":""}"><button class="chk" data-done="${esc(t.id)}" aria-label="${l?"Als nicht erledigt markieren":"Erledigt"}: ${esc(t.titel)}">${l?"✓":""}</button>
+    <button class="tt" data-task="${esc(t.id)}">${esc(t.titel)}<br><span class="meta"><span class="p-${t.person}" style="background:none;font-weight:700">${esc(PNAME[t.person]||"")}</span> · ${WIED[t.wiederholung]||"Einmalig"}</span></button>
+    <span class="st">${"⭐".repeat(Math.min(+t.sterne||1,5))}</span></div>`}).join("");
+  const rws=rewards.slice().sort((a,b)=>(+a.kosten)-(+b.kosten)).map(r=>`<div class="rw"><div class="rw-head"><b>${esc(r.titel)}</b><span class="st" style="color:var(--star);font-weight:700">${+r.kosten} ⭐</span></div>
+    <div class="rw-btns">${P.map(([k,n])=>`<button data-redeem="${esc(r.id)}" data-who="${k}" ${starBalance(k)>=+r.kosten?"":"disabled"}>Einlösen für ${esc(n)}</button>`).join("")}<button data-rwedit="${esc(r.id)}">Bearbeiten</button></div></div>`).join("");
+  const last=redeems.slice().sort((a,b)=>a.datum<b.datum?1:-1).slice(0,5).map(r=>`<li>${fmt(r.datum)}: ${esc(PNAME[r.person]||"")} hat „${esc(r.titel)}“ eingelöst (−${+r.kosten} ⭐)</li>`).join("");
+  document.getElementById("vOther").innerHTML=`<div class="starcards">${cards}</div>
+    <div class="actions"><button class="btn" id="tAdd">+ Aufgabe</button><button class="btn ghost" id="rAdd">+ Belohnung</button></div>
+    <h3 class="sec">Aufgaben</h3>
+    <div class="tasklist">${tl||'<p class="hint">Noch keine Aufgaben. Leg zum Beispiel „Zimmer aufräumen“ für John mit 2 Sternen an. Wer eine Aufgabe erledigt, tippt auf den Kreis und bekommt die Sterne.</p>'}</div>
+    <h3 class="sec">Belohnungen</h3>
+    <div class="tasklist">${rws||'<p class="hint">Noch keine Belohnungen. Zum Beispiel: „30 Minuten länger aufbleiben“ für 10 Sterne oder „Kinobesuch“ für 40 Sterne.</p>'}</div>
+    ${last?`<h3 class="sec">Zuletzt eingelöst</h3><ul class="hint" style="margin:0;padding-left:18px">${last}</ul>`:""}`;
+  document.getElementById("tAdd").onclick=()=>openTaskSheet(null);
+  document.getElementById("rAdd").onclick=()=>openRewardSheet(null);
+}
+document.getElementById("vOther").addEventListener("click",async ev=>{
+  if(view!=="sterne")return;
+  const dn=ev.target.closest("[data-done]");
+  if(dn){const t=tasks.find(x=>x.id===dn.dataset.done);if(!t||!store)return;const l=logFor(t);
+    if(l){if(!await askConfirm(`Erledigt zurücknehmen? ${PNAME[t.person]} verliert dafür ${+l.sterne||1} ⭐.`,"Zurücknehmen"))return;await store.del(l.id);toast("Zurückgenommen")}
+    else{await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:+t.sterne||1,datum:today,titel:t.titel});popPerson=t.person;render();toast(`⭐ +${+t.sterne||1} für ${PNAME[t.person]}!`)}
+    return}
+  const tk=ev.target.closest("[data-task]");if(tk){openTaskSheet(tasks.find(x=>x.id===tk.dataset.task));return}
+  const re=ev.target.closest("[data-redeem]");
+  if(re){const r=rewards.find(x=>x.id===re.dataset.redeem),p=re.dataset.who;if(!r)return;
+    if(!await askConfirm(`„${r.titel}“ für ${PNAME[p]} einlösen? Dafür werden ${+r.kosten} ⭐ abgezogen.`,"Einlösen",false))return;
+    await store.add({typ:"einloesung",person:p,kosten:+r.kosten,titel:r.titel,datum:today});toast(`🎉 ${PNAME[p]} hat „${r.titel}“ eingelöst`);return}
+  const rw=ev.target.closest("[data-rwedit]");if(rw){openRewardSheet(rewards.find(x=>x.id===rw.dataset.rwedit))}
+});
+function openTaskSheet(t){
+  const d=t?{...t}:{titel:"",person:PEOPLE[2][0],sterne:2,wiederholung:"einmalig"};let sure=false;
+  const draw=()=>{sheet(t?"Aufgabe bearbeiten":"Neue Aufgabe",`
+    <label class="f">Was ist zu tun?<input id="tTit" value="${esc(d.titel)}" placeholder="z. B. Zimmer aufräumen, Hausaufgaben"></label>
+    <span class="lbl-s">Für wen?</span>
+    <div class="seg" style="--n:3">${PEOPLE.slice(0,3).map(([k,n])=>`<button class="p-${k}" data-tp="${k}" aria-pressed="${d.person===k}">${esc(n)}</button>`).join("")}</div>
+    <span class="lbl-s">Sterne als Belohnung</span>
+    <div class="seg" style="--n:5">${[1,2,3,4,5].map(n=>`<button class="typ" data-ts="${n}" aria-pressed="${+d.sterne===n}">${n} ⭐</button>`).join("")}</div>
+    <span class="lbl-s">Wie oft?</span>
+    <div class="seg" style="--n:3">${Object.entries(WIED).map(([k,n])=>`<button class="typ" data-tw="${k}" aria-pressed="${d.wiederholung===k}">${n}</button>`).join("")}</div>
+    <div class="actions"><button class="btn" id="tSave">${t?"Speichern":"Aufgabe anlegen"}</button><button class="btn ghost" id="tCancel">Abbrechen</button></div>
+    ${t?`<button class="btn danger" id="tDel">Aufgabe löschen</button><p class="hint">Bereits verdiente Sterne bleiben erhalten.</p>`:""}`);
+    const $=id=>document.getElementById(id);const rd=()=>{d.titel=$("tTit").value.trim()};
+    document.querySelectorAll("[data-tp]").forEach(b=>b.onclick=()=>{rd();d.person=b.dataset.tp;draw()});
+    document.querySelectorAll("[data-ts]").forEach(b=>b.onclick=()=>{rd();d.sterne=+b.dataset.ts;draw()});
+    document.querySelectorAll("[data-tw]").forEach(b=>b.onclick=()=>{rd();d.wiederholung=b.dataset.tw;draw()});
+    $("tCancel").onclick=closeSheet;
+    $("tSave").onclick=async()=>{rd();if(!d.titel){toast("Bitte eintragen, was zu tun ist");return}if(!store)return;
+      const o={typ:"aufgabe",titel:d.titel.slice(0,120),person:d.person,sterne:+d.sterne||1,wiederholung:d.wiederholung,erstellt:d.erstellt||today};
+      closeSheet();if(t)await store.set(t.id,o);else await store.add(o);toast(t?"Gespeichert":"Aufgabe angelegt")};
+    if($("tDel"))$("tDel").onclick=async()=>{rd();if(!await askConfirm(`Aufgabe „${t.titel}“ wirklich löschen?`))return;closeSheet();await store.del(t.id);toast("Aufgabe gelöscht")};
+  };draw();
+}
+function openRewardSheet(r){
+  const d=r?{...r}:{titel:"",kosten:10};let sure=false;
+  const draw=()=>{sheet(r?"Belohnung bearbeiten":"Neue Belohnung",`
+    <label class="f">Belohnung<input id="rTit" value="${esc(d.titel)}" placeholder="z. B. Kinobesuch, Pizza-Abend"></label>
+    <label class="f">Kostet so viele Sterne<input id="rCost" type="number" inputmode="numeric" min="1" max="999" value="${+d.kosten||10}"></label>
+    <div class="actions"><button class="btn" id="rSave">${r?"Speichern":"Belohnung anlegen"}</button><button class="btn ghost" id="rCancel">Abbrechen</button></div>
+    ${r?`<button class="btn danger" id="rDel">Belohnung löschen</button>`:""}`);
+    const $=id=>document.getElementById(id);
+    $("rCancel").onclick=closeSheet;
+    $("rSave").onclick=async()=>{const ti=$("rTit").value.trim(),k=Math.max(1,Math.min(999,parseInt($("rCost").value,10)||0));if(!ti){toast("Bitte eine Belohnung eintragen");return}if(!store)return;
+      closeSheet();const o={typ:"belohnung",titel:ti.slice(0,120),kosten:k};if(r)await store.set(r.id,o);else await store.add(o);toast("Gespeichert")};
+    if($("rDel"))$("rDel").onclick=async()=>{d.titel=$("rTit").value;d.kosten=$("rCost").value;if(!await askConfirm(`Belohnung „${r.titel}“ wirklich löschen?`))return;closeSheet();await store.del(r.id);toast("Belohnung gelöscht")};
+  };draw();
+}
+
+/* ---------- Nur-Lese-Links ---------- */
+let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
+async function ensureMember(cfg){
+  if(memberOK)return true;
+  try{
+    if(!firebase.auth)throw{code:"no-auth"};
+    const a=firebase.auth();
+    if(!a.currentUser)await a.signInAnonymously();
+    await FS.doc(`familien/${cfg.code}/mitglieder/${a.currentUser.uid}`).set({seit:today},{merge:true});
+    memberOK=true;scheduleMirror();return true;
+  }catch(e){memberOK=false;memberErr=e&&e.code||"";console.warn("Mitglied",e);return false}
+}
+function mirrorData(l){
+  const sp=l.spalten||[];
+  return entries.filter(e=>sp.includes(e.person)).map(e=>{const o={typ:e.typ,person:e.person,titel:e.titel||"",datum:e.datum};
+    if(e.endDatum)o.endDatum=e.endDatum;if(e.von)o.von=e.von;if(e.bis)o.bis=e.bis;if(e.geburtsjahr)o.geburtsjahr=e.geburtsjahr;return o})
+    .sort((a,b)=>(a.datum+a.person+(a.von||"")+a.titel)<(b.datum+b.person+(b.von||"")+b.titel)?-1:1);
+}
+function scheduleMirror(){clearTimeout(mirrorTimer);mirrorTimer=setTimeout(syncMirrors,2500)}
+async function syncMirrors(){
+  if(!memberOK||!FS||!LESE.length)return;
+  for(const l of LESE){
+    const body={namen:SLOTS.map((k,i)=>(l.spalten||[]).includes(k)?NAMES[i]:""),spalten:l.spalten,name:l.name||"",eintraege:mirrorData(l)};
+    const key=JSON.stringify(body);let last="";try{last=localStorage.getItem("fk-mirror-"+l.rc)||""}catch(e){}
+    if(key===last)continue;
+    try{await FS.doc(`lesen/${l.rc}`).set({...body,stand:new Date().toISOString()});try{localStorage.setItem("fk-mirror-"+l.rc,key)}catch(e){}}catch(e){console.warn("Spiegel",e)}
+  }
+}
+async function createReadLink(name,spalten){
+  const cfg=getCfg();if(!await ensureMember(cfg)){showAuthHelp();return}
+  const rc=newCode();
+  try{
+    await FS.doc(`leselinks/${rc}`).set({fam:cfg.code});
+    const neu=[...LESE.filter(l=>l.rc!==rc),{rc,name,spalten}];
+    await store.conf({lesen:neu});LESE=neu;
+    await FS.doc(`lesen/${rc}`).set({namen:SLOTS.map((k,i)=>spalten.includes(k)?NAMES[i]:""),spalten,name,eintraege:mirrorData({spalten}),stand:new Date().toISOString()});
+    toast("Nur-Lese-Link erstellt");showSettings();
+  }catch(e){console.warn(e);showAuthHelp()}
+}
+async function removeReadLink(rc){
+  const l=LESE.find(x=>x.rc===rc);
+  if(!await askConfirm(`Nur-Lese-Link${l&&l.name?" für "+l.name:""} löschen? Wer ihn hat, sieht danach nichts mehr.`,"Link löschen"))return;
+  try{await FS.doc(`lesen/${rc}`).delete()}catch(e){}
+  try{await FS.doc(`leselinks/${rc}`).delete()}catch(e){}
+  LESE=LESE.filter(x=>x.rc!==rc);await store.conf({lesen:LESE});toast("Link gelöscht");showSettings();
+}
+// Nur-Lese-Links laufen über eine neutrale Adresse (ohne Namen in der URL)
+const READER_BASE="https://termine-john.github.io/kalender/";
+const IS_READER_SITE=location.hostname==="termine-john.github.io";
+const readLink=rc=>READER_BASE+"#lesen="+rc;
+function showAuthHelp(){
+  sheet("Einmalig in Firebase einschalten",`<p>Für Nur-Lese-Links muss in deinem Firebase-Projekt einmal die <b>anonyme Anmeldung</b> eingeschaltet und die Regeln erweitert werden. Das dauert 2 Minuten:</p>
+    <ol class="steps"><li>console.firebase.google.com → Projekt <b>familienkalender</b></li>
+    <li>Links <b>Sicherheit → Authentication</b> → „Jetzt starten“ → Reiter <b>Anmeldemethode</b> → <b>Anonym</b> → aktivieren → Speichern</li>
+    <li><b>Firestore → Regeln</b>: den Text aus der Datei <b>firestore.rules</b> im GitHub-Projekt einfügen → Veröffentlichen</li>
+    <li>App neu laden und nochmal versuchen</li></ol>
+    <p class="hint">Fehlercode: ${esc(memberErr||"unbekannt")}</p>
+    <div class="actions"><button class="btn ghost" id="ahClose">Schließen</button></div>`);
+  document.getElementById("ahClose").onclick=closeSheet;
+}
+function readLinkSection(){
+  const rows=LESE.map(l=>`<div class="rw"><div class="rw-head"><b>${esc(l.name||"Nur-Lese-Link")}</b><span class="hint">sieht: ${(l.spalten||[]).map(k=>esc(PNAME[k]||k)).join(", ")}</span></div>
+    <div class="linkbox">${esc(readLink(l.rc))}</div>
+    <div class="rw-btns"><button data-rlcopy="${l.rc}">Link kopieren</button><a class="btn ghost" style="padding:7px 10px;font-size:.82rem;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent("Hier siehst du unsere Termine: "+readLink(l.rc))}">Per WhatsApp</a><button data-rldel="${l.rc}">Link löschen</button></div></div>`).join("");
+  return `<h4 class="sub">Nur-Lese-Links (z. B. für Papa)</h4>
+    <p class="hint">Wer diesen Link öffnet, kann die ausgewählten Spalten <b>nur ansehen</b>, nichts ändern und nichts von den anderen Spalten sehen. Änderungen erscheinen bei ihm automatisch, sobald ein Familien-Handy die App geöffnet hat.</p>
+    ${rows}
+    <div class="rw"><label class="f">Für wen?<input id="rlName" maxlength="30" placeholder="z. B. Papa von John"></label>
+      <span class="lbl-s">Welche Spalten darf er sehen?</span>
+      <div class="rw-btns">${PEOPLE.map(([k,n])=>`<label class="pick"><input type="checkbox" data-rlsp="${k}" ${k==="john"?"checked":""}> ${esc(n)}</label>`).join("")}</div>
+      <button class="btn ghost" id="rlNew">Nur-Lese-Link erstellen</button></div>`;
+}
+function wireReadLinks(){
+  const n=document.getElementById("rlNew");
+  if(n)n.onclick=()=>{const sp=[...document.querySelectorAll("[data-rlsp]")].filter(x=>x.checked).map(x=>x.dataset.rlsp);if(!sp.length){toast("Bitte mindestens eine Spalte auswählen");return}createReadLink(document.getElementById("rlName").value.trim(),sp)};
+  document.querySelectorAll("[data-rlcopy]").forEach(b=>b.onclick=async()=>{try{await navigator.clipboard.writeText(readLink(b.dataset.rlcopy));toast("Link kopiert")}catch(e){toast("Bitte den Link markieren und kopieren")}});
+  document.querySelectorAll("[data-rldel]").forEach(b=>b.onclick=()=>removeReadLink(b.dataset.rldel));
+}
+/* Lesemodus (für Papa) */
+let READONLY=false;
+function startReader(cfg){
+  READONLY=true;document.body.classList.add("ro");
+  if(view==="sterne")view="woche";
+  store=null;setStatus("Nur ansehen · lade Termine …");
+  if(!window.firebase){setStatus("Keine Verbindung. Bitte später erneut öffnen.");return}
+  try{
+    const app=firebase.apps.length?firebase.app():firebase.initializeApp(cfg.firebase||DEFAULT_FIREBASE);
+    const fs=firebase.firestore(app);
+    fs.doc(`lesen/${cfg.lesen}`).onSnapshot(doc=>{
+      if(!doc.exists){entries=[];render();setStatus("Dieser Link ist nicht mehr gültig.");return}
+      const d=doc.data();if(Array.isArray(d.namen))applyNames(d.namen);
+      const sp=Array.isArray(d.spalten)&&d.spalten.length?d.spalten:PEOPLE.map(([k])=>k);
+      PEOPLE=PEOPLE.filter(([k])=>sp.includes(k));
+      document.documentElement.style.setProperty("--ncol",String(PEOPLE.length));
+      const h1=document.querySelector("h1");if(h1)h1.textContent=PEOPLE.length===1?`Termine von ${PEOPLE[0][1]}`:"Familienkalender";
+      const lg=document.querySelector(".legend");if(lg)lg.innerHTML=PEOPLE.map(([k,n])=>`<div class="p-${k}">${esc(n)}</div>`).join("");
+      entries=(d.eintraege||[]).map((e,i)=>({...e,id:"r"+i}));
+      const st=d.stand?new Date(d.stand):null;
+      setStatus(`Nur ansehen${d.name?" · "+d.name:""}${st?" · Stand "+st.toLocaleDateString("de-DE")+" "+st.toTimeString().slice(0,5):""}`);
+      render();
+    },()=>setStatus("Termine konnten nicht geladen werden."));
+  }catch(e){setStatus("Termine konnten nicht geladen werden.")}
+}
+
+/* ---------- Rückfrage-Dialog ---------- */
+function askConfirm(text,ok="Löschen",danger=true){
+  return new Promise(res=>{
+    const host=document.createElement("div");host.className="cbackdrop";
+    host.innerHTML=`<div class="cdialog" role="alertdialog" aria-modal="true" aria-labelledby="cdT"><p id="cdT">${esc(text)}</p>
+      <div class="actions"><button class="btn ghost" data-a="0">Abbrechen</button><button class="btn ${danger?"danger solid":""}" data-a="1">${esc(ok)}</button></div></div>`;
+    document.body.appendChild(host);
+    const done=v=>{host.remove();document.removeEventListener("keydown",kd);res(v)};
+    const kd=ev=>{if(ev.key==="Escape")done(false)};document.addEventListener("keydown",kd);
+    host.onclick=ev=>{const b=ev.target.closest("[data-a]");if(b)done(b.dataset.a==="1");else if(ev.target===host)done(false)};
+    setTimeout(()=>{const b=host.querySelector('[data-a="0"]');if(b)b.focus()},30);
+  });
+}
+function calNr(){const c=getCfg();return c&&c.code?c.code.slice(0,4).toUpperCase():"–"}
+function joinFromText(t){const m=String(t||"").match(/#join=([^\s&]+)/);const v=m?m[1]:String(t||"").trim().toLowerCase();
+  if(!/^[a-z2-9]{18,}$/.test(v)&&!m){toast("Das ist kein gültiger Einladungslink");return}
+  location.hash="join="+v;location.reload()}
+function joinBox(){return `<label class="f">Einladungslink einfügen<input id="joinIn" placeholder="https://…/familienkalender/#join=…"></label><button class="btn ghost" id="joinGo">Mit diesem Kalender verbinden</button>`}
+function wireJoin(){const b=document.getElementById("joinGo");if(b)b.onclick=()=>joinFromText(document.getElementById("joinIn").value)}
+function setStatus(t){document.getElementById("status").textContent=t}
+function toast(t){const h=document.getElementById("toastHost");h.innerHTML=`<div class="toast">${esc(t)}</div>`;clearTimeout(toast.t);toast.t=setTimeout(()=>h.innerHTML="",2600)}
+
+/* ---------- Anzeige ---------- */
+const isLeap=y=>(y%4===0&&y%100!==0)||y%400===0;
+function bdayIn(e,y){const md=e.datum.slice(5);if(md==="02-29"&&!isLeap(y))return `${y}-02-28`;return `${y}-${md}`}
+function onDay(e,day){
+  if(e.typ==="geburtstag")return bdayIn(e,+day.slice(0,4))===day;
+  const end=e.endDatum&&e.endDatum>=e.datum?e.endDatum:e.datum;return e.datum<=day&&day<=end}
+function ageOn(e,day){const j=+e.geburtsjahr;return j>1900&&j<=+day.slice(0,4)?(+day.slice(0,4))-j:0}
+function bdayLabel(e,day){const a=ageOn(e,day);return `🎂 ${e.titel}${a?` wird ${a}`:""}`}
+const ORDER={geburtstag:-1,urlaub:0,arbeit:1,termin:2};
+function sortE(a,b){return(ORDER[a.typ]-ORDER[b.typ])||((a.von||"99")<(b.von||"99")?-1:(a.von||"99")>(b.von||"99")?1:0)}
+function timeTxt(e){if(e.typ==="urlaub")return"";if(e.von&&e.bis)return`${e.von}–${e.bis}`;if(e.von)return e.von;return""}
+function chipHTML(e,day){
+  const multi=e.endDatum&&e.endDatum>e.datum;
+  const t=timeTxt(e);
+  let label=e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?(e.titel||"Arbeit"):e.typ==="urlaub"?(e.titel?`Urlaub · ${e.titel}`:"Urlaub"):e.titel;
+  const range=multi&&e.typ!=="geburtstag"?` <span class="rep">(${fmt(e.datum).slice(3)}–${fmt(e.endDatum).slice(3)})</span>`:"";
+  const rep=e.serie?` <span class="rep">↻</span>`:"";
+  return `<button class="chip ${e.typ} ${e.person}" data-id="${esc(e.id)}">${t?`<span class="t">${t}</span>`:""}<span class="chip-label">${esc(label)}</span>${range}${rep}</button>`;
+}
+/* ---------- Ferien & Feiertage Berlin ---------- */
+// Quelle: Ferienordnung Berlin (Senatsverwaltung für Bildung), Stand Nov. 2026
+const FERIEN=[
+["Winterferien","2026-02-02","2026-02-07"],["Osterferien","2026-03-30","2026-04-10"],["Unterrichtsfreier Tag","2026-05-15","2026-05-15"],["Pfingstferien","2026-05-26","2026-05-26"],["Sommerferien","2026-07-09","2026-08-22"],["Herbstferien","2026-10-19","2026-10-31"],["Weihnachtsferien","2026-12-23","2027-01-02"],
+["Winterferien","2027-02-01","2027-02-06"],["Osterferien","2027-03-22","2027-04-02"],["Unterrichtsfreier Tag","2027-05-07","2027-05-07"],["Pfingstferien","2027-05-18","2027-05-19"],["Sommerferien","2027-07-01","2027-08-14"],["Herbstferien","2027-10-11","2027-10-23"],["Weihnachtsferien","2027-12-22","2027-12-31"],
+["Winterferien","2028-01-31","2028-02-05"],["Osterferien","2028-04-10","2028-04-22"],["Unterrichtsfreier Tag","2028-05-26","2028-05-26"],["Pfingstferien","2028-06-01","2028-06-02"],["Sommerferien","2028-07-01","2028-08-12"],["Herbstferien","2028-10-02","2028-10-14"],["Weihnachtsferien","2028-12-22","2029-01-02"]];
+function easter(y){const a=y%19,b=Math.floor(y/100),c=y%100,d=Math.floor(b/4),e=b%4,f=Math.floor((b+8)/25),g=Math.floor((b-f+1)/3),h=(19*a+b-d-g+15)%30,i=Math.floor(c/4),k=c%4,l=(32+2*e+2*i-h-k)%7,m=Math.floor((a+11*h+22*l)/451),mo=Math.floor((h+l-7*m+114)/31),da=((h+l-7*m+114)%31)+1;return iso(new Date(y,mo-1,da))}
+const _feierCache={};
+function feiertage(y){
+  if(_feierCache[y])return _feierCache[y];
+  const o=easter(y),f={};
+  f[`${y}-01-01`]="Neujahr";f[`${y}-03-08`]="Frauentag";f[addDays(o,-2)]="Karfreitag";f[addDays(o,1)]="Ostermontag";
+  f[`${y}-05-01`]="Tag der Arbeit";f[addDays(o,39)]="Himmelfahrt";f[addDays(o,50)]="Pfingstmontag";
+  f[`${y}-10-03`]="Tag der Deutschen Einheit";f[`${y}-12-25`]="1. Weihnachtstag";f[`${y}-12-26`]="2. Weihnachtstag";
+  if(y===2028)f["2028-06-17"]="Jahrestag 17. Juni 1953";
+  return _feierCache[y]=f;
+}
+const feierOf=day=>feiertage(+day.slice(0,4))[day]||"";
+const ferienOf=day=>{const f=FERIEN.find(([n,a,b])=>a<=day&&day<=b);return f?f[0]:""};
+
+/* ---------- Ansichten ---------- */
+let view="woche";try{view=localStorage.getItem("fk-view")||"woche"}catch(e){}
+let monthCur=iso(new Date()).slice(0,7)+"-01",yearCur=new Date().getFullYear();
+const MONL=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
+function setView(v){if(READONLY&&v==="sterne")v="woche";view=v;try{localStorage.setItem("fk-view",v)}catch(e){}render();window.scrollTo({top:0})}
+function render(){
+  today=iso(new Date());
+  document.querySelectorAll(".tabs [data-view]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.view===view)));
+  document.getElementById("vWoche").hidden=view!=="woche";
+  document.getElementById("vOther").hidden=view==="woche";
+  document.getElementById("navbar").hidden=view==="ferien"||view==="sterne";
+  if(view==="monat")renderMonth();else if(view==="jahr")renderYear();else if(view==="ferien")renderFerien();else if(view==="sterne")renderStars();else renderWeek();
+  renderMorning();
+}
+function renderMonth(){
+  const m0=parse(monthCur);const y=m0.getFullYear(),m=m0.getMonth();
+  document.getElementById("weekLbl").textContent=`${MONL[m]} ${y}`;
+  let start=mondayOf(monthCur);const last=iso(new Date(y,m+1,0));const end=addDays(mondayOf(last),6);
+  let h=`<div class="mgrid">${["Mo","Di","Mi","Do","Fr","Sa","So"].map(d=>`<div class="mhead">${d}</div>`).join("")}`;
+  for(let day=start;day<=end;day=addDays(day,1)){
+    const d=parse(day),fe=feierOf(day),fr=ferienOf(day);
+    const list=entries.filter(e=>onDay(e,day)).sort(sortE);
+    const bars=list.slice(0,3).map(e=>{const cls=e.typ==="termin"?e.person:e.typ;const t=e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?`${PNAME[e.person][0]} ${e.von||"Arbeit"}`:e.typ==="urlaub"?`${PNAME[e.person]} Urlaub`:`${e.von?e.von+" ":""}${e.titel}`;return `<div class="mbar ${cls}">${esc(t)}</div>`}).join("");
+    h+=`<button class="mcell${d.getMonth()!==m?" out":""}${fr?" fer":""}${fe?" feier":""}${day===today?" today":""}" data-goday="${day}" aria-label="${fmt(day)}${fe?", "+fe:""}${fr?", "+fr:""}, ${list.length} Einträge"><span class="n">${d.getDate()}</span>${fe?`<span class="fname">${esc(fe)}</span>`:""}${bars}${list.length>3?`<span class="more">+${list.length-3} mehr</span>`:""}</button>`;
+  }
+  h+=`</div><div class="key"><span><i style="background:var(--fer)"></i>Schulferien Berlin</span><span style="color:var(--feier);font-weight:600">Feiertag</span><span>Tippe auf einen Tag für die Wochenansicht</span></div>`;
+  document.getElementById("vOther").innerHTML=h;
+}
+function renderYear(){
+  const y=yearCur;document.getElementById("weekLbl").textContent=String(y);
+  const busy={};
+  for(const e of entries){if(e.typ==="geburtstag"){const b=bdayIn(e,y);(busy[b]||(busy[b]=new Set())).add(e.person);continue}let d=e.datum;const end=e.endDatum&&e.endDatum>e.datum?e.endDatum:e.datum;let n=0;while(d<=end&&n<400){if(d.startsWith(String(y))){(busy[d]||(busy[d]=new Set())).add(e.person)}d=addDays(d,1);n++}}
+  let h=`<div class="ygrid">`;
+  for(let m=0;m<12;m++){
+    const first=iso(new Date(y,m,1));const off=(parse(first).getDay()+6)%7;const dim=new Date(y,m+1,0).getDate();
+    let cells=["M","D","M","D","F","S","S"].map(x=>`<span class="h">${x}</span>`).join("")+"<span></span>".repeat(off);
+    for(let i=1;i<=dim;i++){const day=iso(new Date(y,m,i));const c=[ferienOf(day)?"fer":"",feierOf(day)?"feier":"",day===today?"today":"",""].filter(Boolean).join(" ");
+      const ps=busy[day]?PEOPLE.map(([k])=>k).filter(k=>busy[day].has(k)):[];
+      cells+=`<span class="${c}"${feierOf(day)?` title="${esc(feierOf(day))}"`:""}>${i}<span class="pd">${ps.map(k=>`<i class="${k}"></i>`).join("")}</span></span>`}
+    h+=`<button class="ymon" data-gomonth="${first}" aria-label="${MONL[m]} ${y} öffnen"><h4>${MONL[m]}</h4><div class="ydays">${cells}</div></button>`;
+  }
+  h+=`</div><div class="key"><span><i style="background:var(--fer)"></i>Schulferien</span><span style="color:var(--feier);font-weight:700">Feiertag</span>${PEOPLE.map(([k,n])=>`<span><span class="kd ${k}"></span>${n}</span>`).join("")}</div>`;
+  document.getElementById("vOther").innerHTML=h;
+}
+function renderFerien(){
+  const fam=(a,b)=>{const who=[...new Set(entries.filter(e=>e.typ==="urlaub"&&e.datum<=b&&(e.endDatum||e.datum)>=a).map(e=>PNAME[e.person]))];return who.length?`Urlaub eingetragen: ${who.join(", ")}`:""};
+  const range=(a,b)=>a===b?fmt(a)+" "+a.slice(0,4):`${fmt(a)} – ${fmt(b)} ${b.slice(0,4)}`;
+  const rows=FERIEN.filter(([n,a,b])=>b>=today).map(([n,a,b])=>{
+    const now=a<=today;const len=diffDays(a,b)+1;const until=diffDays(today,a);const left=diffDays(today,b);
+    const cd=now?(left===0?"letzter Tag":`noch ${left+1} Tage`):until===1?"morgen":`in ${until} Tagen`;
+    const f=fam(a,b);
+    return `<div class="frow${now?" now":""}"><b>${esc(n)}</b><span class="cd">${now?"läuft · ":""}${cd}</span><span class="when">${range(a,b)} · ${len} ${len===1?"Tag":"Tage"}</span><span></span>${f?`<span class="fam">${esc(f)}</span>`:""}</div>`}).join("");
+  const fts=[];for(let y=+today.slice(0,4);y<=+today.slice(0,4)+1;y++)for(const[d,n] of Object.entries(feiertage(y)))if(d>=today&&d<=addDays(today,365))fts.push([d,n]);
+  fts.sort((a,b)=>a[0]<b[0]?-1:1);
+  const frows=fts.map(([d,n])=>{const u=diffDays(today,d);return `<div class="frow"><b>${esc(n)}</b><span class="cd">${u===0?"heute":u===1?"morgen":`in ${u} Tagen`}</span><span class="when">${WDL[parse(d).getDay()]}, ${fmt(d).slice(3)} ${d.slice(0,4)}</span></div>`}).join("");
+  document.getElementById("vOther").innerHTML=`<h3 class="sec">Schulferien in Berlin</h3><div class="flist">${rows||'<p class="hint">Keine weiteren Ferientermine hinterlegt.</p>'}</div>
+  <p class="hint">Ferientermine laut Ferienordnung des Landes Berlin, hinterlegt bis Januar 2029. Bewegliche Ferientage einzelner Schulen sind nicht enthalten.</p>
+  <h3 class="sec">Feiertage in Berlin (nächste 12 Monate)</h3><div class="flist">${frows}</div>`;
+}
+function renderWeek(){
+  const wEnd=addDays(weekStart,6);
+  const a=parse(weekStart),b=parse(wEnd);
+  const kw=isoWeek(a);
+  document.getElementById("weekLbl").textContent=`KW ${kw} · ${a.getDate()}.${a.getMonth()===b.getMonth()?"":" "+MON[a.getMonth()]+" "}–${b.getDate()}. ${MON[b.getMonth()]}`;
+  let html="";
+  for(let i=0;i<7;i++){
+    const day=addDays(weekStart,i);const d=parse(day);
+    const list=entries.filter(e=>onDay(e,day));
+    const fe=feierOf(day),fr=ferienOf(day);
+    html+=`<article class="day${day===today?" is-today":""}${fr?" is-fer":""}" id="d-${day}"><div class="day-head"><b>${WDL[d.getDay()]}, ${d.getDate()}. ${MON[d.getMonth()]}${fe?`<span class="badge feier">${esc(fe)}</span>`:""}${fr?`<span class="badge fer">${esc(fr)}</span>`:""}</b><span>${day===today?"heute · ":""}${list.length?list.length+(list.length===1?" Eintrag":" Einträge"):"frei"}</span></div><div class="cols">`;
+    for(const[p] of PEOPLE){
+      const cell=list.filter(e=>e.person===p).sort(sortE);
+      html+=`<div class="cell" role="button" tabindex="0" data-day="${day}" data-person="${p}" aria-label="${PNAME[p]}, ${fmt(day)}: Eintrag hinzufügen">${cell.map(e=>chipHTML(e,day)).join("")}<span class="plus" aria-hidden="true">+</span></div>`;
+    }
+    html+=`</div></article>`;
+  }
+  document.getElementById("days").innerHTML=html;
+}
+function isoWeek(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate()));const n=t.getUTCDay()||7;t.setUTCDate(t.getUTCDate()+4-n);const y=new Date(Date.UTC(t.getUTCFullYear(),0,1));return Math.ceil(((t-y)/864e5+1)/7)}
+
+/* ---------- Morgen-Übersicht (bleibt bis "Gelesen") ---------- */
+function ackKey(){return"fk-gelesen-"+today}
+function isAck(){try{return localStorage.getItem(ackKey())==="1"}catch(e){return false}}
+function renderMorning(){
+  const box=document.getElementById("morning");
+  if(isAck()){box.hidden=true;return}
+  const list=entries.filter(e=>onDay(e,today)).sort(sortE);
+  const d=parse(today);
+  document.getElementById("mTitle").textContent=`Heute, ${WDL[d.getDay()]} ${d.getDate()}. ${MON[d.getMonth()]}`;
+  document.getElementById("mList").innerHTML=list.length?list.map(e=>{
+    const t=timeTxt(e);const lbl=e.typ==="geburtstag"?bdayLabel(e,today):e.typ==="arbeit"?`Arbeit ${t}`:e.typ==="urlaub"?"Urlaub":`${t?t+" ":""}${e.titel}`;
+    return `<li><span class="who p-${e.person}" style="background:none">${PNAME[e.person]}</span><span>${esc(lbl)}${e.typ==="arbeit"&&e.titel&&e.titel!=="Arbeit"?" · "+esc(e.titel):""}</span></li>`}).join("")
+    :`<li>Heute steht nichts im Kalender.</li>`;
+  box.hidden=false;
+}
+document.getElementById("mImg").onclick=()=>showWidgetImage();
+if(voiceOK()){document.getElementById("micBtn").hidden=false;document.getElementById("micBtn").onclick=()=>startVoice()}
+document.getElementById("mAck").onclick=()=>{try{localStorage.setItem(ackKey(),"1")}catch(e){}document.getElementById("morning").hidden=true;toast("Als gelesen markiert")};
+
+/* ---------- Eingabe-Sheet ---------- */
+let draft=null,editId=null,confirmDel=false;
+function openSheet(e,preset){
+  editId=e?e.id:null;confirmDel=false;
+  draft=e?{...e}:{typ:"termin",person:preset?.person||"gemeinsam",titel:"",datum:preset?.day||today,endDatum:"",von:"",bis:"",serie:"",intervall:0,wdh:"keine",wdhBis:addDays(preset?.day||today,364)};
+  if(!draft.wdhBis)draft.wdhBis=addDays(draft.datum,364);
+  if(!draft.wdh)draft.wdh="keine";
+  if(!draft.tage)draft.tage=[parse(draft.datum).getDay()];
+  drawSheet();
+}
+function closeSheet(){document.getElementById("sheetHost").innerHTML="";draft=null}
+function drawSheet(){
+  const d=draft;const isEdit=!!editId;
+  const bd=d.typ==="geburtstag";
+  const peopleAllowed=d.typ==="termin"||bd?PEOPLE:PEOPLE.slice(0,3);
+  if(!(d.typ==="termin"||bd)&&d.person==="gemeinsam")d.person="christin";
+  const showTime=d.typ!=="urlaub"&&!bd;
+  const series=isEdit&&d.serie?entries.filter(x=>x.serie===d.serie).length:0;
+  document.getElementById("sheetHost").innerHTML=`
+  <div class="backdrop" id="bd"><div class="sheet" role="dialog" aria-modal="true" aria-label="${isEdit?"Eintrag bearbeiten":"Neuer Eintrag"}">
+    <h3>${isEdit?"Eintrag bearbeiten":"Neuer Eintrag"}</h3>
+    <div class="seg" style="--n:4">${["termin","arbeit","urlaub","geburtstag"].map(t=>`<button class="typ" data-typ="${t}" aria-pressed="${d.typ===t}">${TYPN[t]}</button>`).join("")}</div>
+    ${!isEdit&&voiceOK()?`<button class="btn ghost" id="voiceIn">🎤 Per Sprache ausfüllen</button>`:""}
+    <div class="seg" style="--n:${peopleAllowed.length}">${peopleAllowed.map(([k,n])=>`<button class="p-${k}" data-person="${k}" aria-pressed="${d.person===k}">${n}</button>`).join("")}</div>
+    ${bd?`<p class="hint">In welcher Spalte soll der Geburtstag stehen? Für Verwandte und Freunde passt „Gemeinsam“.</p>`:""}
+    <label class="f">${bd?"Wer hat Geburtstag?":d.typ==="termin"?"Was?":"Notiz (optional)"}<input id="i-titel" value="${esc(d.titel)}" placeholder="${bd?"z. B. Oma Helga":d.typ==="termin"?"z. B. John bei Papa, Zahnarzt …":d.typ==="arbeit"?"z. B. Frühdienst":"z. B. Ostsee"}"></label>
+    ${bd?`<div class="row2"><label class="f">Geburtstag (Tag und Monat)<input type="date" id="i-datum" value="${d.datum}"></label>
+      <label class="f">Geburtsjahr (optional)<input type="number" inputmode="numeric" id="i-jahr" min="1900" max="2100" value="${esc(d.geburtsjahr||"")}" placeholder="z. B. 1956"></label></div>
+      <p class="hint">Kommt jedes Jahr automatisch wieder. Mit Geburtsjahr wird das Alter angezeigt.</p><input type="hidden" id="i-end" value="">`:`<div class="row2">
+      <label class="f">${d.typ==="urlaub"?"Erster Tag":"Datum"}<input type="date" id="i-datum" value="${d.datum}"></label>
+      <label class="f">${d.typ==="urlaub"?"Letzter Tag":"Bis Datum (mehrtägig)"}<input type="date" id="i-end" value="${d.endDatum||""}"></label>
+    </div>`}
+    ${showTime?`<div class="row2">
+      <label class="f">${d.typ==="arbeit"?"Arbeitsbeginn":"Von (optional)"}<input type="time" id="i-von" value="${d.von||""}"></label>
+      <label class="f">${d.typ==="arbeit"?"Arbeitsende":"Bis (optional)"}<input type="time" id="i-bis" value="${d.bis||""}"></label>
+    </div>`:""}
+    ${bd?"":!isEdit?`<div class="box">
+      <span class="lbl-s">Wiederholen</span>
+      <div class="seg" style="--n:3">${[["keine","Einmalig"],["7","Jede Woche"],["14","Alle 2 Wochen"]].map(([v,t])=>`<button class="typ" data-wdh="${v}" aria-pressed="${d.wdh===v}">${t}</button>`).join("")}</div>
+      ${d.wdh!=="keine"?`<span class="lbl-s">An diesen Tagen</span>
+      <div class="wdays">${[1,2,3,4,5,6,0].map(w=>`<button data-wd="${w}" aria-pressed="${d.tage.includes(w)}">${WD[w]}</button>`).join("")}</div>
+      <label class="f">Fortlaufend bis<input type="date" id="i-wdhbis" value="${d.wdhBis}"></label>
+      <p class="hint" id="wdhPrev">${seriesPreview(d)}</p>`:""}
+    </div>`:`<div class="box">
+      ${d.serie?`<p class="hint">Teil einer Serie (${d.intervall===7?"jede Woche":"alle 2 Wochen"}, ${series} Einträge).</p>`:""}
+      <div class="actions"><button class="btn ghost" id="cont7">↻ Jede Woche fortlaufend</button><button class="btn ghost" id="cont14">↻ Alle 2 Wochen fortlaufend</button></div>
+      <p class="hint">Trägt diesen Eintrag ab hier für die nächsten 12 Monate weiter ein. Schon vorhandene Termine der Serie werden nicht doppelt angelegt.</p>
+    </div>`}
+    <div class="actions">
+      <button class="btn" id="save">${isEdit?"Änderungen speichern":"Eintragen"}</button>
+      <button class="btn ghost" id="cancel">Abbrechen</button>
+    </div>
+    ${isEdit?(confirmDel?`<div class="confirm"><b>Wirklich löschen?</b><div class="actions">
+        <button class="btn danger" id="delOne">Nur diesen Eintrag</button>
+        ${d.serie?`<button class="btn danger" id="delSeries">Ganze Serie (${series})</button>`:""}
+        <button class="btn ghost" id="delNo">Nein</button></div></div>`
+      :`<button class="btn danger" id="del">Löschen</button>`):""}
+  </div></div>`;
+  const $=id=>document.getElementById(id);
+  const read=()=>{d.titel=$("i-titel").value.trim();d.datum=$("i-datum").value||d.datum;d.endDatum=$("i-end").value;
+    if($("i-jahr"))d.geburtsjahr=$("i-jahr").value.trim();
+    if($("i-von"))d.von=$("i-von").value;if($("i-bis"))d.bis=$("i-bis").value;
+    if($("i-wdhbis"))d.wdhBis=$("i-wdhbis").value||d.wdhBis;};
+  $("bd").onclick=ev=>{if(ev.target.id==="bd")closeSheet()};
+  document.querySelectorAll(".sheet [data-typ]").forEach(b=>b.onclick=()=>{read();d.typ=b.dataset.typ;if(d.typ==="urlaub"){d.von="";d.bis=""}drawSheet()});
+  document.querySelectorAll(".sheet [data-person]").forEach(b=>b.onclick=()=>{read();d.person=b.dataset.person;drawSheet()});
+  document.querySelectorAll(".sheet [data-wdh]").forEach(b=>b.onclick=()=>{read();d.wdh=b.dataset.wdh;if(d.wdh!=="keine"&&!d.tage.length)d.tage=[parse(d.datum).getDay()];drawSheet()});
+  document.querySelectorAll(".sheet [data-wd]").forEach(b=>b.onclick=()=>{read();const w=+b.dataset.wd;d.tage=d.tage.includes(w)?d.tage.filter(x=>x!==w):[...d.tage,w];drawSheet()});
+  if($("i-wdhbis"))$("i-wdhbis").onchange=()=>{read();const p=$("wdhPrev");if(p)p.textContent=seriesPreview(d)};
+  if($("i-datum"))$("i-datum").addEventListener("change",()=>{read();const p=$("wdhPrev");if(p)p.textContent=seriesPreview(d)});
+  $("cancel").onclick=closeSheet;
+  if($("voiceIn"))$("voiceIn").onclick=()=>startVoice();
+  $("save").onclick=()=>{read();save()};
+  if($("cont7"))$("cont7").onclick=()=>{read();continueSeries(7)};
+  if($("cont14"))$("cont14").onclick=()=>{read();continueSeries(14)};
+  if($("del"))$("del").onclick=async()=>{read();
+    if(d.serie&&series>1){confirmDel=true;drawSheet();return}
+    if(await askConfirm(`„${d.typ==="geburtstag"?"Geburtstag "+d.titel:d.titel||TYPN[d.typ]}“ wirklich löschen?`)){await store.del(editId);closeSheet();toast("Gelöscht")}};
+  if($("delNo"))$("delNo").onclick=()=>{confirmDel=false;drawSheet()};
+  if($("delOne"))$("delOne").onclick=async()=>{if(!await askConfirm("Nur diesen einen Eintrag löschen?"))return;await store.del(editId);closeSheet();toast("Gelöscht")};
+  if($("delSeries"))$("delSeries").onclick=async()=>{const ids=entries.filter(x=>x.serie===d.serie).map(x=>x.id);if(!await askConfirm(`Wirklich die ganze Serie mit ${ids.length} Einträgen löschen?`,"Serie löschen"))return;closeSheet();for(const id of ids)await store.del(id);toast(`${ids.length} Einträge gelöscht`)};
+}
+function clean(d){
+  const o={typ:d.typ,person:d.person,titel:d.titel||"",datum:d.datum,endDatum:(d.endDatum&&d.endDatum>d.datum)?d.endDatum:"",
+    von:d.typ==="urlaub"?"":(d.von||""),bis:d.typ==="urlaub"?"":(d.bis||""),serie:d.serie||"",intervall:d.intervall||0};
+  if(d.typ==="geburtstag"){o.endDatum="";o.von="";o.bis="";o.serie="";o.intervall=0;o.geburtsjahr=String(d.geburtsjahr||"").replace(/\D/g,"").slice(0,4)}
+  return o;
+}
+function validate(d){
+  if(!store){toast("Speicher wird noch geladen …");return false}
+  if(d.typ==="termin"&&!d.titel){toast("Bitte eintragen, was ansteht");return false}
+  if(d.typ==="geburtstag"&&!d.titel){toast("Bitte eintragen, wer Geburtstag hat");return false}
+  if(d.typ==="geburtstag")d.wdh="keine";
+  if(d.typ==="arbeit"&&(!d.von||!d.bis)){toast("Bitte Arbeitsbeginn und -ende angeben");return false}
+  if(d.typ==="urlaub"&&!d.endDatum){d.endDatum=d.datum}
+  return true;
+}
+async function save(){
+  const d=draft;if(!validate(d))return;
+  if(editId){await store.set(editId,clean(d));closeSheet();toast("Gespeichert");return}
+  if(d.wdh==="keine"){await store.add(clean(d));closeSheet();weekStart=mondayOf(d.datum);render();toast("Eingetragen");return}
+  if(!d.tage.length){toast("Bitte mindestens einen Wochentag wählen");return}
+  const step=Number(d.wdh);const serie="s"+Date.now().toString(36);
+  const span=d.endDatum&&d.endDatum>d.datum?diffDays(d.datum,d.endDatum):0;
+  const dates=seriesDates(d);
+  if(!dates.length){toast("Im gewählten Zeitraum liegt kein passender Tag");return}
+  const base=clean({...d,serie,intervall:step});
+  closeSheet();
+  for(const s of dates)await store.add({...base,datum:s,endDatum:span?addDays(s,span):""});
+  weekStart=mondayOf(dates[0]);render();toast(`${dates.length} Einträge angelegt`);
+}
+const MAX_SERIE=300;
+function seriesDates(d){
+  const step=Number(d.wdh)||7,until=d.wdhBis||addDays(d.datum,364),out=[];
+  for(let wk=mondayOf(d.datum);wk<=until&&out.length<MAX_SERIE;wk=addDays(wk,step))
+    for(const w of [1,2,3,4,5,6,0]){if(!d.tage.includes(w))continue;const day=addDays(wk,(w+6)%7);if(day>=d.datum&&day<=until&&out.length<MAX_SERIE)out.push(day)}
+  return out;
+}
+function seriesPreview(d){
+  if(!d.tage||!d.tage.length)return"Bitte mindestens einen Wochentag wählen.";
+  const n=seriesDates(d).length;const days=[1,2,3,4,5,6,0].filter(w=>d.tage.includes(w)).map(w=>WD[w]).join(", ");
+  return `Ergibt ${n} ${n===1?"Termin":"Termine"}: ${d.wdh==="14"?"alle 2 Wochen":"jede Woche"} am ${days}, bis ${fmt(d.wdhBis)} ${d.wdhBis.slice(0,4)}${n>=MAX_SERIE?" (höchstens "+MAX_SERIE+")":""}.`;
+}
+async function continueSeries(step){
+  const d=draft;if(!validate(d))return;
+  const serie=d.serie||("s"+Date.now().toString(36));
+  const span=d.endDatum&&d.endDatum>d.datum?diffDays(d.datum,d.endDatum):0;
+  await store.set(editId,clean({...d,serie,intervall:step}));
+  const have=new Set(entries.filter(x=>x.serie===serie).map(x=>x.datum));have.add(d.datum);
+  const base=clean({...d,serie,intervall:step});
+  const until=addDays(d.datum,365);closeSheet();let n=0;
+  for(let s=addDays(d.datum,step);s<=until;s=addDays(s,step)){if(have.has(s))continue;await store.add({...base,datum:s,endDatum:span?addDays(s,span):""});n++}
+  toast(n?`${n} weitere Einträge ${step===7?"jede Woche":"alle 2 Wochen"} angelegt`:"Serie ist schon vollständig eingetragen");
+}
+
+/* ---------- Foto-Erkennung ---------- */
+let scanCtl=null,found=[],scanImgUrl="",ocrText="",ocrWorker=null,scanBusy=false;
+const TESS_JS="https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+function initPhoto(){document.getElementById("photoBtn").hidden=false}
+document.getElementById("photoBtn").onclick=()=>document.getElementById("photoIn").click();
+document.getElementById("photoIn").onchange=ev=>{const f=ev.target.files&&ev.target.files[0];ev.target.value="";if(f)scanPhoto(f)};
+
+function loadScript(src){return new Promise((ok,no)=>{if(window.Tesseract)return ok();const s=document.createElement("script");s.src=src;s.onload=ok;s.onerror=()=>no(new Error("script"));document.head.appendChild(s)})}
+let progressCb=null;
+async function getWorker(){
+  if(ocrWorker)return ocrWorker;
+  await loadScript(TESS_JS);
+  ocrWorker=await Tesseract.createWorker("deu",1,{logger:m=>{if(progressCb)progressCb(m)}});
+  return ocrWorker;
+}
+function shrink(file){
+  return new Promise(ok=>{
+    const img=new Image();
+    img.onload=()=>{const max=2000,s=Math.min(1,max/Math.max(img.width,img.height));
+      const c=document.createElement("canvas");c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);
+      const g=c.getContext("2d");g.filter="grayscale(1) contrast(1.3)";g.drawImage(img,0,0,c.width,c.height);ok(c)};
+    img.onerror=()=>ok(null);img.src=scanImgUrl;
+  });
+}
+async function scanPhoto(file){
+  if(scanBusy)return;scanBusy=true;
+  if(scanImgUrl)URL.revokeObjectURL(scanImgUrl);
+  scanImgUrl=URL.createObjectURL(file);
+  found=[];ocrText="";scanCtl={aborted:false};const my=scanCtl;
+  drawScan("laden");setProgress("Texterkennung wird gestartet …");
+  progressCb=m=>{if(m&&typeof m.progress==="number"){const p=Math.round(m.progress*100);
+    setProgress(m.status==="recognizing text"?`Text wird gelesen … ${p} %`:"Texterkennung wird vorbereitet …")}};
+  try{
+    const canvas=await shrink(file);
+    if(!canvas)throw new Error("bild");
+    const w=await getWorker();
+    const {data}=await w.recognize(canvas);
+    if(my.aborted)return;
+    ocrText=(data&&data.text)||"";
+    found=parseOCR(ocrText,today).map(normFound).filter(Boolean);
+    drawScan(found.length?"liste":"leer");
+  }catch(e){
+    if(my.aborted)return;
+    const msg=e&&e.message==="bild"?"Das Bild konnte nicht geöffnet werden. Bitte ein anderes Foto versuchen."
+      :"Die Texterkennung konnte nicht gestartet werden. Bitte Internetverbindung prüfen und nochmal versuchen.";
+    ocrWorker=null;drawScan("fehler",msg);
+  }finally{scanBusy=false;progressCb=null}
+}
+function setProgress(t){const el=document.getElementById("sc-prog");if(el)el.textContent=t}
+
+/* Erkannten Text in Termine zerlegen */
+const MONTHS={jan:1,januar:1,jänner:1,feb:2,februar:2,mär:3,märz:3,maerz:3,mrz:3,apr:4,april:4,mai:5,jun:6,juni:6,jul:7,juli:7,aug:8,august:8,sep:9,sept:9,september:9,okt:10,oktober:10,nov:11,november:11,dez:12,dezember:12};
+const L_="A-Za-zÄÖÜäöüß";const WDRE=new RegExp(`(^|[^${L_}])(montag|dienstag|mittwoch|donnerstag|freitag|samstag|sonnabend|sonntag|mo|di|mi|do|fr|sa|so)\\.?,?(?![${L_}])`,"gi");const FILLRE=new RegExp(`(^|[^${L_}])(uhr|am|um|von|bis|ab|termin|datum|zeit):?(?![${L_}])`,"gi");
+function mkDate(d,m,y,todayISO){
+  d=+d;m=+m;if(!(d>=1&&d<=31&&m>=1&&m<=12))return"";
+  let yy;
+  if(y){yy=+y;if(yy<100)yy+=2000}else{
+    const t=parse(todayISO);yy=t.getFullYear();
+    const cand=iso(new Date(yy,m-1,d));if(cand<addDays(todayISO,-14))yy++;
+  }
+  const dt=new Date(yy,m-1,d);if(dt.getMonth()!==m-1)return"";
+  return iso(dt);
+}
+function findDates(line,todayISO){
+  const out=[];let rest=line;
+  const num=/(\d{1,2})\s?\.\s?(\d{1,2})\s?\.(?:\s?(\d{4}|\d{2})(?!\s?(?::|\.\d|Uhr)))?/g;
+  rest=rest.replace(num,(all,d,m,y)=>{const s=mkDate(d,m,y,todayISO);if(s){out.push(s);return" "}return all});
+  const word=/(\d{1,2})\.?\s+(januar|jänner|februar|märz|maerz|april|mai|juni|juli|august|september|oktober|november|dezember|jan|feb|mär|mrz|apr|jun|jul|aug|sept?|okt|nov|dez)\.?(?:\s+(\d{4}))?/gi;
+  rest=rest.replace(word,(all,d,mn,y)=>{const s=mkDate(d,MONTHS[mn.toLowerCase()],y,todayISO);if(s){out.push(s);return" "}return all});
+  const iso8=/(\d{4})-(\d{2})-(\d{2})/g;
+  rest=rest.replace(iso8,(all,y,m,d)=>{const s=mkDate(d,m,y,todayISO);if(s){out.push(s);return" "}return all});
+  return{dates:out,rest};
+}
+function findTimes(line){
+  const out=[];
+  const re=/\b([01]?\d|2[0-3])\s?[:.]\s?([0-5]\d)\b(?:\s?Uhr)?|\b([01]?\d|2[0-3])\s?Uhr\b/gi;
+  const rest=line.replace(re,(all,h,mi,h2)=>{const hh=String(h||h2).padStart(2,"0");out.push(`${hh}:${mi||"00"}`);return" "});
+  return{times:out,rest};
+}
+function cleanTitle(s){
+  return s.replace(WDRE,"$1 ").replace(WDRE,"$1 ").replace(FILLRE,"$1 ").replace(FILLRE,"$1 ").replace(/[–—\-|,;:/]+(\s|$)/g," ")
+    .replace(/^[^A-Za-zÄÖÜäöüß0-9]+|[^A-Za-zÄÖÜäöüß0-9).]+$/g,"").replace(/\s{2,}/g," ").trim();
+}
+function isGeneric(w){
+  const r=w.toLowerCase().replace(/\b(christin|john|robert|patient(in)?|name|ihr|ihre|nächster|nächste|naechster|termine?|datum|uhrzeit|bitte|hinweis|am|um|den|der|die|wann|wo)\b/g," ").replace(/[^a-zäöüß]/g,"");
+  return r.length<4;
+}
+function parseOCR(text,todayISO){
+  const lines=String(text||"").split(/\n+/).map(l=>l.trim()).filter(l=>l.length>1);
+  const low=String(text||"").toLowerCase();
+  const NM=PEOPLE.slice(0,3).map(([k,n])=>[k,n.toLowerCase()]).filter(([k,n])=>n.length>1&&!/^person \d$/.test(n));
+  const names=NM.filter(([k,n])=>low.includes(n)).map(([k])=>k);
+  const personAll=names.length===1?names[0]:"gemeinsam";
+  const info=lines.map(raw=>{const a=findDates(raw,todayISO);const b=findTimes(a.rest);return{raw,dates:a.dates,times:b.times,words:cleanTitle(b.rest),used:false}});
+  const events=[];const FREE=/^(frei|f|x|-|ruhetag|dienstfrei|ft)$/i;
+  info.forEach((x,i)=>{if(x.dates.length&&!FREE.test(x.words))events.push({i,datum:x.dates[0],endDatum:x.dates[1]&&x.dates[1]>x.dates[0]?x.dates[1]:"",von:x.times[0]||"",bis:x.times[1]||"",titel:isGeneric(x.words)?"":x.words})});
+  const textLine=x=>!x.dates.length&&!x.used&&!isGeneric(x.words);
+  events.forEach((e,k)=>{
+    const from=k?events[k-1].i+1:0,to=events[k+1]?events[k+1].i:info.length;
+    // Uhrzeit in der Folgezeile
+    if(!e.von){for(let j=e.i+1;j<Math.min(to,e.i+3);j++){if(info[j].times.length){e.von=info[j].times[0];e.bis=info[j].times[1]||"";break}}}
+    if(e.titel)return;
+    const above=[];for(let j=from;j<e.i;j++)if(textLine(info[j]))above.push(info[j]);
+    if(above.length){
+      const pick=[above[0]];if(above[1]&&/\d/.test(above[1].words))pick.push(above[1]);
+      pick.forEach(x=>x.used=true);e.titel=pick.map(x=>x.words).join(", ");return;
+    }
+    for(let j=e.i+1;j<Math.min(to,e.i+3);j++){if(textLine(info[j])){info[j].used=true;e.titel=info[j].words;return}}
+  });
+  const head=info.filter(x=>!x.dates.length&&!isGeneric(x.words)).slice(0,1).map(x=>x.words).join("");
+  const seen=new Set();
+  return events.map(e=>{
+    const t=(e.titel||head||"Termin").slice(0,120);
+    const l=(info[e.i].raw+" "+t).toLowerCase();
+    const typ=/urlaub/.test(l)?"urlaub":/(dienst|schicht|arbeit)/.test(l)?"arbeit":"termin";
+    const ctx=info.slice(Math.max(0,e.i-2),e.i+3).map(x=>x.raw).join(" ").toLowerCase();
+    const nm=NM.filter(([k,n])=>ctx.includes(n)).map(([k])=>k);
+    return{typ,person:nm.length===1?nm[0]:personAll,titel:t,datum:e.datum,endDatum:e.endDatum,von:e.von,bis:e.bis};
+  }).filter(e=>{const k=e.datum+e.von+e.titel;if(seen.has(k))return false;seen.add(k);return true}).slice(0,40);
+}
+function normFound(x){
+  if(!x||typeof x!=="object")return null;
+  const okDate=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||""));
+  const okTime=s=>/^\d{2}:\d{2}$/.test(String(s||""))?String(s):"";
+  if(!okDate(x.datum))return null;
+  const typ=["termin","arbeit","urlaub"].includes(x.typ)?x.typ:"termin";
+  let person=["christin","john","robert","gemeinsam"].includes(String(x.person).toLowerCase())?String(x.person).toLowerCase():"gemeinsam";
+  if(typ!=="termin"&&person==="gemeinsam")person="robert";
+  return{keep:true,typ,person,titel:String(x.titel||"").slice(0,200),datum:x.datum,endDatum:okDate(x.endDatum)&&x.endDatum>x.datum?x.endDatum:"",
+    von:typ==="urlaub"?"":okTime(x.von),bis:typ==="urlaub"?"":okTime(x.bis)};
+}
+function drawScan(state,msg){
+  draft={scan:true};
+  const img=`<img class="scan-prev" src="${scanImgUrl}" alt="Dein Foto">`;
+  let body="";
+  if(state==="laden")body=`${img}<div class="spinner" id="sc-prog">Texterkennung wird gestartet …</div><p class="hint">Läuft direkt auf dem Handy. Beim ersten Mal dauert es etwas länger.</p><div class="actions"><button class="btn ghost" id="sc-stop">Abbrechen</button></div>`;
+  else if(state==="fehler")body=`${img}<p>${esc(msg)}</p><div class="actions"><button class="btn" id="sc-again">Neues Foto</button><button class="btn ghost" id="sc-close">Schließen</button></div>`;
+  else if(state==="leer")body=`${img}<p>Auf dem Foto wurde kein Datum gefunden. Tipp: Foto gerade und mit gutem Licht aufnehmen, nur den Termin-Teil ins Bild.</p>${ocrText.trim()?`<details><summary>Erkannter Text</summary><pre style="white-space:pre-wrap;font-size:.8rem">${esc(ocrText)}</pre></details>`:""}<div class="actions"><button class="btn" id="sc-again">Neues Foto</button><button class="btn ghost" id="sc-close">Schließen</button></div>`;
+  else{
+    const n=found.filter(f=>f.keep).length;
+    body=`<p class="hint">Bitte kurz prüfen und bei Bedarf korrigieren, vor allem den Text bei „Was?“. Abgewählte Einträge werden nicht übernommen.</p><details><summary>Erkannter Text</summary><pre style="white-space:pre-wrap;font-size:.8rem">${esc(ocrText)}</pre></details>
+    <div class="found">${found.map((f,i)=>{
+      const pp=f.typ==="termin"?PEOPLE:PEOPLE.slice(0,3);
+      return `<div class="found-item${f.keep?"":" off"}" data-i="${i}">
+        <label class="keep"><input type="checkbox" data-k="keep"${f.keep?" checked":""}> Übernehmen</label>
+        <div class="row3b">
+          <select data-k="typ" aria-label="Art">${["termin","arbeit","urlaub"].map(t=>`<option value="${t}"${f.typ===t?" selected":""}>${TYPN[t]}</option>`).join("")}</select>
+          <select data-k="person" aria-label="Person">${pp.map(([k,nm])=>`<option value="${k}"${f.person===k?" selected":""}>${nm}</option>`).join("")}</select>
+        </div>
+        <input data-k="titel" value="${esc(f.titel)}" aria-label="Was" placeholder="Was?">
+        <div class="row3b">
+          <input type="date" data-k="datum" value="${f.datum}" aria-label="Datum">
+          <input type="date" data-k="endDatum" value="${f.endDatum}" aria-label="Bis Datum">
+        </div>
+        ${f.typ!=="urlaub"?`<div class="row3b"><input type="time" data-k="von" value="${f.von}" aria-label="Von"><input type="time" data-k="bis" value="${f.bis}" aria-label="Bis"></div>`:""}
+      </div>`}).join("")}</div>
+    <div class="actions"><button class="btn" id="sc-save"${n?"":" disabled"}>${n} ${n===1?"Eintrag":"Einträge"} eintragen</button><button class="btn ghost" id="sc-close">Abbrechen</button></div>`;
+  }
+  document.getElementById("sheetHost").innerHTML=`<div class="backdrop" id="bd"><div class="sheet" role="dialog" aria-modal="true" aria-label="Termin vom Foto"><h3>Termin vom Foto</h3>${body}</div></div>`;
+  const $=id=>document.getElementById(id);
+  if($("sc-stop"))$("sc-stop").onclick=()=>{if(scanCtl)scanCtl.aborted=true;closeSheet()};
+  if($("sc-close"))$("sc-close").onclick=closeSheet;
+  if($("sc-again"))$("sc-again").onclick=()=>{closeSheet();document.getElementById("photoIn").click()};
+  document.querySelectorAll(".found-item").forEach(el=>{
+    const f=found[+el.dataset.i];
+    el.querySelectorAll("[data-k]").forEach(inp=>{
+      const k=inp.dataset.k;
+      inp.onchange=()=>{
+        if(k==="keep")f.keep=inp.checked;else f[k]=inp.value;
+        if(k==="typ"){if(f.typ!=="termin"&&f.person==="gemeinsam")f.person="robert";if(f.typ==="urlaub"){f.von="";f.bis=""}}
+        if(k==="keep"||k==="typ")drawScan("liste");
+      };
+    });
+  });
+  if($("sc-save"))$("sc-save").onclick=saveFound;
+}
+async function saveFound(){
+  if(!store){toast("Speicher wird noch geladen …");return}
+  const list=found.filter(f=>f.keep);
+  for(const f of list){
+    if(f.typ==="termin"&&!f.titel.trim()){toast("Bei jedem Termin bitte eintragen, was ansteht");return}
+    if(f.typ==="arbeit"&&(!f.von||!f.bis)){toast("Bei Arbeit bitte Beginn und Ende angeben");return}
+  }
+  closeSheet();
+  for(const f of list){const o=clean({...f,endDatum:f.typ==="urlaub"&&!f.endDatum?f.datum:f.endDatum});await store.add(o)}
+  if(list.length){weekStart=mondayOf(list.map(f=>f.datum).sort()[0]);render()}
+  toast(`${list.length} ${list.length===1?"Eintrag":"Einträge"} vom Foto eingetragen`);
+}
+
+/* ---------- Ereignisse ---------- */
+document.getElementById("days").addEventListener("click",ev=>{
+  if(READONLY)return;
+  const chip=ev.target.closest(".chip");
+  if(chip){const e=entries.find(x=>x.id===chip.dataset.id);if(e)openSheet(e);return}
+  const cell=ev.target.closest(".cell");if(cell)openSheet(null,{day:cell.dataset.day,person:cell.dataset.person});
+});
+document.getElementById("days").addEventListener("keydown",ev=>{if((ev.key==="Enter"||ev.key===" ")&&ev.target.classList.contains("cell")){ev.preventDefault();openSheet(null,{day:ev.target.dataset.day,person:ev.target.dataset.person})}});
+function step(dir){
+  if(view==="monat"){const d=parse(monthCur);monthCur=iso(new Date(d.getFullYear(),d.getMonth()+dir,1))}
+  else if(view==="jahr")yearCur+=dir;else weekStart=addDays(weekStart,7*dir);
+  render();
+}
+document.getElementById("prev").onclick=()=>step(-1);
+document.getElementById("next").onclick=()=>step(1);
+document.getElementById("goToday").onclick=()=>{const t=iso(new Date());weekStart=mondayOf(t);monthCur=t.slice(0,7)+"-01";yearCur=+t.slice(0,4);render()};
+document.querySelectorAll(".tabs [data-view]").forEach(b=>b.onclick=()=>setView(b.dataset.view));
+document.getElementById("vOther").addEventListener("click",ev=>{
+  const g=ev.target.closest("[data-goday]");if(g){weekStart=mondayOf(g.dataset.goday);setView("woche");setTimeout(()=>{const el=document.getElementById("d-"+g.dataset.goday);if(el)el.scrollIntoView({block:"center"})},50);return}
+  const mo=ev.target.closest("[data-gomonth]");if(mo){monthCur=mo.dataset.gomonth;setView("monat")}
+});
+document.getElementById("fab").onclick=()=>openSheet(null,{day:today>=weekStart&&today<=addDays(weekStart,6)?today:weekStart,person:"gemeinsam"});
+document.addEventListener("keydown",ev=>{if(ev.key==="Escape"&&draft)closeSheet()});
+document.addEventListener("visibilitychange",()=>{if(!document.hidden&&iso(new Date())!==today)render()});
+init();
+if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+</script>
+</body>
+</html>
