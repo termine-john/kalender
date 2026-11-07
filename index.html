@@ -1255,7 +1255,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v45";
+const APP_VER="v46";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -1307,6 +1307,7 @@ async function checkAdmin(){
     try{ni=(await FS.collection("ideen").where("status","==","neu").get({source:"server"})).size}catch(e){}
     SUP_NEW=sn.size+ne+ni;markGear();
     const parts=[sn.size?`${sn.size} Nachricht${sn.size===1?"":"en"}`:"",ne?`${ne} Fehlerbericht${ne===1?"":"e"}`:"",ni?`${ni} neue Idee${ni===1?"":"n"}`:""].filter(Boolean);
+    const waitCl=CHANGELOG.length-clReleased().length;if(waitCl&&CL_LOADED)parts.push(`${waitCl} Update-Ankündigung${waitCl===1?"":"en"} zur Freigabe`);
     if(parts.length)toast("🛠 Neu im Admin-Bereich: "+parts.join(", "));
   }catch(e){IS_ADMIN=false;ADMIN_ERR=e&&e.code==="permission-denied"?"regeln":"offline"}
 }
@@ -1331,7 +1332,7 @@ function adminBoxFill(){
   document.getElementById("uidCopy").onclick=async()=>{try{await navigator.clipboard.writeText(uid);toast("Code kopiert")}catch(e){toast("Bitte den Code markieren und kopieren")}};
 }
 async function showInbox(){showAdmin("post")}
-const ATABS=[["post","📬 Postfach"],["fehler","🐞 Fehler"],["alle","📢 An alle"],["familie","👪 An Familie"],["umfrage","📊 Umfrage"],["ideen","💡 Ideen"],["steuer","⚙️ Steuerung"],["sperren","🚫 Sperren"]];
+const ATABS=[["post","📬 Postfach"],["fehler","🐞 Fehler"],["alle","📢 An alle"],["familie","👪 An Familie"],["umfrage","📊 Umfrage"],["ideen","💡 Ideen"],["steuer","⚙️ Steuerung"],["updates","✨ Updates"],["sperren","🚫 Sperren"]];
 function showAdmin(tab){
   tab=tab||"post";
   sheet("🛠 Admin-Bereich",`<div class="atabs">${ATABS.map(([k,n])=>`<button data-at="${k}" aria-pressed="${k===tab}">${n}</button>`).join("")}</div><div id="aBody"><p class="hint">Lade …</p></div>
@@ -1339,7 +1340,7 @@ function showAdmin(tab){
   document.getElementById("aClose").onclick=closeSheet;
   document.querySelectorAll("[data-at]").forEach(b=>b.onclick=()=>showAdmin(b.dataset.at));
   const body=document.getElementById("aBody");
-  const fn={post:admPost,fehler:admErr,alle:admAll,familie:admFam,umfrage:admPoll,ideen:admIdeas,steuer:admCtl,sperren:admBlock}[tab];
+  const fn={post:admPost,fehler:admErr,alle:admAll,familie:admFam,umfrage:admPoll,ideen:admIdeas,steuer:admCtl,updates:admUpd,sperren:admBlock}[tab];
   fn(body).catch(e=>{console.warn(e);body.innerHTML=`<p class="hint">Konnte nicht geladen werden${e&&e.code==="permission-denied"?" · bitte die neuen Regeln veröffentlichen":""}.</p>`});
 }
 const $v=id=>{const el=document.getElementById(id);return el?el.value.trim():""};
@@ -1445,7 +1446,7 @@ async function admCtl(body){
   document.getElementById("ctSave").onclick=async()=>{
     const mv=$v("ctMin"),wt=$v("ctW").slice(0,300),wb=$v("ctWB");const a={};body.querySelectorAll("[data-fl]").forEach(x=>{if(!x.checked)a[x.dataset.fl]=true});
     if(mv&&+mv>parseInt(APP_VER.slice(1))){toast(`Höher als die aktuelle Version ${APP_VER} geht nicht`);return}
-    try{await FS.doc("info/steuerung").set({minVer:mv?String(+mv):"",wartung:wt?{text:wt,farbe,bis:wb||"",id:"w"+Date.now()}:{},aus:a,zeit:nowISO()});toast("Gespeichert · gilt sofort für alle")}catch(e){toast("Hat nicht geklappt")}};
+    try{await FS.doc("info/steuerung").set({minVer:mv?String(+mv):"",wartung:wt?{text:wt,farbe,bis:wb||"",id:"w"+Date.now()}:{},aus:a,zeit:nowISO()},{mergeFields:["minVer","wartung","aus","zeit"]});toast("Gespeichert · gilt sofort für alle")}catch(e){toast("Hat nicht geklappt")}};
 }
 const codeFrom=t=>{const m=String(t||"").match(/#join=([a-z2-9]{18,})/);const v=m?m[1]:String(t||"").trim().toLowerCase();return /^[a-z2-9]{18,}$/.test(v)?v:""};
 async function admBlock(body){
@@ -2801,7 +2802,7 @@ function watchAnn(){
   try{if(!db)db=supDB()}catch(e){}
   if(!db)return;
   annSub=db.collection("info").onSnapshot(sn=>{const m={};sn.docs.forEach(d=>m[d.id]=d.data());
-    ANN=m.aktuell||null;CTL.umfrage=m.umfrage||null;CTL.steuerung=m.steuerung||null;renderAnn();applyFlags();renderAdminCards()},()=>{});
+    ANN=m.aktuell||null;CTL.umfrage=m.umfrage||null;CTL.steuerung=m.steuerung||null;CL_LOADED=true;renderAnn();applyFlags();renderAdminCards();showNews()},()=>{});
   const c=getCfg();if(c&&c.code)db.doc(`famhinweis/${c.code.slice(0,4).toUpperCase()}`).onSnapshot(d=>{CTL.fam=d.exists?d.data():null;renderAdminCards()},()=>{});
   setTimeout(()=>checkReplies(db),3000);
   if(c&&c.code)db.doc(`gesperrt/${c.code}`).get().then(d=>{if(d.exists){CTL.gesperrt=d.data();setStatus("🚫 Dieser Kalender wurde vom Betreiber gesperrt"+(d.data().grund?": "+d.data().grund:""));renderAdminCards()}}).catch(()=>{});
@@ -2889,7 +2890,7 @@ const CHANGELOG=[
     "🛠 Fehler werden automatisch gemeldet, damit sie schneller behoben werden (ohne Termine oder Namen)"]},
   {v:"2026-11-07d",d:"2026-11-07",t:"Farben & Neuigkeiten",items:[
     "🎨 Eigene Farbe für jede Person: Einstellungen → Personen im Haushalt → auf den farbigen Kreis tippen",
-    "✨ Diese Übersicht „Was ist neu?“: Neue Funktionen erscheinen nach jedem Update automatisch oben"]},
+    "✨ Diese Übersicht „Was ist neu?“: Neue Funktionen erscheinen nach jedem Update oben in der App"]},
   {v:"2026-11-07c",d:"2026-11-07",t:"Hintergrund, Hilfe & Support",items:[
     "🖼 Eigener Kalender-Hintergrund: Farbverlauf oder eigenes Foto, nur für dein Handy (Einstellungen → Darstellung)",
     "❓ Ausführliche Hilfe zu allen Funktionen über das ? oben, mit Suche",
@@ -2907,30 +2908,49 @@ const CHANGELOG=[
     "❗ Termine als wichtig markieren",
     "💾 Automatische Sicherungen und Offline-Nutzung"]}
 ];
-const CL_LATEST=CHANGELOG[0].v;
-function clNewSince(seen){const i=CHANGELOG.findIndex(c=>c.v===seen);return i<0?[]:CHANGELOG.slice(0,i)}
+// Freigabe: Nur Einträge bis einschließlich info/steuerung.clFrei werden Nutzern gezeigt (Admin gibt im Admin-Bereich frei)
+let CL_LOADED=false;
+function clReleased(){const fr=CTL.steuerung&&CTL.steuerung.clFrei;const i=fr?CHANGELOG.findIndex(c=>c.v===fr):-1;return i<0?[]:CHANGELOG.slice(i)}
 function showNews(){
   const el=document.getElementById("newCard");if(!el)return;
-  if(IS_READER_SITE||annReader()){el.hidden=true;return}
+  if(IS_READER_SITE||annReader()||!CL_LOADED){el.hidden=true;return}
+  const rel=clReleased();if(!rel.length){el.hidden=true;return}
+  const top=rel[0].v;
   let seen=null;try{seen=localStorage.getItem("fk-cl-seen")}catch(e){return}
   if(!seen){if(getCfg())seen="2026-11-07a"; // bisherige Nutzer: Neuigkeiten seit Einführung zeigen
-    else{try{localStorage.setItem("fk-cl-seen",CL_LATEST)}catch(e){}el.hidden=true;return}} // ganz neue Nutzer: nichts zeigen
-  const nw=seen===CL_LATEST?[]:(clNewSince(seen).length?clNewSince(seen):CHANGELOG.slice(0,1));
+    else{try{localStorage.setItem("fk-cl-seen",top)}catch(e){}el.hidden=true;return}} // ganz neue Nutzer: nichts zeigen
+  const si=rel.findIndex(c=>c.v===seen);
+  const nw=seen===top?[]:(si>0?rel.slice(0,si):(CHANGELOG.findIndex(c=>c.v===seen)>CHANGELOG.findIndex(c=>c.v===top)?rel.slice(0,1):[]));
   if(!nw.length){el.hidden=true;return}
   const items=nw.flatMap(c=>c.items);const more=items.length>4?items.length-4:0;
   document.getElementById("newTxt").innerHTML=`<b>Neu in der App</b><ul>${items.slice(0,4).map(x=>`<li>${esc(x)}</li>`).join("")}</ul>${more?`<span class="meta">… und ${more} weitere</span><br>`:""}<button class="btn ghost" id="newAll">Alle Neuigkeiten ansehen</button>`;
   el.hidden=false;
   document.getElementById("newAll").onclick=()=>{clSeen();showChangelog()};
 }
-function clSeen(){try{localStorage.setItem("fk-cl-seen",CL_LATEST)}catch(e){}const el=document.getElementById("newCard");if(el)el.hidden=true}
+function clSeen(){const rel=clReleased();if(rel.length){try{localStorage.setItem("fk-cl-seen",rel[0].v)}catch(e){}}const el=document.getElementById("newCard");if(el)el.hidden=true}
 document.getElementById("newX").onclick=clSeen;
 function showChangelog(){
+  const list=IS_ADMIN?CHANGELOG:clReleased();const relSet=new Set(clReleased().map(c=>c.v));
   sheet("✨ Was ist neu?",`<p class="hint">Alle Updates der App, das Neueste oben.</p>
-    ${CHANGELOG.map(c=>`<div class="clog"><h4>${esc(c.t)}<span class="cd">${dmy(c.d)}</span></h4><ul>${c.items.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`).join("")}
+    ${list.length?list.map(c=>`<div class="clog"><h4>${esc(c.t)}<span class="cd">${dmy(c.d)}${relSet.has(c.v)?"":" · ⏳ noch nicht freigegeben"}</span></h4><ul>${c.items.map(x=>`<li>${esc(x)}</li>`).join("")}</ul></div>`).join(""):`<p class="hint">Noch keine Neuigkeiten.</p>`}
     <div class="actions"><button class="btn ghost" id="clClose">Schließen</button></div>`);
   document.getElementById("clClose").onclick=closeSheet;
 }
-setTimeout(showNews,1200);
+async function admUpd(body){
+  const rel=new Set(clReleased().map(c=>c.v));const open=CHANGELOG.filter(c=>!rel.has(c.v)).length;
+  body.innerHTML=`<p class="hint">Neue Update-Ankündigungen erscheinen bei den Nutzern erst, wenn du sie hier freigibst. ${open?`<b>${open} warten auf Freigabe.</b>`:"Alles ist freigegeben."}</p>
+    ${CHANGELOG.map(c=>`<div class="clog"><h4>${esc(c.t)}<span class="cd">${dmy(c.d)}</span></h4>
+      <div class="hint" style="margin:0">${rel.has(c.v)?"✅ freigegeben":"⏳ wartet auf Freigabe"}</div>
+      <ul>${c.items.map(x=>`<li>${esc(x)}</li>`).join("")}</ul>
+      ${rel.has(c.v)?"":`<button class="btn" data-clrel="${esc(c.v)}">✅ Freigeben${CHANGELOG.indexOf(c)<CHANGELOG.length-1&&!rel.has(CHANGELOG[CHANGELOG.indexOf(c)+1].v)?" (inkl. ältere)":""}</button>`}</div>`).join("")}
+    ${rel.size?`<button class="btn ghost" id="clBack">↩️ Letzte Freigabe zurücknehmen</button>`:""}`;
+  body.querySelectorAll("[data-clrel]").forEach(b=>b.onclick=async()=>{
+    if(!await askConfirm("Diese Ankündigung jetzt für alle freigeben? Sie erscheint dann bei allen oben in der App.","Freigeben",false))return;
+    try{await FS.doc("info/steuerung").set({clFrei:b.dataset.clrel,clZeit:nowISO()},{merge:true});toast("✅ Freigegeben");setTimeout(()=>showAdmin("updates"),700)}catch(e){toast("Hat nicht geklappt")}});
+  const bk=document.getElementById("clBack");if(bk)bk.onclick=async()=>{const r=clReleased();const prev=r[1]?r[1].v:"";
+    if(!await askConfirm("Die neueste Freigabe zurücknehmen? Nutzer, die sie schon gesehen haben, sehen sie trotzdem in ihrer Liste nicht mehr.","Zurücknehmen"))return;
+    try{await FS.doc("info/steuerung").set({clFrei:prev,clZeit:nowISO()},{merge:true});toast("Zurückgenommen");setTimeout(()=>showAdmin("updates"),700)}catch(e){toast("Hat nicht geklappt")}};
+}
 
 
 
