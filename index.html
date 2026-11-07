@@ -429,7 +429,7 @@ body.compact .cal3d{width:30px;height:30px}
 .acard .opts button{border:1px solid var(--accent);background:var(--surface);color:var(--fg);border-radius:999px;padding:7px 12px;font:inherit;font-size:.88rem}
 .acard .quote{opacity:.75;font-size:.85rem;border-left:3px solid var(--line);padding-left:8px;margin:4px 0}
 body.off-foto #photoBtn,body.off-sprache #micBtn,body.off-sprache #voiceIn,body.off-sterne [data-view="sterne"],body.off-support #supBtn,body.off-support #rSup,body.off-support #hSupport,body.off-ideen #ideaBtn,body.off-ideen #rIdea,body.off-ideen #hIdea{display:none!important}
-.atabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:6px;margin-bottom:6px;scrollbar-width:none}
+.atabs{display:flex;flex-wrap:wrap;gap:6px;padding-bottom:6px;margin-bottom:6px}
 .atabs button{flex:none;border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:999px;padding:7px 12px;font:inherit;font-size:.85rem;white-space:nowrap}
 .atabs button[aria-pressed="true"]{background:var(--accent);color:#06222e;border-color:var(--accent)}
 .idea{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface);margin:8px 0;display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center}
@@ -1324,7 +1324,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v54";
+const APP_VER="v55";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -1383,7 +1383,9 @@ async function checkAdmin(){
 function markGear(){const g=document.getElementById("gear");if(!g)return;let b=g.querySelector(".badge");if(!SUP_NEW){if(b)b.remove();return}if(!b){b=document.createElement("span");b.className="badge";g.appendChild(b)}b.textContent=SUP_NEW}
 function adminBoxFill(){
   const box=document.getElementById("adminBox");if(!box)return;
-  if(IS_ADMIN){box.innerHTML=`<button class="btn" id="inboxBtn">🛠 Admin-Bereich${SUP_NEW?` (${SUP_NEW} neu)`:""}</button>`;document.getElementById("inboxBtn").onclick=()=>{closeSheet();setTimeout(showInbox,200)};return}
+  if(IS_ADMIN){const wcl=CHANGELOG.length-clReleased().length;
+    box.innerHTML=`<button class="btn" id="inboxBtn">🛠 Admin-Bereich${SUP_NEW?` (${SUP_NEW} neu)`:""}</button><button class="btn ghost" id="updBtn">✨ Update-Ankündigungen freigeben${wcl?` (${wcl} warten)`:""}</button>`;
+    document.getElementById("updBtn").onclick=()=>{closeSheet();setTimeout(()=>showAdmin("updates"),200)};document.getElementById("inboxBtn").onclick=()=>{closeSheet();setTimeout(showInbox,200)};return}
   if(!IS_MAIN_SITE)return;
   let uid="";try{uid=firebase.auth().currentUser.uid}catch(e){}
   if(!uid)return;
