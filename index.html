@@ -317,6 +317,18 @@ body.fold .day.empty .day-head{border-bottom:0}
 .appbar.hasbg{background-size:cover;background-position:center}
 .morning.eve{border-left-color:#8b7bd8;background:color-mix(in srgb,#8b7bd8 10%,var(--surface))}
 .morning .eve-extra{font-size:.85rem;color:var(--muted);font-weight:600}
+.appbar h1{font-size:clamp(1.1rem,5.4vw,1.45rem);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.appbar .top>div:first-child{min-width:0}
+.appbar .topbtns{gap:6px}
+.appbar .topbtns .gear{width:40px;height:40px}
+.toast.undo{display:flex;align-items:center;gap:14px;padding:8px 8px 8px 16px}
+.toast.undo button{background:var(--star);color:#1a1200;font-weight:800;border-radius:8px;padding:8px 12px}
+.nextcard{display:flex;flex-direction:column;gap:2px;text-align:left;background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 14px}
+.nextcard .nx-l{font-size:.78rem;color:var(--muted)}
+.nextcard .nx-t{font-size:1rem;font-weight:600}
+.nextcard.soon{border-color:var(--star);box-shadow:0 0 0 1px var(--star)}
+.nextcard.imp{border-color:var(--imp);box-shadow:0 0 0 1px var(--imp)}
+#searchBtn svg{width:22px;height:22px}
 .sec{font-family:var(--f-display);font-size:1.05rem;margin:6px 0 0}
 .empty-note{font-size:.85rem;color:var(--muted);text-align:center;padding:4px}
 
@@ -379,13 +391,15 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
       <h1>Familienkalender</h1>
       <div class="status" id="status">Verbinde …</div>
     </div>
-    <div class="topbtns"><button class="gear" id="helpBtn" aria-label="Anleitung starten">?</button>
+    <div class="topbtns"><button class="gear" id="searchBtn" aria-label="Termine suchen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg></button><button class="gear" id="helpBtn" aria-label="Anleitung starten">?</button>
     <button class="gear" id="gear" aria-label="Einstellungen und Familie einladen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M17 8v6M14 11h6"/></svg></button></div>
   </div>
   <div class="tabs" role="tablist" aria-label="Ansicht">
     <button role="tab" data-view="tag">Tag</button><button role="tab" data-view="woche">Woche</button><button role="tab" data-view="monat">Monat</button><button role="tab" data-view="jahr">Jahr</button><button role="tab" data-view="ferien">Ferien</button><button role="tab" data-view="sterne">Sterne</button>
   </div>
   </header>
+
+  <button class="nextcard" id="nextCard" hidden></button>
 
   <section class="news" id="news" hidden>
     <div class="news-head"><h2 id="newsTitle">Neue Einträge</h2><button class="btn" id="newsAck">Gesehen ✓</button></div>
@@ -1134,6 +1148,11 @@ function joinFromText(t){const m=String(t||"").match(/#join=([^\s&]+)/);const v=
 function joinBox(){return `<label class="f">Einladungslink einfügen<input id="joinIn" placeholder="https://…/familienkalender/#join=…"></label><button class="btn ghost" id="joinGo">Mit diesem Kalender verbinden</button>`}
 function wireJoin(){const b=document.getElementById("joinGo");if(b)b.onclick=()=>joinFromText(document.getElementById("joinIn").value)}
 function setStatus(t){document.getElementById("status").textContent=t}
+const strip=e=>{const{id,...o}=e;return o};
+function undoToast(msg,fn){const h=document.getElementById("toastHost");clearTimeout(toast.t);
+  h.innerHTML=`<div class="toast undo"><span>${esc(msg)}</span><button id="undoBtn">Rückgängig</button></div>`;
+  document.getElementById("undoBtn").onclick=async()=>{h.innerHTML="";try{await fn();toast("Rückgängig gemacht")}catch(e){toast("Rückgängig hat nicht geklappt")}};
+  toast.t=setTimeout(()=>h.innerHTML="",10000)}
 function toast(t){const h=document.getElementById("toastHost");h.innerHTML=`<div class="toast">${esc(t)}</div>`;clearTimeout(toast.t);toast.t=setTimeout(()=>h.innerHTML="",2600)}
 
 /* ---------- Anzeige ---------- */
@@ -1201,7 +1220,7 @@ function renderInner(){
   document.getElementById("vOther").hidden=view==="woche";
   document.getElementById("navbar").hidden=view==="ferien"||view==="sterne";
   if(view==="tag")renderDay();else if(view==="monat")renderMonth();else if(view==="jahr")renderYear();else if(view==="ferien")renderFerien();else if(view==="sterne")renderStars();else renderWeek();
-  renderMorning();renderNews();renderEve();
+  renderMorning();renderNews();renderEve();renderNext();
 }
 /* ---------- Tagesübersicht (Zeitstrahl) ---------- */
 const HPX=52;
@@ -1365,6 +1384,42 @@ function renderNews(){
 document.getElementById("newsAck").onclick=()=>{try{localStorage.setItem("fk-seen",nowISO())}catch(e){}document.getElementById("news").hidden=true;toast("Als gesehen markiert")};
 document.getElementById("newsList").addEventListener("click",ev=>{const b=ev.target.closest("[data-goday]");if(!b)return;weekStart=mondayOf(b.dataset.goday);setView("woche");setTimeout(()=>{const el=document.getElementById("d-"+b.dataset.goday);if(el)el.scrollIntoView({block:"center"})},60)});
 
+/* ---------- Als Nächstes ---------- */
+function nextEntry(){
+  const now=new Date(),nowMin=now.getHours()*60+now.getMinutes();let best=null;
+  for(let i=0;i<8;i++){const day=addDays(today,i);
+    for(const e of entries){if(!e.von||e.typ==="urlaub"||e.typ==="geburtstag"||!onDay(e,day))continue;if(e.endDatum&&e.endDatum>e.datum&&e.datum!==day)continue;
+      const m=toMin(e.von)+i*1440;if(i===0&&toMin(e.von)<nowMin)continue;if(!best||m<best.m)best={e,day,m}}
+    if(best)break}
+  return best?{...best,diff:best.m-nowMin}:null;
+}
+function renderNext(){
+  const el=document.getElementById("nextCard");if(!el)return;
+  if(READONLY&&!entries.length){el.hidden=true;return}
+  const n=nextEntry();if(!n){el.hidden=true;return}
+  const h=Math.floor(n.diff/60),m=n.diff%60,dd=Math.floor(n.diff/1440);
+  const inTxt=n.diff<1?"jetzt":dd>=1&&n.day!==addDays(today,1)?`${WDL[parse(n.day).getDay()]}`:n.day===addDays(today,1)?"morgen":h?`in ${h} Std ${m} Min`:`in ${m} Min`;
+  const e=n.e;const lbl=e.typ==="arbeit"?`Arbeit ${timeTxt(e)}`:`${e.von} ${e.titel}`;
+  el.className="nextcard"+(e.wichtig?" imp":"")+(n.diff<=60?" soon":"");
+  el.innerHTML=`<span class="nx-l">⏭ Als Nächstes · <b>${esc(inTxt)}</b></span><span class="nx-t">${av(e.person,"av sm")}<b class="p-${e.person}" style="background:none">${esc(PNAME[e.person]||"")}</b> ${e.wichtig?"❗ ":""}${esc(lbl)}</span>`;
+  el.onclick=()=>{dayCur=n.day;setView("tag")};
+  el.hidden=false;
+}
+setInterval(()=>{if(!document.hidden)renderNext()},60*1000);
+function openSearch(){
+  sheet("Suchen",`<label class="f">Wonach suchst du?<input id="sq" type="search" placeholder="z. B. Zahnarzt, Pascal, Fußball" autocomplete="off"></label><div id="sres" class="tasklist"></div>`);
+  const q=document.getElementById("sq"),box=document.getElementById("sres");
+  const run=()=>{const v=q.value.trim().toLowerCase();if(v.length<2){box.innerHTML='<p class="hint">Mindestens 2 Buchstaben eingeben.</p>';return}
+    const hits=entries.filter(e=>[(e.titel||""),PNAME[e.person]||"",TYPN[e.typ]||""].join(" ").toLowerCase().includes(v));
+    const up=hits.filter(e=>(e.endDatum||e.datum)>=today||e.typ==="geburtstag").sort((a,b)=>a.datum.localeCompare(b.datum)),past=hits.filter(e=>!up.includes(e)).sort((a,b)=>b.datum.localeCompare(a.datum));
+    const row=e=>{const day=e.typ==="geburtstag"?(bdayIn(e,+today.slice(0,4))<today?bdayIn(e,+today.slice(0,4)+1):bdayIn(e,+today.slice(0,4))):e.datum;
+      return `<button class="task" style="grid-template-columns:auto 1fr;text-align:left" data-sday="${day}">${av(e.person,"av sm")||`<span class="kd ${e.person}"></span>`}<span class="tt">${e.wichtig?"❗ ":""}${esc(e.typ==="geburtstag"?bdayLabel(e,day):e.titel||TYPN[e.typ])}<br><span class="meta">${esc(PNAME[e.person]||"")} · ${fmt(day)} ${day.slice(0,4)}${e.von?" · "+e.von:""}${e.serie?" · Serie":""}</span></span></button>`};
+    box.innerHTML=(up.length?`<span class="lbl-s">Kommend (${up.length})</span>${up.slice(0,30).map(row).join("")}`:"")+(past.length?`<span class="lbl-s">Vergangen (${past.length})</span>${past.slice(0,20).map(row).join("")}`:"")||'<p class="hint">Nichts gefunden.</p>'};
+  q.addEventListener("input",run);run();setTimeout(()=>q.focus(),100);
+  box.onclick=ev=>{const b=ev.target.closest("[data-sday]");if(!b)return;closeSheet();dayCur=b.dataset.sday;setView("tag")};
+}
+document.getElementById("searchBtn").onclick=openSearch;
+
 /* ---------- Vorabend-Hinweis (ab 17 Uhr) ---------- */
 const EVE_HOUR=17;
 function renderEve(){
@@ -1431,7 +1486,7 @@ function drawSheet(){
     ${!isEdit&&voiceOK()?`<button class="btn ghost" id="voiceIn">🎤 Per Sprache ausfüllen</button>`:""}
     <div class="seg" style="--n:${peopleAllowed.length}">${peopleAllowed.map(([k,n])=>`<button class="p-${k}" data-person="${k}" aria-pressed="${d.person===k}">${n}</button>`).join("")}</div>
     ${bd?`<p class="hint">In welcher Spalte soll der Geburtstag stehen? Für Verwandte und Freunde passt „Gemeinsam“.</p>`:""}
-    <label class="f">${bd?"Wer hat Geburtstag?":d.typ==="termin"?"Was?":"Notiz (optional)"}<input id="i-titel" value="${esc(d.titel)}" placeholder="${bd?"z. B. Oma Helga":d.typ==="termin"?"z. B. John bei Papa, Zahnarzt …":d.typ==="arbeit"?"z. B. Frühdienst":"z. B. Ostsee"}"></label>
+    <label class="f">${bd?"Wer hat Geburtstag?":d.typ==="termin"?"Was?":"Notiz (optional)"}<input id="i-titel" list="dlTitles" autocomplete="off" value="${esc(d.titel)}" placeholder="${bd?"z. B. Oma Helga":d.typ==="termin"?"z. B. John bei Papa, Zahnarzt …":d.typ==="arbeit"?"z. B. Frühdienst":"z. B. Ostsee"}"></label>
     <button class="impbtn" id="i-imp" aria-pressed="${!!d.wichtig}">❗ ${d.wichtig?"Als wichtig markiert":"Als wichtig markieren"}</button>
     ${bd?`<div class="row2"><label class="f">Geburtstag (Tag und Monat)<input type="date" id="i-datum" value="${d.datum}"></label>
       <label class="f">Geburtsjahr (optional)<input type="number" inputmode="numeric" id="i-jahr" min="1900" max="2100" value="${esc(d.geburtsjahr||"")}" placeholder="z. B. 1956"></label></div>
@@ -1475,6 +1530,17 @@ function drawSheet(){
   document.querySelectorAll(".sheet [data-person]").forEach(b=>b.onclick=()=>{read();d.person=b.dataset.person;drawSheet()});
   document.querySelectorAll(".sheet [data-wdh]").forEach(b=>b.onclick=()=>{read();d.wdh=b.dataset.wdh;if(d.wdh!=="keine"&&!d.tage.length)d.tage=[parse(d.datum).getDay()];drawSheet()});
   document.querySelectorAll(".sheet [data-wd]").forEach(b=>b.onclick=()=>{read();const w=+b.dataset.wd;d.tage=d.tage.includes(w)?d.tage.filter(x=>x!==w):[...d.tage,w];drawSheet()});
+  // Vorschläge: frühere Einträge mit gleichem Titel übernehmen
+  {const dl=document.createElement("datalist");dl.id="dlTitles";const seen=new Set();
+    [...entries].filter(e=>e.typ===d.typ&&e.titel).sort((a,b)=>(b.erstellt||b.datum).localeCompare(a.erstellt||a.datum)).forEach(e=>{const k=e.titel.trim();if(k&&!seen.has(k.toLowerCase())&&seen.size<40){seen.add(k.toLowerCase());const o=document.createElement("option");o.value=k;o.label=`${PNAME[e.person]||""}${e.von?" · "+e.von:""}`;dl.appendChild(o)}});
+    document.querySelector(".sheet").appendChild(dl);
+    $("i-titel").addEventListener("change",()=>{if(isEdit)return;const v=$("i-titel").value.trim().toLowerCase();
+      const m=[...entries].filter(e=>e.typ===d.typ&&(e.titel||"").trim().toLowerCase()===v).sort((a,b)=>(b.erstellt||b.datum).localeCompare(a.erstellt||a.datum))[0];
+      if(!m)return;read();let ch=false;
+      if(!d.von&&m.von){d.von=m.von;d.bis=m.bis||"";ch=true}
+      if(m.person&&d.person==="gemeinsam"&&m.person!=="gemeinsam"){d.person=m.person;ch=true}
+      if(m.wichtig&&!d.wichtig){d.wichtig=true;ch=true}
+      if(ch){drawSheet();toast("Angaben vom letzten Mal übernommen")}});}
   if($("i-wdhbis"))$("i-wdhbis").onchange=()=>{read();const p=$("wdhPrev");if(p)p.textContent=seriesPreview(d)};
   if($("i-datum"))$("i-datum").addEventListener("change",()=>{read();const p=$("wdhPrev");if(p)p.textContent=seriesPreview(d)});
   $("cancel").onclick=closeSheet;
@@ -1485,10 +1551,10 @@ function drawSheet(){
   if($("cont14"))$("cont14").onclick=()=>{read();continueSeries(14)};
   if($("del"))$("del").onclick=async()=>{read();
     if(d.serie&&series>1){confirmDel=true;drawSheet();return}
-    if(await askConfirm(`„${d.typ==="geburtstag"?"Geburtstag "+d.titel:d.titel||TYPN[d.typ]}“ wirklich löschen?`)){await store.del(editId);closeSheet();toast("Gelöscht")}};
+    if(await askConfirm(`„${d.typ==="geburtstag"?"Geburtstag "+d.titel:d.titel||TYPN[d.typ]}“ wirklich löschen?`)){const id=editId,old=entries.find(x=>x.id===id);await store.del(id);closeSheet();if(old)undoToast("Gelöscht",()=>store.set(id,strip(old)));else toast("Gelöscht")}};
   if($("delNo"))$("delNo").onclick=()=>{confirmDel=false;drawSheet()};
-  if($("delOne"))$("delOne").onclick=async()=>{if(!await askConfirm("Nur diesen einen Eintrag löschen?"))return;await store.del(editId);closeSheet();toast("Gelöscht")};
-  if($("delSeries"))$("delSeries").onclick=async()=>{const ids=entries.filter(x=>x.serie===d.serie).map(x=>x.id);if(!await askConfirm(`Wirklich die ganze Serie mit ${ids.length} Einträgen löschen?`,"Serie löschen"))return;closeSheet();for(const id of ids)await store.del(id);toast(`${ids.length} Einträge gelöscht`)};
+  if($("delOne"))$("delOne").onclick=async()=>{if(!await askConfirm("Nur diesen einen Eintrag löschen?"))return;const id=editId,old=entries.find(x=>x.id===id);await store.del(id);closeSheet();if(old)undoToast("Gelöscht",()=>store.set(id,strip(old)));else toast("Gelöscht")};
+  if($("delSeries"))$("delSeries").onclick=async()=>{const ids=entries.filter(x=>x.serie===d.serie).map(x=>x.id);if(!await askConfirm(`Wirklich die ganze Serie mit ${ids.length} Einträgen löschen?`,"Serie löschen"))return;const olds=entries.filter(x=>ids.includes(x.id)).map(x=>[x.id,strip(x)]);closeSheet();for(const id of ids)await store.del(id);undoToast(`${ids.length} Einträge gelöscht`,async()=>{for(const[id,o] of olds)await store.set(id,o)})};
 }
 function clean(d){
   const o={typ:d.typ,person:d.person,titel:d.titel||"",datum:d.datum,endDatum:(d.endDatum&&d.endDatum>d.datum)?d.endDatum:"",
@@ -1508,7 +1574,7 @@ function validate(d){
 }
 async function save(){
   const d=draft;if(!validate(d))return;
-  if(editId){await store.set(editId,clean(d));closeSheet();toast("Gespeichert");return}
+  if(editId){const id=editId,old=entries.find(x=>x.id===id);await store.set(id,clean(d));closeSheet();if(old)undoToast("Gespeichert",()=>store.set(id,strip(old)));else toast("Gespeichert");return}
   if(d.wdh==="keine"){await store.add(clean(d));closeSheet();weekStart=mondayOf(d.datum);render();toast("Eingetragen");return}
   if(!d.tage.length){toast("Bitte mindestens einen Wochentag wählen");return}
   const step=Number(d.wdh);const serie="s"+Date.now().toString(36);
