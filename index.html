@@ -343,6 +343,8 @@ body.fold .day.empty .day-head{border-bottom:0}
 .wst{font-size:.8rem;font-weight:700}
 .wst.angenommen{color:var(--vac)}.wst.abgelehnt{color:var(--imp)}.wst.offen{color:var(--muted)}
 #myWishes #wishNew{padding:8px 14px;font-size:.88rem}
+.clashbox{background:color-mix(in srgb,var(--star) 18%,var(--surface));border:1px solid var(--star);border-radius:10px;padding:10px 12px;font-size:.88rem;font-weight:600;line-height:1.45}
+.chip.clash{box-shadow:inset 0 0 0 2px var(--star)}
 .sec{font-family:var(--f-display);font-size:1.05rem;margin:6px 0 0}
 .empty-note{font-size:.85rem;color:var(--muted);text-align:center;padding:4px}
 
@@ -1206,7 +1208,7 @@ function chipHTML(e,day){
   let label=e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?(e.titel||"Arbeit"):e.typ==="urlaub"?(e.titel?`Urlaub · ${e.titel}`:"Urlaub"):e.titel;
   const range=multi&&e.typ!=="geburtstag"?` <span class="rep">(${fmt(e.datum).slice(3)}–${fmt(e.endDatum).slice(3)})</span>`:"";
   const rep=e.serie?` <span class="rep">↻</span>`:"";
-  return `<button class="chip ${e.typ} ${e.person}${e.wichtig?" imp":""}" data-id="${esc(e.id)}">${t?`<span class="t">${t}</span>`:""}<span class="chip-label">${esc(label)}</span>${range}${rep}</button>`;
+  return `<button class="chip ${e.typ} ${e.person}${e.wichtig?" imp":""}${CLASH.has(e.id)?" clash":""}" data-id="${esc(e.id)}" ${CLASH.has(e.id)?'title="Überschneidet sich mit einem anderen Termin"':""}>${t?`<span class="t">${CLASH.has(e.id)?"⚠️ ":""}${t}</span>`:""}<span class="chip-label">${esc(label)}</span>${range}${rep}</button>`;
 }
 /* ---------- Ferien & Feiertage Berlin ---------- */
 // Quelle: Ferienordnung Berlin (Senatsverwaltung für Bildung), Stand Nov. 2026
@@ -1370,6 +1372,7 @@ function renderWeek(){
   for(let i=0;i<7;i++){
     const day=addDays(weekStart,i);const d=parse(day);
     const list=entries.filter(e=>onDay(e,day));
+    CLASH=dayClashIds(list,day);
     const fe=feierOf(day),fr=ferienOf(day);
     const pp=papaOf(day);
     html+=`<article class="day${[0,6].includes(d.getDay())?" is-we":""}${list.length?"":" empty"}${day===today?" is-today":""}${fr?" is-fer":""}${pp?" is-papa":""}" id="d-${day}"><div class="day-head"><b>${WDL[d.getDay()]}, ${d.getDate()}. ${MON[d.getMonth()]}${pp?`<span class="badge papa">bei Papa</span>`:""}${fe?`<span class="badge feier">${esc(fe)}</span>`:""}${fr?`<span class="badge fer">${esc(fr)}</span>`:""}</b><span>${day===today?"heute · ":""}${list.length?list.length+(list.length===1?" Eintrag":" Einträge"):"frei"}</span></div><div class="cols">`;
@@ -1514,6 +1517,33 @@ function renderRemind(){
   box.hidden=false;
 }
 
+/* ---------- Überschneidungen ---------- */
+function spanOf(e){if(!e.von)return null;const a=toMin(e.von);let b=e.bis?toMin(e.bis):a+60;if(b<=a)b=e.bis?1440:a+60;return[a,b]}
+function relevant(p,q){return p===q||p==="gemeinsam"||q==="gemeinsam"}
+function clashTxt(o){return `${PNAME[o.person]||""} ${o.von?o.von+(o.bis?"–"+o.bis:"")+" ":""}${o.typ==="arbeit"?"Arbeit":o.typ==="urlaub"?"Urlaub":o.titel||TYPN[o.typ]}`}
+// Überschneidungen eines (neuen oder geänderten) Eintrags am Tag d.datum
+function clashesFor(d,excludeId){
+  if(!d||!d.datum||d.typ==="geburtstag")return[];
+  const day=d.datum,out=[];const me=spanOf(d);
+  for(const o of entries){
+    if(o.id===excludeId||o.typ==="geburtstag"||!onDay(o,day)||!relevant(d.person,o.person))continue;
+    if(d.serie&&o.serie===d.serie)continue;
+    const os=spanOf(o);const oAll=!o.von||o.typ==="urlaub"||(o.endDatum&&o.endDatum>o.datum&&o.datum!==day);
+    if(me&&os&&!oAll){if(me[0]<os[1]&&os[0]<me[1])out.push({o,txt:clashTxt(o)})}
+    else if(me&&oAll&&o.person===d.person&&(o.typ==="urlaub"||o.typ==="termin"))out.push({o,txt:`${PNAME[o.person]} ganztägig: ${o.typ==="urlaub"?"Urlaub":o.titel}`});
+    else if(!me&&d.typ==="urlaub"&&os&&o.person===d.person&&o.typ!=="urlaub")out.push({o,txt:clashTxt(o)});
+  }
+  return out;
+}
+function showClash(d){const box=document.getElementById("clashBox");if(!box)return;
+  const c=clashesFor(d,editId);if(!c.length){box.hidden=true;return}
+  box.innerHTML=`⚠️ Überschneidet sich mit:<br>${c.slice(0,4).map(x=>"· "+esc(x.txt)).join("<br>")}${c.length>4?`<br>· und ${c.length-4} weitere`:""}`;box.hidden=false}
+// Einträge mit Überschneidung an einem Tag (für das ⚠️ in der Wochenansicht)
+function dayClashIds(list,day){const ids=new Set();const t=list.filter(e=>spanOf(e)&&e.typ!=="urlaub"&&!(e.endDatum&&e.endDatum>e.datum&&e.datum!==day));
+  for(let i=0;i<t.length;i++)for(let j=i+1;j<t.length;j++){const a=t[i],b=t[j];if(!relevant(a.person,b.person))continue;const x=spanOf(a),y=spanOf(b);if(x[0]<y[1]&&y[0]<x[1]){ids.add(a.id);ids.add(b.id)}}
+  return ids}
+let CLASH=new Set();
+
 /* ---------- Als Nächstes ---------- */
 function nextEntry(){
   const now=new Date(),nowMin=now.getHours()*60+now.getMinutes();let best=null;
@@ -1633,6 +1663,7 @@ function drawSheet(){
       <label class="f">${d.typ==="arbeit"?"Arbeitsbeginn":"Von (optional)"}<input type="time" id="i-von" value="${d.von||""}"></label>
       <label class="f">${d.typ==="arbeit"?"Arbeitsende":"Bis (optional)"}<input type="time" id="i-bis" value="${d.bis||""}"></label>
     </div>`:""}
+    <div id="clashBox" class="clashbox" hidden></div>
     ${bd?"":!isEdit?`<div class="box">
       <span class="lbl-s">Wiederholen</span>
       <div class="seg" style="--n:3">${[["keine","Einmalig"],["7","Jede Woche"],["14","Alle 2 Wochen"]].map(([v,t])=>`<button class="typ" data-wdh="${v}" aria-pressed="${d.wdh===v}">${t}</button>`).join("")}</div>
@@ -1679,6 +1710,8 @@ function drawSheet(){
       if(ch){drawSheet();toast("Angaben vom letzten Mal übernommen")}});}
   if($("i-wdhbis"))$("i-wdhbis").onchange=()=>{read();const p=$("wdhPrev");if(p)p.textContent=seriesPreview(d)};
   if($("i-datum"))$("i-datum").addEventListener("change",()=>{read();const p=$("wdhPrev");if(p)p.textContent=seriesPreview(d)});
+  ["i-datum","i-end","i-von","i-bis"].forEach(id=>{const el=$(id);if(el)el.addEventListener("change",()=>{read();showClash(d)})});
+  showClash(d);
   $("cancel").onclick=closeSheet;
   $("i-imp").onclick=()=>{read();d.wichtig=!d.wichtig;drawSheet()};
   document.querySelectorAll(".sheet [data-vl]").forEach(b=>b.onclick=()=>{read();d.vorlauf=+b.dataset.vl;if(d.vorlauf&&!d.vorlaufText)d.vorlaufText=vlText(d);drawSheet()});
@@ -1712,6 +1745,9 @@ function validate(d){
 }
 async function save(){
   const d=draft;if(!validate(d))return;
+  if(d.typ!=="geburtstag"){const days=editId||d.wdh==="keine"?[d.datum]:seriesDates(d);let n=0,first=null;
+    for(const day of days){const c=clashesFor({...d,datum:day,endDatum:""},editId);if(c.length){n++;if(!first)first={day,c}}}
+    if(n&&!await askConfirm(`⚠️ ${days.length>1?`An ${n} von ${days.length} Tagen gibt es Überschneidungen, z. B. ${fmt(first.day)}: `:"Überschneidet sich mit: "}${first.c.slice(0,2).map(x=>x.txt).join(", ")}. Trotzdem speichern?`,"Trotzdem speichern",false))return}
   if(editId){const id=editId,old=entries.find(x=>x.id===id);await store.set(id,clean(d));closeSheet();if(old)undoToast("Gespeichert",()=>store.set(id,strip(old)));else toast("Gespeichert");return}
   if(d.wdh==="keine"){await store.add(clean(d));closeSheet();weekStart=mondayOf(d.datum);render();toast("Eingetragen");return}
   if(!d.tage.length){toast("Bitte mindestens einen Wochentag wählen");return}
