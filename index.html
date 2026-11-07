@@ -335,6 +335,14 @@ body.fold .day.empty .day-head{border-bottom:0}
 .remrow .meta{font-size:.78rem;color:var(--muted)}
 .remrow .btn{padding:7px 10px;font-size:.8rem}
 .remrow.soon b{color:var(--imp)}
+.morning.wishes{border-left-color:#4fa3d9;background:color-mix(in srgb,#4fa3d9 10%,var(--surface))}
+.wishrow{display:flex!important;flex-direction:column;gap:8px;padding:6px 0;border-bottom:1px solid var(--line)}
+.wishrow:last-child{border-bottom:0}
+.wishrow .meta{font-size:.82rem;color:var(--muted)}
+.wishrow .clash{font-size:.8rem;color:var(--imp);font-weight:600}
+.wst{font-size:.8rem;font-weight:700}
+.wst.angenommen{color:var(--vac)}.wst.abgelehnt{color:var(--imp)}.wst.offen{color:var(--muted)}
+#myWishes #wishNew{padding:8px 14px;font-size:.88rem}
 .sec{font-family:var(--f-display);font-size:1.05rem;margin:6px 0 0}
 .empty-note{font-size:.85rem;color:var(--muted);text-align:center;padding:4px}
 
@@ -406,6 +414,16 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
   </header>
 
   <button class="nextcard" id="nextCard" hidden></button>
+
+  <section class="morning wishes" id="wishes" hidden>
+    <h2 id="wishTitle">💬 Wünsche</h2><span></span>
+    <ul id="wishList"></ul>
+  </section>
+
+  <section class="morning wishes" id="myWishes" hidden>
+    <h2>💬 Meine Wünsche</h2><button class="btn" id="wishNew">+ Wunsch</button>
+    <ul id="myWishList"></ul>
+  </section>
 
   <section class="morning remind" id="remind" hidden>
     <h2 id="remTitle">🔔 Erinnerungen</h2>
@@ -593,6 +611,7 @@ async function init(){
     if(conf){const n=conf.data().namen;if(Array.isArray(n)){applyNames(n);try{localStorage.setItem("fk-namen",JSON.stringify(n))}catch(e){}}}
     LESE=conf?(conf.data().lesen||[]):[];
     if(conf&&conf.data().bilder)setPhotos(conf.data().bilder);
+    watchWishes();
     splitData(snap.docs.filter(d=>d.id!=="_config").map(d=>({...d.data(),id:d.id})));
     const nr=calNr();
     if(snap.metadata.hasPendingWrites)setStatus(`Kalender ${nr} · Änderungen werden übertragen …`);
@@ -1020,6 +1039,8 @@ function startReader(cfg){
     const app=firebase.apps.length?firebase.app():firebase.initializeApp(cfg.firebase||DEFAULT_FIREBASE);
     const fs=firebase.firestore(app);
     fs.enablePersistence().catch(()=>{});
+    FSR=fs;READER_RC=cfg.lesen;
+    fs.collection(`lesen/${cfg.lesen}/wuensche`).onSnapshot(sn=>{MYWISHES=sn.docs.map(x=>({...x.data(),id:x.id}));renderWishes()},()=>{});
     fs.doc(`lesen/${cfg.lesen}`).onSnapshot(doc=>{
       if(!doc.exists){entries=[];render();setStatus("Dieser Link ist nicht mehr gültig.");return}
       const d=doc.data();if(Array.isArray(d.namen))applyNames(d.namen);
@@ -1031,6 +1052,7 @@ function startReader(cfg){
       const lg=document.querySelector(".legend");if(lg)lg.innerHTML=legendHTML();
       entries=(d.eintraege||[]).map((e,i)=>({...e,id:"r"+i}));
       const st=d.stand?new Date(d.stand):null;
+      READER_NAME=d.name||"";
       setStatus(`Nur ansehen${d.name?" · "+d.name:""}${st?" · Stand "+st.toLocaleDateString("de-DE")+" "+st.toTimeString().slice(0,5):""}`);
       render();
     },()=>setStatus("Termine konnten nicht geladen werden."));
@@ -1232,7 +1254,7 @@ function renderInner(){
   document.getElementById("vOther").hidden=view==="woche";
   document.getElementById("navbar").hidden=view==="ferien"||view==="sterne";
   if(view==="tag")renderDay();else if(view==="monat")renderMonth();else if(view==="jahr")renderYear();else if(view==="ferien")renderFerien();else if(view==="sterne")renderStars();else renderWeek();
-  renderMorning();renderNews();renderEve();renderNext();renderRemind();
+  renderMorning();renderNews();renderEve();renderNext();renderRemind();renderWishes();
 }
 /* ---------- Tagesübersicht (Zeitstrahl) ---------- */
 const HPX=52;
@@ -1395,6 +1417,76 @@ function renderNews(){
 }
 document.getElementById("newsAck").onclick=()=>{try{localStorage.setItem("fk-seen",nowISO())}catch(e){}document.getElementById("news").hidden=true;toast("Als gesehen markiert")};
 document.getElementById("newsList").addEventListener("click",ev=>{const b=ev.target.closest("[data-goday]");if(!b)return;weekStart=mondayOf(b.dataset.goday);setView("woche");setTimeout(()=>{const el=document.getElementById("d-"+b.dataset.goday);if(el)el.scrollIntoView({block:"center"})},60)});
+
+/* ---------- Wünsche (z. B. von Papa über den Nur-Lese-Link) ---------- */
+let FSR=null,READER_RC="",READER_NAME="",MYWISHES=[];const WISHES={},wishSubs={};
+const WART=["Ferien","Feiertag","Wochenende","Event","Sonstiges"];
+function watchWishes(){
+  if(!FS)return;
+  for(const l of LESE){if(wishSubs[l.rc])continue;
+    wishSubs[l.rc]=FS.collection(`lesen/${l.rc}/wuensche`).onSnapshot(sn=>{WISHES[l.rc]=sn.docs.map(x=>({...x.data(),id:x.id}));renderWishes()},()=>{})}
+}
+function wishRange(w){return w.bis&&w.bis>w.von?`${fmt(w.von)} – ${fmt(w.bis)} ${w.bis.slice(0,4)}`:`${fmt(w.von)} ${w.von.slice(0,4)}`}
+function renderWishes(){
+  const fam=document.getElementById("wishes"),mine=document.getElementById("myWishes");if(!fam||!mine)return;
+  if(READONLY){fam.hidden=true;
+    if(!READER_RC){mine.hidden=true;return}
+    const st={offen:"⏳ wartet auf Antwort",angenommen:"✅ angenommen",abgelehnt:"❌ leider nicht möglich"};
+    document.getElementById("myWishList").innerHTML=MYWISHES.length?MYWISHES.slice().sort((a,b)=>a.von.localeCompare(b.von)).map(w=>`<li class="remrow"><span class="rt"><b>${esc(wishRange(w))}</b> · ${esc(w.art||"")}<br><span class="meta">${esc(w.text||"")}</span><br><span class="wst ${w.status}">${st[w.status]||""}</span>${w.antwort?`<br><span class="meta">Antwort: „${esc(w.antwort)}“</span>`:""}</span>${w.status==="offen"?`<button class="btn ghost" data-wdel="${esc(w.id)}">Zurückziehen</button>`:"<span></span>"}</li>`).join("")
+      :`<li class="meta">Hier kannst du Wünsche äußern, zum Beispiel für Ferien, Feiertage oder besondere Tage. Die Familie bekommt sie angezeigt und antwortet dir hier.</li>`;
+    mine.querySelectorAll("[data-wdel]").forEach(b=>b.onclick=async()=>{if(!await askConfirm("Diesen Wunsch zurückziehen?","Zurückziehen"))return;try{await FSR.doc(`lesen/${READER_RC}/wuensche/${b.dataset.wdel}`).delete();toast("Zurückgezogen")}catch(e){toast("Das hat nicht geklappt")}});
+    mine.hidden=false;return}
+  mine.hidden=true;
+  const open=[];for(const l of LESE)for(const w of (WISHES[l.rc]||[]))if(w.status==="offen")open.push({l,w});
+  if(!open.length){fam.hidden=true;return}
+  open.sort((a,b)=>a.w.von.localeCompare(b.w.von));
+  document.getElementById("wishTitle").textContent=`💬 ${open.length} ${open.length===1?"neuer Wunsch":"neue Wünsche"}`;
+  document.getElementById("wishList").innerHTML=open.map(({l,w},i)=>{
+    const col=(l.spalten||[]).find(k=>k!=="gemeinsam")||"john";
+    const end=w.bis&&w.bis>w.von?w.bis:w.von;
+    const clash=entries.filter(e=>e.person===col&&e.typ!=="geburtstag"&&e.datum<=end&&(e.endDatum||e.datum)>=w.von&&!/papa|pascal/i.test(e.titel||""));
+    return `<li class="wishrow"><div><b>${esc(l.name||"Nur-Lese-Link")}</b> wünscht sich <b>${esc(PNAME[col]||"")}</b>: <b>${esc(wishRange(w))}</b>${w.art?` · ${esc(w.art)}`:""}
+      ${w.text?`<br><span class="meta">„${esc(w.text)}“</span>`:""}
+      ${clash.length?`<br><span class="clash">⚠️ Überschneidet sich mit: ${clash.slice(0,3).map(e=>esc(`${fmt(e.datum)} ${e.titel||TYPN[e.typ]}`)).join(", ")}</span>`:""}</div>
+      <div class="actions"><button class="btn" data-wok="${i}">Annehmen</button><button class="btn ghost" data-wno="${i}">Ablehnen</button></div></li>`}).join("");
+  fam.querySelectorAll("[data-wok]").forEach(b=>b.onclick=()=>decideWish(open[+b.dataset.wok],true));
+  fam.querySelectorAll("[data-wno]").forEach(b=>b.onclick=()=>decideWish(open[+b.dataset.wno],false));
+  fam.hidden=false;
+}
+function decideWish({l,w},yes){
+  const col=(l.spalten||[]).find(k=>k!=="gemeinsam")||"john";
+  sheet(yes?"Wunsch annehmen":"Wunsch ablehnen",`<p><b>${esc(wishRange(w))}</b>${w.text?` – „${esc(w.text)}“`:""}</p>
+    ${yes?`<p class="hint">Es wird ein Eintrag „${esc(PNAME[col])} bei Papa“ in ${esc(PNAME[col])}s Spalte angelegt. Die Tage werden rot markiert.</p>`:""}
+    <label class="f">Antwort (optional, sieht ${esc(l.name||"der Empfänger")})<input id="wAns" maxlength="200" placeholder="${yes?"z. B. Passt, wir bringen ihn um 10 Uhr":"z. B. Da sind wir leider im Urlaub"}"></label>
+    <div class="actions"><button class="btn" id="wGo">${yes?"Annehmen":"Ablehnen"}</button><button class="btn ghost" id="wCancel">Abbrechen</button></div>`);
+  document.getElementById("wCancel").onclick=closeSheet;
+  document.getElementById("wGo").onclick=async()=>{
+    const ans=document.getElementById("wAns").value.trim().slice(0,200);
+    try{
+      if(yes){await store.add({typ:"termin",person:col,titel:`${PNAME[col]} bei Papa${w.text?" · "+w.text.slice(0,60):""}`,datum:w.von,endDatum:w.bis&&w.bis>w.von?w.bis:"",von:"",bis:"",serie:"",intervall:0})}
+      await FS.doc(`lesen/${l.rc}/wuensche/${w.id}`).update({status:yes?"angenommen":"abgelehnt",antwort:ans,entschieden:nowISO()});
+      closeSheet();toast(yes?"Angenommen und eingetragen ✓":"Abgelehnt");
+    }catch(e){console.warn(e);toast("Das hat nicht geklappt. Sind die neuen Datenbank-Regeln veröffentlicht?")}
+  };
+}
+function newWish(){
+  let art="Ferien";const t0=today;
+  const draw=()=>{sheet("Wunsch äußern",`<p class="hint">Wann hättest du ${esc(PEOPLE[0]?PEOPLE[0][1]:"ihn")} gern bei dir? Die Familie bekommt den Wunsch angezeigt und antwortet dir hier.</p>
+    <div class="seg" style="--n:5">${WART.map(a=>`<button class="typ" data-wa="${a}" aria-pressed="${art===a}">${a}</button>`).join("")}</div>
+    <div class="row2"><label class="f">Von<input type="date" id="wVon" value="${t0}"></label><label class="f">Bis (optional)<input type="date" id="wBis"></label></div>
+    <label class="f">Nachricht<input id="wTxt" maxlength="300" placeholder="z. B. 2. Weihnachtsfeiertag bei Oma, Geburtstagsfeier, Zoo-Besuch"></label>
+    <div class="actions"><button class="btn" id="wSend">Wunsch senden</button><button class="btn ghost" id="wCancel">Abbrechen</button></div>`);
+    document.querySelectorAll("[data-wa]").forEach(b=>b.onclick=()=>{const v=document.getElementById("wVon").value,bi=document.getElementById("wBis").value,tx=document.getElementById("wTxt").value;art=b.dataset.wa;draw();document.getElementById("wVon").value=v;document.getElementById("wBis").value=bi;document.getElementById("wTxt").value=tx});
+    document.getElementById("wCancel").onclick=closeSheet;
+    document.getElementById("wSend").onclick=async()=>{
+      const von=document.getElementById("wVon").value,bis=document.getElementById("wBis").value,text=document.getElementById("wTxt").value.trim().slice(0,300);
+      if(!von){toast("Bitte ein Datum wählen");return}if(bis&&bis<von){toast("„Bis“ liegt vor „Von“");return}
+      try{await FSR.collection(`lesen/${READER_RC}/wuensche`).add({von,bis:bis||"",art,text,status:"offen",erstellt:nowISO()});closeSheet();toast("Wunsch gesendet ✓")}
+      catch(e){console.warn(e);toast("Senden hat nicht geklappt. Bitte später nochmal versuchen.")}
+    };
+  };draw();
+}
+document.getElementById("wishNew").onclick=newWish;
 
 /* ---------- Vorlauf-Erinnerungen ---------- */
 // Geburtstage erinnern automatisch 7 Tage vorher, sonst nur wenn eingestellt
