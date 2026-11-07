@@ -275,8 +275,9 @@ body.offline .appbar{box-shadow:0 0 0 3px #d98a00}
 .dblk .chip-label{color:var(--fg);font-weight:500}
 .dblk.imp{outline:2px solid var(--imp);font-weight:700}
 .dband{position:absolute;top:2px;bottom:2px;z-index:1;border-radius:8px;border:1.5px dashed currentColor;padding:6px 5px;display:flex;flex-direction:column;gap:4px;align-items:stretch;justify-content:flex-start;text-align:center;font-size:.74rem;font-weight:700;opacity:.92}
-.dband .chip-label{color:var(--fg);writing-mode:horizontal-tb;word-break:break-word}
-.dband .dband-sub{font-size:.62rem;font-weight:600;opacity:.75}
+.dband{justify-content:center!important;align-items:center!important;flex-direction:row!important;gap:6px}
+.dband .chip-label{color:var(--fg);writing-mode:vertical-rl;transform:rotate(180deg);font-size:1.35rem;font-weight:800;letter-spacing:.35em;white-space:nowrap;max-height:100%;overflow:hidden;text-overflow:ellipsis}
+.dband .dband-sub{display:none}
 .dband.christin{color:var(--c-christin);background:color-mix(in srgb,var(--c-christin-bg) 70%,transparent)}.dband.john{color:var(--c-john);background:color-mix(in srgb,var(--c-john-bg) 70%,transparent)}.dband.robert{color:var(--c-robert);background:color-mix(in srgb,var(--c-robert-bg) 70%,transparent)}.dband.gemeinsam{color:var(--c-gem);background:color-mix(in srgb,var(--c-gem-bg) 70%,transparent)}
 .dband.urlaub{color:var(--vac);background:color-mix(in srgb,var(--vac-bg) 70%,transparent)}
 .dband.imp{border:2px solid var(--imp)}
