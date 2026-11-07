@@ -1432,9 +1432,9 @@ function renderWishes(){
   if(READONLY){fam.hidden=true;
     if(!READER_RC){mine.hidden=true;return}
     const st={offen:"⏳ wartet auf Antwort",angenommen:"✅ angenommen",abgelehnt:"❌ leider nicht möglich"};
-    document.getElementById("myWishList").innerHTML=MYWISHES.length?MYWISHES.slice().sort((a,b)=>a.von.localeCompare(b.von)).map(w=>`<li class="remrow"><span class="rt"><b>${esc(wishRange(w))}</b> · ${esc(w.art||"")}<br><span class="meta">${esc(w.text||"")}</span><br><span class="wst ${w.status}">${st[w.status]||""}</span>${w.antwort?`<br><span class="meta">Antwort: „${esc(w.antwort)}“</span>`:""}</span>${w.status==="offen"?`<button class="btn ghost" data-wdel="${esc(w.id)}">Zurückziehen</button>`:"<span></span>"}</li>`).join("")
+    document.getElementById("myWishList").innerHTML=MYWISHES.length?MYWISHES.slice().sort((a,b)=>a.von.localeCompare(b.von)).map(w=>`<li class="remrow"><span class="rt"><b>${esc(wishRange(w))}</b> · ${esc(w.art||"")}<br><span class="meta">${esc(w.text||"")}</span><br><span class="wst ${w.status}">${st[w.status]||""}</span>${w.antwort?`<br><span class="meta">Antwort: „${esc(w.antwort)}“</span>`:""}</span><button class="btn ghost" data-wdel="${esc(w.id)}" data-wst="${w.status}">${w.status==="offen"?"Zurückziehen":"Entfernen"}</button></li>`).join("")
       :`<li class="meta">Hier kannst du Wünsche äußern, zum Beispiel für Ferien, Feiertage oder besondere Tage. Die Familie bekommt sie angezeigt und antwortet dir hier.</li>`;
-    mine.querySelectorAll("[data-wdel]").forEach(b=>b.onclick=async()=>{if(!await askConfirm("Diesen Wunsch zurückziehen?","Zurückziehen"))return;try{await FSR.doc(`lesen/${READER_RC}/wuensche/${b.dataset.wdel}`).delete();toast("Zurückgezogen")}catch(e){toast("Das hat nicht geklappt")}});
+    mine.querySelectorAll("[data-wdel]").forEach(b=>b.onclick=async()=>{const off=b.dataset.wst==="offen";if(!await askConfirm(off?"Diesen Wunsch zurückziehen?":"Diesen Wunsch aus der Liste entfernen?",off?"Zurückziehen":"Entfernen"))return;try{await FSR.doc(`lesen/${READER_RC}/wuensche/${b.dataset.wdel}`).delete();toast("Entfernt")}catch(e){toast("Das hat nicht geklappt")}});
     mine.hidden=false;return}
   mine.hidden=true;
   const open=[];for(const l of LESE)for(const w of (WISHES[l.rc]||[]))if(w.status==="offen")open.push({l,w});
