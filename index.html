@@ -274,6 +274,12 @@ body.offline .appbar{box-shadow:0 0 0 3px #d98a00}
 .dblk.arbeit{color:var(--work);background:var(--work-bg);background-image:repeating-linear-gradient(135deg,transparent 0 6px,color-mix(in srgb,var(--work) 10%,transparent) 6px 12px)}
 .dblk .chip-label{color:var(--fg);font-weight:500}
 .dblk.imp{outline:2px solid var(--imp);font-weight:700}
+.dband{position:absolute;top:2px;bottom:2px;z-index:1;border-radius:8px;border:1.5px dashed currentColor;padding:6px 5px;display:flex;flex-direction:column;gap:4px;align-items:stretch;justify-content:flex-start;text-align:center;font-size:.74rem;font-weight:700;opacity:.92}
+.dband .chip-label{color:var(--fg);writing-mode:horizontal-tb;word-break:break-word}
+.dband .dband-sub{font-size:.62rem;font-weight:600;opacity:.75}
+.dband.christin{color:var(--c-christin);background:color-mix(in srgb,var(--c-christin-bg) 70%,transparent)}.dband.john{color:var(--c-john);background:color-mix(in srgb,var(--c-john-bg) 70%,transparent)}.dband.robert{color:var(--c-robert);background:color-mix(in srgb,var(--c-robert-bg) 70%,transparent)}.dband.gemeinsam{color:var(--c-gem);background:color-mix(in srgb,var(--c-gem-bg) 70%,transparent)}
+.dband.urlaub{color:var(--vac);background:color-mix(in srgb,var(--vac-bg) 70%,transparent)}
+.dband.imp{border:2px solid var(--imp)}
 .dnow{position:absolute;left:0;right:0;border-top:2px solid var(--imp);z-index:3;pointer-events:none}
 .dnow span{position:absolute;left:-44px;top:-9px;background:var(--imp);color:#fff;font-size:.64rem;font-weight:700;padding:1px 4px;border-radius:4px}
 .sec{font-family:var(--f-display);font-size:1.05rem;margin:6px 0 0}
@@ -1113,9 +1119,15 @@ function renderDay(){
   const badges=[pp?`<span class="badge papa">bei Papa</span>`:"",fe?`<span class="badge feier">${esc(fe)}</span>`:"",fr?`<span class="badge fer">${esc(fr)}</span>`:""].join("");
   const cols=PEOPLE.map(([k])=>k);
   const lab=e=>e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?`Arbeit${e.titel&&e.titel!=="Arbeit"?" · "+e.titel:""}`:e.typ==="urlaub"?`Urlaub${e.titel?" · "+e.titel:""}`:e.titel;
-  const adHTML=allday.length?`<div class="dallday">${allday.map(e=>`<button class="chip ${e.typ} ${e.person}${e.wichtig?" imp":""}" data-id="${esc(e.id)}">${av(e.person,"av sm")}<b>${esc(PNAME[e.person]||"")}</b> · <span class="chip-label">${esc(lab(e))}</span></button>`).join("")}</div>`:"";
+  // Ganztägige Termine/Urlaub als Band durch die ganze Spalte, Geburtstage bleiben oben
+  const bands=allday.filter(e=>e.typ!=="geburtstag");
+  const topList=allday.filter(e=>e.typ==="geburtstag");
+  const adHTML=topList.length?`<div class="dallday">${topList.map(e=>`<button class="chip ${e.typ} ${e.person}${e.wichtig?" imp":""}" data-id="${esc(e.id)}">${av(e.person,"av sm")}<b>${esc(PNAME[e.person]||"")}</b> · <span class="chip-label">${esc(lab(e))}</span></button>`).join("")}</div>`:"";
   // Spalten mit Überlappungs-Verteilung
   let blocks="";
+  cols.forEach((k,ci)=>{const bs=bands.filter(e=>e.person===k);if(!bs.length)return;
+    const cls=bs[0].typ==="termin"?k:bs[0].typ;
+    blocks+=`<button class="dband ${cls}${bs.some(e=>e.wichtig)?" imp":""}" data-id="${esc(bs[0].id)}" style="left:calc(${ci} * var(--cw) + 2px);width:calc(var(--cw) - 4px)">${bs.map(e=>`<span class="chip-label">${e.wichtig?"❗ ":""}${esc(lab(e))}</span>`).join("")}<span class="dband-sub">ganzer Tag</span></button>`});
   cols.forEach((k,ci)=>{
     const ev=timed.filter(e=>e.person===k).map(e=>{const a=toMin(e.von);let b=e.bis?toMin(e.bis):a+60;if(b<=a)b=e.bis?24*60:a+60;return{e,a,b}}).sort((x,y)=>x.a-y.a);
     const lanes=[];for(const x of ev){let l=lanes.findIndex(end=>end<=x.a);if(l<0){l=lanes.length;lanes.push(0)}lanes[l]=x.b;x.l=l}
