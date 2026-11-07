@@ -162,6 +162,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .frow .cd{font-size:.8rem;font-weight:600;color:var(--fer-fg);text-align:right}
 .frow .fam{grid-column:1/-1;font-size:.78rem;color:var(--vac)}
 .row3n{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.prow input{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:9px;min-width:0;width:100%}
+.prow .btn{padding:6px 10px}
 .sub{font-family:var(--f-display);font-size:1rem;margin:6px 0 -4px}
 .foot{text-align:center;font-size:.85rem;padding:8px 0 4px}.foot a{color:var(--muted)}
 .lbl-s{font-size:.82rem;color:var(--muted);font-weight:600;letter-spacing:.02em}
@@ -480,7 +482,22 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script>
 // Die drei Personen-Spalten haben feste interne Schlüssel, die Namen kommen aus den Kalender-Einstellungen
-const SLOTS=["christin","john","robert"];
+const BASE_SLOTS=["christin","john","robert"];
+let SLOTS=BASE_SLOTS.slice();
+try{const ps=JSON.parse(localStorage.getItem("fk-personen")||"null");if(Array.isArray(ps)&&ps.length)SLOTS=ps.filter(k=>typeof k==="string"&&/^[a-z0-9]{2,12}$/.test(k)&&k!=="gemeinsam")}catch(e){}
+// Farben für weitere Personen (funktionieren in hell und dunkel)
+const EXTRA_COLORS=["#3d8fe0","#e0873d","#9a6be0","#2fae74","#c9a227","#e05aa8","#5a73e0","#36aaaa","#b5651d","#7f9c2b"];
+const persons=()=>PEOPLE.filter(([k])=>k!=="gemeinsam");
+function personColor(k){const i=SLOTS.indexOf(k)-BASE_SLOTS.length;return i>=0?EXTRA_COLORS[(SLOTS.filter(x=>!BASE_SLOTS.includes(x)).indexOf(k))%EXTRA_COLORS.length]:null}
+function applyPersonStyles(){
+  let css="";for(const k of SLOTS){if(BASE_SLOTS.includes(k))continue;const c=personColor(k);if(!c)continue;
+    css+=`.p-${k},.chip.termin.${k},.mbar.${k},.dblk.${k}{color:${c};background:color-mix(in srgb,${c} 18%,var(--surface))}.dband.${k}{color:${c};background:color-mix(in srgb,${c} 12%,transparent)}.pd .${k},.kd.${k}{background:${c}}`;
+    if(typeof WCOL!=="undefined")WCOL[k]=c}
+  let el=document.getElementById("dynPersons");if(!el){el=document.createElement("style");el.id="dynPersons";document.head.appendChild(el)}el.textContent=css}
+function setPersons(keys,names){
+  if(Array.isArray(keys)&&keys.length)SLOTS=keys.filter(k=>typeof k==="string"&&/^[a-z0-9]{2,12}$/.test(k)&&k!=="gemeinsam");
+  try{localStorage.setItem("fk-personen",JSON.stringify(SLOTS))}catch(e){}
+  applyNames(names);applyPersonStyles()}
 const DEFAULT_NAMES=["","",""];
 let NAMES=DEFAULT_NAMES.slice();
 let PEOPLE=[],PNAME={};
@@ -525,7 +542,7 @@ const mondayOf=s=>{const d=parse(s);const w=(d.getDay()+6)%7;d.setDate(d.getDate
 const fmt=s=>{const d=parse(s);return `${WD[d.getDay()]} ${d.getDate()}. ${MON[d.getMonth()]}`};
 const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 let _ln=null;try{_ln=JSON.parse(localStorage.getItem("fk-namen")||"null")}catch(e){}
-applyNames(_ln||DEFAULT_NAMES);
+applyNames(_ln||DEFAULT_NAMES);applyPersonStyles();
 
 let today=iso(new Date());
 let weekStart=mondayOf(today);
@@ -543,7 +560,7 @@ function localStore(){
     async add(o){const id="l"+Math.random().toString(36).slice(2,10);all.push({...o,id});upd()},
     async set(id,o){if(all.some(e=>e.id===id))all=all.map(e=>e.id===id?{...o,id}:e);else all.push({...o,id});upd()},
     async del(id){all=all.filter(e=>e.id!==id);upd()},
-    async names(n){try{localStorage.setItem("fk-namen",JSON.stringify(n))}catch(e){}applyNames(n);render()},
+    async names(n,keys){try{localStorage.setItem("fk-namen",JSON.stringify(n))}catch(e){}setPersons(keys||SLOTS,n);render()},
     async wipe(){all=[];save(all);splitData(all);try{localStorage.removeItem("fk-namen")}catch(e){}}};
 }
 /* ---------- Verbindung (Firebase) ---------- */
@@ -593,7 +610,7 @@ async function init(){
     add(o){col.add(stampNew(o)).catch(failed)},
     set(id,o){col.doc(id).set(stampEdit(id,o)).catch(failed)},
     del(id){col.doc(id).delete().catch(failed)},
-    async names(n){await col.doc("_config").set({typ:"config",namen:n},{merge:true})},
+    async names(n,keys){await col.doc("_config").set({typ:"config",namen:n,personen:keys||SLOTS},{merge:true})},
     async conf(o){await col.doc("_config").set({typ:"config",...o},{merge:true})},
     async wipe(){const snap=await col.get();let b=col.firestore.batch(),n=0;for(const d of snap.docs){b.delete(d.ref);if(++n%400===0){await b.commit();b=col.firestore.batch()}}await b.commit()}};
   try{const nn=sessionStorage.getItem("fk-namen-neu");if(nn){sessionStorage.removeItem("fk-namen-neu");await store.names(JSON.parse(nn))}}catch(e){}
@@ -610,7 +627,7 @@ async function init(){
   try{if(sessionStorage.getItem("fk-invite")){sessionStorage.removeItem("fk-invite");setTimeout(showSettings,400)}}catch(e){}
   col.onSnapshot({includeMetadataChanges:true},snap=>{
     const conf=snap.docs.find(d=>d.id==="_config");
-    if(conf){const n=conf.data().namen;if(Array.isArray(n)){applyNames(n);try{localStorage.setItem("fk-namen",JSON.stringify(n))}catch(e){}}}
+    if(conf){const n=conf.data().namen,ks=conf.data().personen;if(Array.isArray(n)){setPersons(Array.isArray(ks)&&ks.length===n.length?ks:BASE_SLOTS.slice(0,n.length),n);try{localStorage.setItem("fk-namen",JSON.stringify(n))}catch(e){}}}
     LESE=conf?(conf.data().lesen||[]):[];
     if(conf&&conf.data().bilder)setPhotos(conf.data().bilder);
     watchWishes();
@@ -627,6 +644,17 @@ async function init(){
 /* ---------- Einrichtung & Einladen ---------- */
 function sheet(title,html){document.getElementById("sheetHost").innerHTML=`<div class="backdrop" id="bd"><div class="sheet" role="dialog" aria-modal="true" aria-label="${title}"><h3>${title}</h3>${html}</div></div>`;draft={setup:true};
   document.getElementById("bd").onclick=ev=>{if(ev.target.id==="bd")closeSheet()}}
+function personRow(k,n){return `<div class="task prow" data-pkey="${k}" style="grid-template-columns:auto 1fr auto"><span class="kd ${k}" style="width:14px;height:14px"></span><input maxlength="20" value="${esc(n||"")}" placeholder="Name" aria-label="Name"><button class="btn ghost" data-prm="${k}" aria-label="Person entfernen">✕</button></div>`}
+let removedKeys=[];
+function wirePersons(){
+  const list=document.getElementById("persList");if(!list)return;
+  list.onclick=ev=>{const b=ev.target.closest("[data-prm]");if(!b)return;if(list.querySelectorAll("[data-pkey]").length<=1){toast("Mindestens eine Person wird gebraucht");return}b.closest("[data-pkey]").remove();toast("Zum Übernehmen „Speichern“ tippen")};
+  document.getElementById("persAdd").onclick=()=>{if(list.querySelectorAll("[data-pkey]").length>=12){toast("Höchstens 12 Personen");return}
+    let k;do{k="p"+Math.random().toString(36).slice(2,6)}while(SLOTS.includes(k)||list.querySelector(`[data-pkey="${k}"]`));
+    const tmp=document.createElement("div");tmp.innerHTML=personRow(k,"");const row=tmp.firstChild;list.appendChild(row);
+    const keysNow=[...list.querySelectorAll("[data-pkey]")].map(r=>r.dataset.pkey);const old=SLOTS;SLOTS=keysNow;applyPersonStyles();SLOTS=old;
+    row.querySelector("input").focus()};
+}
 function nameFields(vals){return `<div class="row3n">${SLOTS.map((k,i)=>`<label class="f">Person ${i+1}<input id="nm${i}" maxlength="20" value="${esc(vals[i]||"")}" placeholder="Name"></label>`).join("")}</div>`}
 const readNames=()=>SLOTS.map((k,i)=>(document.getElementById("nm"+i).value||"").trim());
 function showSetup(){
@@ -663,9 +691,11 @@ function showSettings(){
     <div class="avgrid">${PEOPLE.map(([k,n])=>`<div class="avcell"><button class="avpick p-${k}" data-avpick="${k}" aria-label="Bild für ${esc(n)} wählen">${PHOTOS[k]?`<img src="${PHOTOS[k]}" alt="">`:`<span>📷</span>`}</button><span class="avname">${esc(n)}</span>${PHOTOS[k]?`<button class="avdel" data-avdel="${k}">Entfernen</button>`:""}</div>`).join("")}</div>
     <input type="file" id="avIn" accept="image/*" hidden>
     <p class="hint">Tippe auf einen Kreis und wähle ein Foto. Es wird verkleinert und erscheint bei allen über dem Namen.</p>
-    <h4 class="sub">Namen der Spalten</h4>
-    ${nameFields(NAMES)}
-    <button class="btn ghost" id="nmSave">Namen speichern</button>
+    <h4 class="sub">Personen im Haushalt</h4>
+    <div id="persList" class="tasklist">${SLOTS.map((k,i)=>personRow(k,NAMES[i])).join("")}</div>
+    <button class="btn ghost" id="persAdd">+ Person hinzufügen</button>
+    <p class="hint">Jede Person bekommt eine eigene Spalte und Farbe. „Gemeinsam“ gibt es immer dazu.</p>
+    <button class="btn" id="nmSave">Personen speichern</button>
     <h4 class="sub">Für Freunde: eigenen Kalender</h4>
     <p class="hint">Mit diesem Link können andere die App nutzen und legen dabei ihren <b>eigenen, getrennten</b> Kalender an. Deine Termine sehen sie nicht.</p>
     <div class="linkbox" id="appl">${esc(appLink)}</div>
@@ -714,7 +744,15 @@ function showSettings(){
   if(navigator.share)sh.onclick=()=>navigator.share({title:"Familienkalender",text:"Unser Familienkalender",url:link}).catch(()=>{});else sh.hidden=true;
   document.getElementById("setClose").onclick=closeSheet;
   wirePhotos();
-  document.getElementById("nmSave").onclick=async()=>{const n=readNames();if(!n.some(Boolean)){toast("Bitte mindestens einen Namen eintragen");return}try{await store.names(n);applyNames(n);render();toast("Namen gespeichert")}catch(e){toast("Speichern hat nicht geklappt")}};
+  wirePersons();
+  document.getElementById("nmSave").onclick=async()=>{const rows=[...document.querySelectorAll("#persList [data-pkey]")];
+    const keys=rows.map(r=>r.dataset.pkey),n=rows.map(r=>r.querySelector("input").value.trim().slice(0,20));
+    if(!keys.length){toast("Mindestens eine Person wird gebraucht");return}
+    if(n.some(x=>!x)){toast("Bitte jeder Person einen Namen geben");return}
+    const removed=SLOTS.filter(k=>!keys.includes(k)),cnt=entries.filter(e=>removed.includes(e.person)).length;
+    if(removed.length&&!await askConfirm(`${removed.map(k=>PNAME[k]).join(", ")} entfernen?${cnt?` ${cnt} Einträge dieser Person werden dann nicht mehr angezeigt (sie bleiben gespeichert und kommen zurück, wenn du die Person wieder hinzufügst).`:""}`,"Entfernen"))return;
+    try{await store.names(n,keys);setPersons(keys,n);render();toast("Gespeichert");showSettings()}catch(e){toast("Speichern hat nicht geklappt")}};
+  if(false)document.getElementById("nmSave").onclick=async()=>{const n=readNames();if(!n.some(Boolean)){toast("Bitte mindestens einen Namen eintragen");return}try{await store.names(n);applyNames(n);render();toast("Namen gespeichert")}catch(e){toast("Speichern hat nicht geklappt")}};
   document.getElementById("applCopy").onclick=async()=>{try{await navigator.clipboard.writeText(appLink);toast("App-Link kopiert")}catch(e){const r=document.createRange();r.selectNodeContents(document.getElementById("appl"));const x=getSelection();x.removeAllRanges();x.addRange(r);toast("Link markiert, jetzt kopieren")}};
   document.getElementById("disc").onclick=async()=>{if(!await askConfirm("Dieses Handy vom Kalender trennen? Die Termine bleiben für die anderen erhalten. Zum erneuten Verbinden brauchst du den Einladungslink.","Trennen"))return;localStorage.removeItem(CFG_KEY);location.reload()};
 }
@@ -778,7 +816,7 @@ function parseVoice(text){
   const wichtig=/\b(wichtig|dringend)\b/.test(low);if(wichtig)t=t.replace(/\b(wichtig|dringend)\b/ig," ");
   const typ=/geburtstag/.test(low)?"geburtstag":/urlaub/.test(low)?"urlaub":/(arbeit|arbeite|dienst|schicht)/.test(low)?"arbeit":"termin";
   let person=typ==="termin"||typ==="geburtstag"?"gemeinsam":"";
-  for(const[k,n] of PEOPLE.slice(0,3)){const re=new RegExp(`(^|[^a-zäöüß])${n.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}([^a-zäöüß]|$)`);if(n.length>1&&re.test(low)&&typ!=="geburtstag"){person=k;t=t.replace(new RegExp(n,"i")," ");break}}
+  for(const[k,n] of persons()){const re=new RegExp(`(^|[^a-zäöüß])${n.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}([^a-zäöüß]|$)`);if(n.length>1&&re.test(low)&&typ!=="geburtstag"){person=k;t=t.replace(new RegExp(n,"i")," ");break}}
   if(!person)person=PEOPLE[0][0];
   let datum="",endDatum="";
   const {dates,rest}=findDates(t,today);t=rest;
@@ -815,7 +853,7 @@ function applyVoice(text){
 }
 
 /* ---------- Bild für den Sperrbildschirm ---------- */
-const WCOL={christin:"#f08aaa",john:"#6fd1c2",robert:"#f0b26b",gemeinsam:"#a99bf2",arbeit:"#c9d4da",urlaub:"#8bd08e",geburtstag:"#ffd27a"};
+var WCOL={christin:"#f08aaa",john:"#6fd1c2",robert:"#f0b26b",gemeinsam:"#a99bf2",arbeit:"#c9d4da",urlaub:"#8bd08e",geburtstag:"#ffd27a"};
 function rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
 function fitText(g,txt,max){if(g.measureText(txt).width<=max)return txt;while(txt.length>1&&g.measureText(txt+"…").width>max)txt=txt.slice(0,-1);return txt+"…"}
 function entryLine(e,day){const t=timeTxt(e);return e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?`Arbeit ${t}`:e.typ==="urlaub"?`Urlaub${e.titel?" · "+e.titel:""}`:`${t?t+"  ":""}${e.titel}`}
@@ -878,7 +916,7 @@ function starBalance(p){return taskLogs.filter(l=>l.person===p).reduce((a,l)=>a+
 function starWeek(p){const m=mondayOf(today);return taskLogs.filter(l=>l.person===p&&mondayOf(l.datum)===m).reduce((a,l)=>a+(+l.sterne||0),0)}
 let popPerson="";
 function renderStars(){
-  const P=PEOPLE.slice(0,3);
+  const P=persons();
   const cards=P.map(([k,n])=>`<div class="starcard${popPerson===k?" pop":""}">${av(k,"av big-av")}<span class="nm p-${k}" style="background:none">${esc(n)}</span><span class="big">⭐ ${starBalance(k)}</span><span class="wk">diese Woche +${starWeek(k)}</span></div>`).join("");
   popPerson="";
   const vis=tasks.filter(t=>{const l=logFor(t);return !(t.wiederholung==="einmalig"&&l&&l.datum<today)});
@@ -918,7 +956,7 @@ function openTaskSheet(t){
   const draw=()=>{sheet(t?"Aufgabe bearbeiten":"Neue Aufgabe",`
     <label class="f">Was ist zu tun?<input id="tTit" value="${esc(d.titel)}" placeholder="z. B. Zimmer aufräumen, Hausaufgaben"></label>
     <span class="lbl-s">Für wen?</span>
-    <div class="seg" style="--n:3">${PEOPLE.slice(0,3).map(([k,n])=>`<button class="p-${k}" data-tp="${k}" aria-pressed="${d.person===k}">${esc(n)}</button>`).join("")}</div>
+    <div class="seg" style="--n:${Math.min(4,persons().length)}">${persons().map(([k,n])=>`<button class="p-${k}" data-tp="${k}" aria-pressed="${d.person===k}">${esc(n)}</button>`).join("")}</div>
     <span class="lbl-s">Sterne als Belohnung</span>
     <div class="seg" style="--n:5">${[1,2,3,4,5].map(n=>`<button class="typ" data-ts="${n}" aria-pressed="${+d.sterne===n}">${n} ⭐</button>`).join("")}</div>
     <span class="lbl-s">Wie oft?</span>
@@ -974,7 +1012,7 @@ function scheduleMirror(){clearTimeout(mirrorTimer);mirrorTimer=setTimeout(syncM
 async function syncMirrors(){
   if(!memberOK||!FS||!LESE.length)return;
   for(const l of LESE){
-    const body={namen:SLOTS.map((k,i)=>(l.spalten||[]).includes(k)?NAMES[i]:""),bilder:Object.fromEntries(Object.entries(PHOTOS).filter(([k])=>(l.spalten||[]).includes(k))),spalten:l.spalten,name:l.name||"",eintraege:mirrorData(l)};
+    const body={personen:SLOTS,namen:SLOTS.map((k,i)=>(l.spalten||[]).includes(k)?NAMES[i]:""),bilder:Object.fromEntries(Object.entries(PHOTOS).filter(([k])=>(l.spalten||[]).includes(k))),spalten:l.spalten,name:l.name||"",eintraege:mirrorData(l)};
     const key=JSON.stringify(body);let last="";try{last=localStorage.getItem("fk-mirror-"+l.rc)||""}catch(e){}
     if(key===last)continue;
     try{await FS.doc(`lesen/${l.rc}`).set({...body,stand:new Date().toISOString()});try{localStorage.setItem("fk-mirror-"+l.rc,key)}catch(e){}}catch(e){console.warn("Spiegel",e)}
@@ -987,7 +1025,7 @@ async function createReadLink(name,spalten){
     await FS.doc(`leselinks/${rc}`).set({fam:cfg.code});
     const neu=[...LESE.filter(l=>l.rc!==rc),{rc,name,spalten}];
     await store.conf({lesen:neu});LESE=neu;
-    await FS.doc(`lesen/${rc}`).set({namen:SLOTS.map((k,i)=>spalten.includes(k)?NAMES[i]:""),spalten,name,eintraege:mirrorData({spalten}),stand:new Date().toISOString()});
+    await FS.doc(`lesen/${rc}`).set({personen:SLOTS,namen:SLOTS.map((k,i)=>spalten.includes(k)?NAMES[i]:""),spalten,name,eintraege:mirrorData({spalten}),stand:new Date().toISOString()});
     toast("Nur-Lese-Link erstellt");showSettings();
   }catch(e){console.warn(e);showAuthHelp()}
 }
@@ -1045,7 +1083,7 @@ function startReader(cfg){
     fs.collection(`lesen/${cfg.lesen}/wuensche`).onSnapshot(sn=>{MYWISHES=sn.docs.map(x=>({...x.data(),id:x.id}));renderWishes()},()=>{});
     fs.doc(`lesen/${cfg.lesen}`).onSnapshot(doc=>{
       if(!doc.exists){entries=[];render();setStatus("Dieser Link ist nicht mehr gültig.");return}
-      const d=doc.data();if(Array.isArray(d.namen))applyNames(d.namen);
+      const d=doc.data();if(Array.isArray(d.namen)){if(Array.isArray(d.personen)&&d.personen.length===d.namen.length){SLOTS=d.personen;applyPersonStyles()}applyNames(d.namen)}
       const sp=Array.isArray(d.spalten)&&d.spalten.length?d.spalten:PEOPLE.map(([k])=>k);
       PEOPLE=PEOPLE.filter(([k])=>sp.includes(k));
       document.documentElement.style.setProperty("--ncol",String(PEOPLE.length));
@@ -1635,8 +1673,8 @@ function closeSheet(){document.getElementById("sheetHost").innerHTML="";draft=nu
 function drawSheet(){
   const d=draft;const isEdit=!!editId;
   const bd=d.typ==="geburtstag";
-  const peopleAllowed=d.typ==="termin"||bd?PEOPLE:PEOPLE.slice(0,3);
-  if(!(d.typ==="termin"||bd)&&d.person==="gemeinsam")d.person="christin";
+  const peopleAllowed=d.typ==="termin"||bd?PEOPLE:persons();
+  if(!(d.typ==="termin"||bd)&&d.person==="gemeinsam")d.person=persons()[0][0];
   const showTime=d.typ!=="urlaub"&&!bd;
   const series=isEdit&&d.serie?entries.filter(x=>x.serie===d.serie).length:0;
   document.getElementById("sheetHost").innerHTML=`
@@ -1644,7 +1682,7 @@ function drawSheet(){
     <h3>${isEdit?"Eintrag bearbeiten":"Neuer Eintrag"}</h3>
     <div class="seg" style="--n:4">${["termin","arbeit","urlaub","geburtstag"].map(t=>`<button class="typ" data-typ="${t}" aria-pressed="${d.typ===t}">${TYPN[t]}</button>`).join("")}</div>
     ${!isEdit&&voiceOK()?`<button class="btn ghost" id="voiceIn">🎤 Per Sprache ausfüllen</button>`:""}
-    <div class="seg" style="--n:${peopleAllowed.length}">${peopleAllowed.map(([k,n])=>`<button class="p-${k}" data-person="${k}" aria-pressed="${d.person===k}">${n}</button>`).join("")}</div>
+    <div class="seg" style="--n:${Math.min(4,peopleAllowed.length)}">${peopleAllowed.map(([k,n])=>`<button class="p-${k}" data-person="${k}" aria-pressed="${d.person===k}">${n}</button>`).join("")}</div>
     ${bd?`<p class="hint">In welcher Spalte soll der Geburtstag stehen? Für Verwandte und Freunde passt „Gemeinsam“.</p>`:""}
     <label class="f">${bd?"Wer hat Geburtstag?":d.typ==="termin"?"Was?":"Notiz (optional)"}<input id="i-titel" list="dlTitles" autocomplete="off" value="${esc(d.titel)}" placeholder="${bd?"z. B. Oma Helga":d.typ==="termin"?"z. B. John bei Papa, Zahnarzt …":d.typ==="arbeit"?"z. B. Frühdienst":"z. B. Ostsee"}"></label>
     <div class="box">
@@ -1874,7 +1912,7 @@ function isGeneric(w){
 function parseOCR(text,todayISO){
   const lines=String(text||"").split(/\n+/).map(l=>l.trim()).filter(l=>l.length>1);
   const low=String(text||"").toLowerCase();
-  const NM=PEOPLE.slice(0,3).map(([k,n])=>[k,n.toLowerCase()]).filter(([k,n])=>n.length>1&&!/^person \d$/.test(n));
+  const NM=persons().map(([k,n])=>[k,n.toLowerCase()]).filter(([k,n])=>n.length>1&&!/^person \d$/.test(n));
   const names=NM.filter(([k,n])=>low.includes(n)).map(([k])=>k);
   const personAll=names.length===1?names[0]:"gemeinsam";
   const info=lines.map(raw=>{const a=findDates(raw,todayISO);const b=findTimes(a.rest);return{raw,dates:a.dates,times:b.times,words:cleanTitle(b.rest),used:false}});
@@ -1910,8 +1948,8 @@ function normFound(x){
   const okTime=s=>/^\d{2}:\d{2}$/.test(String(s||""))?String(s):"";
   if(!okDate(x.datum))return null;
   const typ=["termin","arbeit","urlaub"].includes(x.typ)?x.typ:"termin";
-  let person=["christin","john","robert","gemeinsam"].includes(String(x.person).toLowerCase())?String(x.person).toLowerCase():"gemeinsam";
-  if(typ!=="termin"&&person==="gemeinsam")person="robert";
+  let person=PNAME[String(x.person).toLowerCase()]?String(x.person).toLowerCase():"gemeinsam";
+  if(typ!=="termin"&&person==="gemeinsam")person=persons()[0][0];
   return{keep:true,typ,person,titel:String(x.titel||"").slice(0,200),datum:x.datum,endDatum:okDate(x.endDatum)&&x.endDatum>x.datum?x.endDatum:"",
     von:typ==="urlaub"?"":okTime(x.von),bis:typ==="urlaub"?"":okTime(x.bis)};
 }
@@ -1926,7 +1964,7 @@ function drawScan(state,msg){
     const n=found.filter(f=>f.keep).length;
     body=`<p class="hint">Bitte kurz prüfen und bei Bedarf korrigieren, vor allem den Text bei „Was?“. Abgewählte Einträge werden nicht übernommen.</p><details><summary>Erkannter Text</summary><pre style="white-space:pre-wrap;font-size:.8rem">${esc(ocrText)}</pre></details>
     <div class="found">${found.map((f,i)=>{
-      const pp=f.typ==="termin"?PEOPLE:PEOPLE.slice(0,3);
+      const pp=f.typ==="termin"?PEOPLE:persons();
       return `<div class="found-item${f.keep?"":" off"}" data-i="${i}">
         <label class="keep"><input type="checkbox" data-k="keep"${f.keep?" checked":""}> Übernehmen</label>
         <div class="row3b">
@@ -1953,7 +1991,7 @@ function drawScan(state,msg){
       const k=inp.dataset.k;
       inp.onchange=()=>{
         if(k==="keep")f.keep=inp.checked;else f[k]=inp.value;
-        if(k==="typ"){if(f.typ!=="termin"&&f.person==="gemeinsam")f.person="robert";if(f.typ==="urlaub"){f.von="";f.bis=""}}
+        if(k==="typ"){if(f.typ!=="termin"&&f.person==="gemeinsam")f.person=persons()[0][0];if(f.typ==="urlaub"){f.von="";f.bis=""}}
         if(k==="keep"||k==="typ")drawScan("liste");
       };
     });
