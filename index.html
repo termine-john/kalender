@@ -495,6 +495,7 @@ body.haspbg::after{background:var(--bg);opacity:var(--pdim,.55)}
 .pbgrid button[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
 .pbgrid button span{background:rgba(0,0,0,.45);color:#fff;border-radius:6px;padding:1px 5px}
 .pbrange{width:100%}
+body.lang-x #micBtn,body.lang-x #voiceIn{display:none!important}
 .pcol{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);padding:0;cursor:pointer;flex:none}
 .palette{display:flex;flex-wrap:wrap;gap:8px;padding:8px 2px 4px;grid-column:1/-1}
 .palette button{width:30px;height:30px;border-radius:50%;border:2px solid transparent;padding:0}
@@ -835,7 +836,7 @@ function wirePersons(){
 function nameFields(vals){return `<div class="row3n">${SLOTS.map((k,i)=>`<label class="f">Person ${i+1}<input id="nm${i}" maxlength="20" value="${esc(vals[i]||"")}" placeholder="Name"></label>`).join("")}</div>`}
 const readNames=()=>SLOTS.map((k,i)=>(document.getElementById("nm"+i).value||"").trim());
 function showSetup(){
-  sheet("Willkommen",`<p>Hier legst du einen eigenen Kalender für deine Familie an. Trag dafür die Namen ein, die als Spalten erscheinen sollen. Die Spalte „Gemeinsam“ gibt es immer dazu.</p>
+  sheet("Willkommen",`${langSelect()}<p>Hier legst du einen eigenen Kalender für deine Familie an. Trag dafür die Namen ein, die als Spalten erscheinen sollen. Die Spalte „Gemeinsam“ gibt es immer dazu.</p>
     ${nameFields(["","",""])}
     <div class="actions"><button class="btn" id="cfgNew">Neuen Kalender starten</button></div>
     <h4 class="sub">Du hast einen Einladungslink bekommen?</h4>
@@ -848,7 +849,7 @@ function showSetup(){
     setCfg({firebase:DEFAULT_FIREBASE,code:newCode()});location.reload();
   };
   document.getElementById("cfgLocal").onclick=()=>{const n=readNames();if(n.some(Boolean)){try{localStorage.setItem("fk-namen",JSON.stringify(n))}catch(e){}}setCfg({local:true});closeSheet();location.reload()};
-  document.getElementById("cfgLater").onclick=closeSheet;wireJoin();
+  document.getElementById("cfgLater").onclick=closeSheet;wireJoin();wireLang();
 }
 function showSettings(){
   const c=getCfg();
@@ -894,6 +895,7 @@ function showSettings(){
     <button class="btn ghost" id="ideaBtn">💡 Ideen-Wand · Wünsche für die App</button>
     <div id="adminBox"></div>
     <h4 class="sub">Darstellung</h4>
+    ${langSelect()}
     <div class="rw">
       <label class="pick" style="justify-content:space-between"><span>Kompakt-Modus (mehr auf einen Blick)</span><input type="checkbox" id="optCompact" ${prefOn("compact")?"checked":""}></label>
       <label class="pick" style="justify-content:space-between"><span>Leere Tage in der Woche schmal anzeigen</span><input type="checkbox" id="optFold" ${prefOn("fold")?"checked":""}></label>
@@ -922,6 +924,7 @@ function showSettings(){
     <div class="actions"><button class="btn danger" id="disc">Auf diesem Handy trennen</button><button class="btn ghost" id="setClose">Schließen</button></div>`);
   document.getElementById("exp").onclick=exportICS;wireReadLinks();wireBackups();
   {const ib=document.getElementById("installSet");if(ib)ib.onclick=()=>{closeSheet();setTimeout(installApp,200)}}
+  wireLang();
   document.getElementById("tourAgain").onclick=()=>{closeSheet();setTimeout(showHelp,200)};
   document.getElementById("clBtn").onclick=()=>{closeSheet();setTimeout(showChangelog,200)};
   document.getElementById("ideaBtn").onclick=()=>{closeSheet();setTimeout(showIdeas,200)};
@@ -1321,7 +1324,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v53";
+const APP_VER="v54";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -1649,6 +1652,7 @@ function showReaderSettings(){
     <button class="btn ghost" id="rSup">💬 Support · Nachricht an den Entwickler</button>
     <button class="btn ghost" id="rIdea">💡 Ideen-Wand</button>
     <h4 class="sub">Darstellung</h4>
+    ${langSelect()}
     <div class="seg" style="--n:3">${[["dark","🌙 Dunkel"],["light","☀️ Hell"],["auto","📱 Wie Handy"]].map(([k,n])=>`<button class="typ" data-theme-set="${k}" aria-pressed="${themeNow()===k}">${n}</button>`).join("")}</div>
     <div class="rw">
       <label class="pick" style="justify-content:space-between"><span>Kompakt-Modus (mehr auf einen Blick)</span><input type="checkbox" id="optCompact" ${prefOn("compact")?"checked":""}></label>
@@ -1662,7 +1666,7 @@ function showReaderSettings(){
     ${joinBox()}
     <p class="hint"><a href="datenschutz.html">Datenschutz, Impressum & Nutzungshinweise</a></p>
     <div class="actions"><button class="btn danger" id="disc">Auf diesem Handy trennen</button><button class="btn ghost" id="setClose">Schließen</button></div>`);
-  wireNameBox(null);wireJoin();wirePbg(showSettings);document.getElementById("rHelp").onclick=()=>{closeSheet();setTimeout(showHelp,200)};document.getElementById("rSup").onclick=()=>{closeSheet();setTimeout(showSupport,200)};document.getElementById("rIdea").onclick=()=>{closeSheet();setTimeout(showIdeas,200)};
+  wireNameBox(null);wireJoin();wirePbg(showSettings);wireLang();document.getElementById("rHelp").onclick=()=>{closeSheet();setTimeout(showHelp,200)};document.getElementById("rSup").onclick=()=>{closeSheet();setTimeout(showSupport,200)};document.getElementById("rIdea").onclick=()=>{closeSheet();setTimeout(showIdeas,200)};
   {const ib=document.getElementById("installSet");if(ib)ib.onclick=()=>{closeSheet();setTimeout(installApp,200)}}
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{setTheme(b.dataset.themeSet);showSettings()});
   [["optCompact","compact"],["optFold","fold"],["optArrows","arrows"]].forEach(([id,k])=>{const el=document.getElementById(id);if(el)el.onchange=()=>{setPref(k,el.checked);render()}});
@@ -3023,6 +3027,7 @@ const CHANGELOG=[
   {v:"2026-11-07f",d:"2026-11-07",t:"Termine schützen & Sichtbarkeit",items:[
     "🔒 Termine schützen: Wer einen Termin eingetragen hat, kann ihn so sperren, dass nur er selbst ihn löschen kann (im Termin „Vor dem Löschen durch andere schützen“)",
     "👋 Persönliche Begrüßung beim Öffnen und neuer 3D-Kopfbereich",
+    "🌐 Weitere Sprachen: English, Türkçe, Polski, Українська (Einstellungen → Darstellung)",
     "✅ Angenommene Wünsche von Nur-Lese-Seiten werden automatisch eingetragen, auf Wunsch in mehreren Spalten",
     "👥 Sichtbarkeit: Beim Eintragen festlegen, welche Familienmitglieder einen Termin sehen dürfen (im Termin „Wer darf diesen Termin sehen?“)"]},
   {v:"2026-11-07e",d:"2026-11-07",t:"Ideen-Wand & Umfragen",items:[
@@ -3095,6 +3100,150 @@ async function admUpd(body){
 }
 
 
+
+/* ---------- Sprachen (Übersetzung der Oberfläche) ---------- */
+const LANGS=[["de","Deutsch"],["en","English"],["tr","Türkçe"],["pl","Polski"],["uk","Українська"]];
+var LANG="de";try{LANG=localStorage.getItem("fk-lang")||"";if(!LANG){const n=(navigator.language||"de").slice(0,2).toLowerCase();LANG=LANGS.some(l=>l[0]===n)?n:"de"}}catch(e){LANG="de"}
+if(!LANGS.some(l=>l[0]===LANG))LANG="de";
+const LI={en:0,tr:1,pl:2,uk:3};
+const I18N={
+"Tag":["Day","Gün","Dzień","День"],"Woche":["Week","Hafta","Tydzień","Тиждень"],"Monat":["Month","Ay","Miesiąc","Місяць"],"Jahr":["Year","Yıl","Rok","Рік"],
+"Ferien":["Holidays","Tatiller","Ferie","Канікули"],"Sterne":["Stars","Yıldızlar","Gwiazdki","Зірки"],
+"Heute":["Today","Bugün","Dziś","Сьогодні"],"Gemeinsam":["Together","Ortak","Wspólne","Спільне"],"frei":["free","boş","wolne","вільно"],
+"+ Eintrag":["+ Add","+ Ekle","+ Dodaj","+ Додати"],"Foto":["Photo","Fotoğraf","Zdjęcie","Фото"],
+"Verbinde …":["Connecting …","Bağlanıyor …","Łączenie …","З'єднання …"],
+"alles übertragen ✓":["all synced ✓","hepsi aktarıldı ✓","wszystko zsynchronizowane ✓","усе синхронізовано ✓"],
+"Änderungen werden übertragen …":["Syncing changes …","Değişiklikler aktarılıyor …","Synchronizowanie zmian …","Синхронізація змін …"],
+"offline, zeigt gespeicherten Stand":["offline, showing saved data","çevrimdışı, kayıtlı veriler gösteriliyor","offline, pokazuje zapisane dane","офлайн, показано збережені дані"],
+"Als App aufs Handy holen":["Get it as an app","Uygulama olarak yükle","Zainstaluj jako aplikację","Встановити як застосунок"],
+"Mit eigenem Symbol, startet wie eine richtige App.":["With its own icon, starts like a real app.","Kendi simgesiyle, gerçek bir uygulama gibi açılır.","Z własną ikoną, działa jak prawdziwa aplikacja.","З власною іконкою, працює як справжній застосунок."],
+"Installieren":["Install","Yükle","Zainstaluj","Встановити"],
+"🔔 Erinnerungen":["🔔 Reminders","🔔 Hatırlatıcılar","🔔 Przypomnienia","🔔 Нагадування"],
+"Neue Einträge":["New entries","Yeni kayıtlar","Nowe wpisy","Нові записи"],
+"Gesehen ✓":["Seen ✓","Görüldü ✓","Widziane ✓","Переглянуто ✓"],"Gelesen ✓":["Read ✓","Okundu ✓","Przeczytane ✓","Прочитано ✓"],
+"Heute steht nichts im Kalender.":["Nothing in the calendar today.","Bugün takvimde bir şey yok.","Dziś nic nie ma w kalendarzu.","Сьогодні в календарі нічого немає."],
+"Morgen steht nichts im Kalender. 🌿":["Nothing in the calendar tomorrow. 🌿","Yarın takvimde bir şey yok. 🌿","Jutro nic nie ma w kalendarzu. 🌿","Завтра в календарі нічого немає. 🌿"],
+"❗ Wichtig in den nächsten 7 Tagen:":["❗ Important in the next 7 days:","❗ Önümüzdeki 7 günde önemli:","❗ Ważne w ciągu 7 dni:","❗ Важливе на наступні 7 днів:"],
+"⏭ Als Nächstes ·":["⏭ Up next ·","⏭ Sıradaki ·","⏭ Następne ·","⏭ Далі ·"],
+"Termin":["Event","Randevu","Termin","Подія"],"Arbeit":["Work","İş","Praca","Робота"],"Urlaub":["Vacation","Tatil","Urlop","Відпустка"],"Geburtstag":["Birthday","Doğum günü","Urodziny","День народження"],
+"Neuer Eintrag":["New entry","Yeni kayıt","Nowy wpis","Новий запис"],"Eintrag bearbeiten":["Edit entry","Kaydı düzenle","Edytuj wpis","Редагувати запис"],
+"Was?":["What?","Ne?","Co?","Що?"],"Notiz (optional)":["Note (optional)","Not (isteğe bağlı)","Notatka (opcjonalnie)","Нотатка (необов'язково)"],
+"Wer hat Geburtstag?":["Whose birthday?","Kimin doğum günü?","Czyje urodziny?","Чий день народження?"],
+"Datum":["Date","Tarih","Data","Дата"],"Bis Datum (mehrtägig)":["Until (several days)","Bitiş (çok günlü)","Do (kilka dni)","До (кілька днів)"],
+"Erster Tag":["First day","İlk gün","Pierwszy dzień","Перший день"],"Letzter Tag":["Last day","Son gün","Ostatni dzień","Останній день"],
+"Von (optional)":["From (optional)","Başlangıç (isteğe bağlı)","Od (opcjonalnie)","З (необов'язково)"],"Bis (optional)":["To (optional)","Bitiş (isteğe bağlı)","Do (opcjonalnie)","До (необов'язково)"],
+"Arbeitsbeginn":["Start of work","İş başlangıcı","Początek pracy","Початок роботи"],"Arbeitsende":["End of work","İş bitişi","Koniec pracy","Кінець роботи"],
+"Geburtstag (Tag und Monat)":["Birthday (day and month)","Doğum günü (gün ve ay)","Urodziny (dzień i miesiąc)","День народження (день і місяць)"],
+"Geburtsjahr (optional)":["Year of birth (optional)","Doğum yılı (isteğe bağlı)","Rok urodzenia (opcjonalnie)","Рік народження (необов'язково)"],
+"Wiederholen":["Repeat","Tekrarla","Powtarzaj","Повторювати"],"Einmalig":["Once","Bir kez","Jednorazowo","Одноразово"],"Jede Woche":["Every week","Her hafta","Co tydzień","Щотижня"],"Alle 2 Wochen":["Every 2 weeks","2 haftada bir","Co 2 tygodnie","Кожні 2 тижні"],
+"An diesen Tagen":["On these days","Bu günlerde","W te dni","У ці дні"],"Fortlaufend bis":["Continue until","Şu tarihe kadar","Do dnia","До дати"],
+"↻ Jede Woche fortlaufend":["↻ Continue weekly","↻ Her hafta devam","↻ Kontynuuj co tydzień","↻ Продовжити щотижня"],"↻ Alle 2 Wochen fortlaufend":["↻ Continue every 2 weeks","↻ 2 haftada bir devam","↻ Kontynuuj co 2 tygodnie","↻ Продовжити кожні 2 тижні"],
+"🔔 Vorher erinnern":["🔔 Remind me before","🔔 Önceden hatırlat","🔔 Przypomnij wcześniej","🔔 Нагадати заздалегідь"],"Nein":["No","Hayır","Nie","Ні"],
+"1 Tag":["1 day","1 gün","1 dzień","1 день"],"3 Tage":["3 days","3 gün","3 dni","3 дні"],"1 Woche":["1 week","1 hafta","1 tydzień","1 тиждень"],"2 Wo.":["2 wks","2 hf.","2 tyg.","2 тиж."],
+"Woran erinnern?":["Remind about what?","Neyi hatırlatayım?","O czym przypomnieć?","Про що нагадати?"],
+"❗ Als wichtig markieren":["❗ Mark as important","❗ Önemli olarak işaretle","❗ Oznacz jako ważne","❗ Позначити як важливе"],"❗ Als wichtig markiert":["❗ Marked as important","❗ Önemli olarak işaretlendi","❗ Oznaczone jako ważne","❗ Позначено як важливе"],
+"👥 Wer darf diesen Termin sehen?":["👥 Who may see this?","👥 Bunu kimler görebilir?","👥 Kto może to widzieć?","👥 Хто може це бачити?"],"Alle":["Everyone","Herkes","Wszyscy","Усі"],"Nur ausgewählte":["Only selected","Sadece seçilenler","Tylko wybrani","Лише вибрані"],"Du":["You","Sen","Ty","Ти"],
+"🔒 Vor dem Löschen durch andere schützen":["🔒 Protect from deletion by others","🔒 Başkalarının silmesine karşı koru","🔒 Chroń przed usunięciem przez innych","🔒 Захистити від видалення іншими"],
+"🔒 Geschützt: nur du kannst löschen":["🔒 Protected: only you can delete","🔒 Korumalı: sadece sen silebilirsin","🔒 Chronione: tylko ty możesz usunąć","🔒 Захищено: видалити можеш лише ти"],
+"Eintragen":["Save","Kaydet","Zapisz","Зберегти"],"Änderungen speichern":["Save changes","Değişiklikleri kaydet","Zapisz zmiany","Зберегти зміни"],"Abbrechen":["Cancel","İptal","Anuluj","Скасувати"],
+"Löschen":["Delete","Sil","Usuń","Видалити"],"Wirklich löschen?":["Really delete?","Gerçekten silinsin mi?","Na pewno usunąć?","Справді видалити?"],"Nur diesen Eintrag":["Only this entry","Sadece bu kayıt","Tylko ten wpis","Лише цей запис"],
+"Gelöscht":["Deleted","Silindi","Usunięto","Видалено"],"Rückgängig":["Undo","Geri al","Cofnij","Скасувати"],"Gespeichert":["Saved","Kaydedildi","Zapisano","Збережено"],
+"🎤 Per Sprache ausfüllen":["🎤 Fill in by voice","🎤 Sesle doldur","🎤 Wypełnij głosem","🎤 Заповнити голосом"],
+"Schließen":["Close","Kapat","Zamknij","Закрити"],"Speichern":["Save","Kaydet","Zapisz","Зберегти"],"Später":["Later","Sonra","Później","Пізніше"],
+"Teilen & Einstellungen":["Share & settings","Paylaş ve ayarlar","Udostępnij i ustawienia","Поділитися та налаштування"],"Einstellungen":["Settings","Ayarlar","Ustawienia","Налаштування"],
+"🔑 Kalender-Nummer anzeigen":["🔑 Show calendar number","🔑 Takvim numarasını göster","🔑 Pokaż numer kalendarza","🔑 Показати номер календаря"],
+"Familie einladen":["Invite family","Aileyi davet et","Zaproś rodzinę","Запросити родину"],"👁️ Nur lesen":["👁️ Read only","👁️ Sadece okuma","👁️ Tylko odczyt","👁️ Лише перегляд"],"✏️ Darf mitschreiben":["✏️ Can edit","✏️ Düzenleyebilir","✏️ Może edytować","✏️ Може редагувати"],
+"Link kopieren":["Copy link","Bağlantıyı kopyala","Kopiuj link","Копіювати посилання"],"Teilen …":["Share …","Paylaş …","Udostępnij …","Поділитися …"],"Per WhatsApp schicken":["Send via WhatsApp","WhatsApp ile gönder","Wyślij przez WhatsApp","Надіслати через WhatsApp"],
+"Mitglieder & Rechte":["Members & permissions","Üyeler ve izinler","Członkowie i uprawnienia","Учасники та права"],"Lade Mitglieder …":["Loading members …","Üyeler yükleniyor …","Ładowanie członków …","Завантаження учасників …"],
+"Dein Name (für die Mitgliederliste)":["Your name (for the member list)","Adın (üye listesi için)","Twoje imię (dla listy członków)","Твоє ім'я (для списку учасників)"],"Namen speichern":["Save name","Adı kaydet","Zapisz imię","Зберегти ім'я"],
+"Gerät ohne Namen":["Unnamed device","İsimsiz cihaz","Urządzenie bez nazwy","Пристрій без назви"],"dieses Handy":["this phone","bu telefon","ten telefon","цей телефон"],
+"Mit einem anderen Kalender verbinden":["Connect to another calendar","Başka bir takvime bağlan","Połącz z innym kalendarzem","Під'єднатися до іншого календаря"],
+"Einladungslink einfügen":["Paste invite link","Davet bağlantısını yapıştır","Wklej link zaproszenia","Вставити посилання-запрошення"],"Mit diesem Kalender verbinden":["Connect to this calendar","Bu takvime bağlan","Połącz z tym kalendarzem","Під'єднатися до цього календаря"],
+"Bilder der Personen":["Photos of people","Kişilerin fotoğrafları","Zdjęcia osób","Фото людей"],"Personen im Haushalt":["People in the household","Hanedeki kişiler","Osoby w domu","Люди в родині"],
+"+ Person hinzufügen":["+ Add person","+ Kişi ekle","+ Dodaj osobę","+ Додати людину"],"Personen speichern":["Save people","Kişileri kaydet","Zapisz osoby","Зберегти людей"],"(nur Farbe)":["(color only)","(sadece renk)","(tylko kolor)","(лише колір)"],
+"Wie geht das genau?":["How does it work?","Nasıl çalışır?","Jak to działa?","Як це працює?"],"Standard":["Default","Varsayılan","Domyślny","Типово"],
+"Für Freunde: eigenen Kalender":["For friends: their own calendar","Arkadaşlar için: kendi takvimleri","Dla znajomych: własny kalendarz","Для друзів: власний календар"],"App-Link kopieren":["Copy app link","Uygulama bağlantısını kopyala","Kopiuj link do aplikacji","Копіювати посилання на застосунок"],
+"📲 Als App installieren":["📲 Install as app","📲 Uygulama olarak yükle","📲 Zainstaluj jako aplikację","📲 Встановити як застосунок"],"❓ Hilfe & Anleitung":["❓ Help & guide","❓ Yardım ve kılavuz","❓ Pomoc i instrukcja","❓ Довідка та інструкція"],
+"✨ Was ist neu? (alle Updates)":["✨ What's new? (all updates)","✨ Yenilikler (tüm güncellemeler)","✨ Co nowego? (wszystkie aktualizacje)","✨ Що нового? (усі оновлення)"],"✨ Was ist neu?":["✨ What's new?","✨ Yenilikler","✨ Co nowego?","✨ Що нового?"],
+"💬 Support · Nachricht an den Entwickler":["💬 Support · message the developer","💬 Destek · geliştiriciye mesaj","💬 Wsparcie · wiadomość do twórcy","💬 Підтримка · написати розробнику"],
+"💡 Ideen-Wand · Wünsche für die App":["💡 Idea wall · wishes for the app","💡 Fikir duvarı · uygulama için dilekler","💡 Tablica pomysłów · życzenia","💡 Стіна ідей · побажання"],"💡 Ideen-Wand":["💡 Idea wall","💡 Fikir duvarı","💡 Tablica pomysłów","💡 Стіна ідей"],
+"Darstellung":["Appearance","Görünüm","Wygląd","Вигляд"],"Kompakt-Modus (mehr auf einen Blick)":["Compact mode (more at a glance)","Kompakt mod (bir bakışta daha fazla)","Tryb kompaktny (więcej na raz)","Компактний режим (більше одразу)"],
+"Leere Tage in der Woche schmal anzeigen":["Show empty days narrow","Boş günleri dar göster","Pokazuj puste dni wąsko","Показувати порожні дні вузько"],"Pfeile zusätzlich zum Wischen zeigen":["Show arrows in addition to swiping","Kaydırmaya ek olarak okları göster","Pokaż strzałki oprócz przesuwania","Показувати стрілки на додаток до гортання"],
+"Gilt nur für dieses Handy.":["Applies to this phone only.","Sadece bu telefon için geçerli.","Dotyczy tylko tego telefonu.","Лише для цього телефону."],
+"🌙 Dunkel":["🌙 Dark","🌙 Koyu","🌙 Ciemny","🌙 Темна"],"☀️ Hell":["☀️ Light","☀️ Açık","☀️ Jasny","☀️ Світла"],"📱 Wie Handy":["📱 Like phone","📱 Telefon gibi","📱 Jak telefon","📱 Як у телефоні"],
+"Kalender-Hintergrund":["Calendar background","Takvim arka planı","Tło kalendarza","Фон календаря"],"Keiner":["None","Yok","Brak","Немає"],
+"Abdunkeln, damit alles lesbar bleibt":["Darken so everything stays readable","Her şey okunabilsin diye karart","Przyciemnij, by wszystko było czytelne","Затемнити, щоб усе було видно"],
+"Hintergrundbild oben":["Header background image","Üst arka plan resmi","Obraz tła u góry","Фонове зображення вгорі"],"Bild wählen":["Choose image","Resim seç","Wybierz obraz","Вибрати зображення"],
+"Sperrbildschirm":["Lock screen","Kilit ekranı","Ekran blokady","Екран блокування"],"🖼 Bild mit den heutigen Terminen erstellen":["🖼 Create image with today's events","🖼 Bugünkü etkinliklerle resim oluştur","🖼 Utwórz obraz z dzisiejszymi wydarzeniami","🖼 Створити зображення з подіями на сьогодні"],
+"Sicherungen":["Backups","Yedekler","Kopie zapasowe","Резервні копії"],"Jetzt sichern":["Back up now","Şimdi yedekle","Utwórz kopię teraz","Створити копію зараз"],"Als Datei speichern":["Save as file","Dosya olarak kaydet","Zapisz jako plik","Зберегти як файл"],"Aus Datei wiederherstellen":["Restore from file","Dosyadan geri yükle","Przywróć z pliku","Відновити з файлу"],
+"Deine Daten":["Your data","Verilerin","Twoje dane","Твої дані"],"Alle Termine exportieren (.ics)":["Export all events (.ics)","Tüm etkinlikleri dışa aktar (.ics)","Eksportuj wszystkie wydarzenia (.ics)","Експортувати всі події (.ics)"],
+"Kalender endgültig löschen":["Delete calendar permanently","Takvimi kalıcı olarak sil","Usuń kalendarz na stałe","Видалити календар назавжди"],"Auf diesem Handy trennen":["Disconnect on this phone","Bu telefonda bağlantıyı kes","Odłącz na tym telefonie","Від'єднати на цьому телефоні"],
+"Nur-Lese-Links (z. B. für Papa)":["Read-only links","Salt okunur bağlantılar","Linki tylko do odczytu","Посилання лише для перегляду"],"Nur-Lese-Link erstellen":["Create read-only link","Salt okunur bağlantı oluştur","Utwórz link tylko do odczytu","Створити посилання для перегляду"],
+"Für wen?":["For whom?","Kimin için?","Dla kogo?","Для кого?"],"Welche Spalten darf er sehen?":["Which columns may they see?","Hangi sütunları görebilir?","Które kolumny może widzieć?","Які стовпці можна бачити?"],
+"Willkommen":["Welcome","Hoş geldin","Witaj","Ласкаво просимо"],"Neuen Kalender starten":["Start a new calendar","Yeni takvim başlat","Utwórz nowy kalendarz","Створити новий календар"],
+"Du hast einen Einladungslink bekommen?":["Got an invite link?","Davet bağlantın mı var?","Masz link z zaproszeniem?","Маєш посилання-запрошення?"],"Erst mal nur auf diesem Handy":["Just on this phone for now","Şimdilik sadece bu telefonda","Na razie tylko na tym telefonie","Поки що лише на цьому телефоні"],
+"Hier legst du einen eigenen Kalender für deine Familie an. Trag dafür die Namen ein, die als Spalten erscheinen sollen. Die Spalte „Gemeinsam“ gibt es immer dazu.":["Create your own family calendar here. Enter the names that should appear as columns. A \"Together\" column is always added.","Burada ailen için kendi takvimini oluşturursun. Sütun olarak görünecek isimleri gir. \"Ortak\" sütunu her zaman eklenir.","Tutaj tworzysz własny kalendarz rodzinny. Wpisz imiona, które mają być kolumnami. Kolumna „Wspólne” jest zawsze dodawana.","Тут ти створюєш власний сімейний календар. Введи імена, які будуть стовпцями. Стовпець «Спільне» додається завжди."],
+"Person 1":["Person 1","Kişi 1","Osoba 1","Людина 1"],"Person 2":["Person 2","Kişi 2","Osoba 2","Людина 2"],"Person 3":["Person 3","Kişi 3","Osoba 3","Людина 3"],"Name":["Name","İsim","Imię","Ім'я"],
+"Hilfe & Anleitung":["Help & guide","Yardım ve kılavuz","Pomoc i instrukcja","Довідка та інструкція"],"▶️ Geführte Tour starten (1 Minute)":["▶️ Start guided tour (1 minute)","▶️ Rehberli turu başlat (1 dakika)","▶️ Rozpocznij przewodnik (1 minuta)","▶️ Почати тур (1 хвилина)"],
+"Suchen":["Search","Ara","Szukaj","Пошук"],"Nicht weitergekommen?":["Stuck?","Takıldın mı?","Utknąłeś?","Застряг?"],"💬 Nachricht an den Entwickler":["💬 Message the developer","💬 Geliştiriciye mesaj","💬 Wiadomość do twórcy","💬 Написати розробнику"],
+"💬 Support":["💬 Support","💬 Destek","💬 Wsparcie","💬 Підтримка"],"❓ Frage":["❓ Question","❓ Soru","❓ Pytanie","❓ Питання"],"🐞 Fehler":["🐞 Bug","🐞 Hata","🐞 Błąd","🐞 Помилка"],"💡 Idee":["💡 Idea","💡 Fikir","💡 Pomysł","💡 Ідея"],
+"Deine Nachricht":["Your message","Mesajın","Twoja wiadomość","Твоє повідомлення"],"Dein Name (optional)":["Your name (optional)","Adın (isteğe bağlı)","Twoje imię (opcjonalnie)","Твоє ім'я (необов'язково)"],
+"Wie kann ich dir antworten? (optional)":["How can I reply to you? (optional)","Sana nasıl cevap verebilirim? (isteğe bağlı)","Jak mogę ci odpowiedzieć? (opcjonalnie)","Як тобі відповісти? (необов'язково)"],"Absenden":["Send","Gönder","Wyślij","Надіслати"],
+"Wonach suchst du?":["What are you looking for?","Ne arıyorsun?","Czego szukasz?","Що шукаєш?"],"Nichts gefunden.":["Nothing found.","Hiçbir şey bulunamadı.","Nic nie znaleziono.","Нічого не знайдено."],"Mindestens 2 Buchstaben eingeben.":["Enter at least 2 letters.","En az 2 harf gir.","Wpisz co najmniej 2 litery.","Введи щонайменше 2 літери."],
+"Wie heißt du?":["What's your name?","Adın ne?","Jak masz na imię?","Як тебе звати?"],
+"Neu in der App":["New in the app","Uygulamada yeni","Nowość w aplikacji","Нове в застосунку"],"Alle Neuigkeiten ansehen":["See all news","Tüm yenilikleri gör","Zobacz wszystkie nowości","Переглянути всі новини"],
+"Kurze Umfrage":["Quick poll","Kısa anket","Krótka ankieta","Коротке опитування"],"Antwort vom Entwickler":["Reply from the developer","Geliştiriciden cevap","Odpowiedź od twórcy","Відповідь розробника"],
+"Bitte die App neu laden":["Please reload the app","Lütfen uygulamayı yeniden yükle","Załaduj aplikację ponownie","Перезавантаж застосунок"],"Jetzt neu laden":["Reload now","Şimdi yeniden yükle","Załaduj teraz","Перезавантажити зараз"],
+"Aufgaben":["Tasks","Görevler","Zadania","Завдання"],"Belohnungen":["Rewards","Ödüller","Nagrody","Нагороди"],"+ Aufgabe":["+ Task","+ Görev","+ Zadanie","+ Завдання"],"+ Belohnung":["+ Reward","+ Ödül","+ Nagroda","+ Нагорода"],
+"Schulferien":["School holidays","Okul tatili","Ferie szkolne","Шкільні канікули"],"Feiertag":["Public holiday","Resmi tatil","Święto","Свято"],"ganzer Tag":["all day","tüm gün","cały dzień","увесь день"],
+"Annehmen":["Accept","Kabul et","Akceptuj","Прийняти"],"Ablehnen":["Decline","Reddet","Odrzuć","Відхилити"],"Bearbeiten":["Edit","Düzenle","Edytuj","Редагувати"],
+"Zum Übernehmen „Personen speichern“ tippen":["Tap \"Save people\" to apply","Uygulamak için \"Kişileri kaydet\"e dokun","Dotknij „Zapisz osoby”, aby zastosować","Натисни «Зберегти людей», щоб застосувати"],
+"Du hast in diesem Kalender nur Leserechte":["You only have read access in this calendar","Bu takvimde sadece okuma iznin var","Masz tylko dostęp do odczytu","У тебе лише доступ на перегляд"],
+"🌐 Sprache":["🌐 Language","🌐 Dil","🌐 Język","🌐 Мова"],
+"Familienkalender":["Family Calendar","Aile Takvimi","Kalendarz","Сімейний календар"],
+"z. B. John bei Papa, Zahnarzt …":["e.g. Dentist, football …","ör. Diş hekimi, futbol …","np. Dentysta, piłka …","напр. Стоматолог, футбол …"],
+"z. B. Frühdienst":["e.g. Early shift","ör. Sabah vardiyası","np. Ranna zmiana","напр. Рання зміна"],"z. B. Ostsee":["e.g. Seaside","ör. Deniz kenarı","np. Morze","напр. Море"],
+"z. B. Oma Helga":["e.g. Grandma","ör. Büyükanne","np. Babcia","напр. Бабуся"],"z. B. 1956":["e.g. 1956","ör. 1956","np. 1956","напр. 1956"],
+"z. B. Mama":["e.g. Mom","ör. Anne","np. Mama","напр. Мама"],"Termine suchen":["Search events","Etkinlik ara","Szukaj wydarzeń","Шукати події"],
+"Einstellungen und Familie einladen":["Settings and invite family","Ayarlar ve aileyi davet et","Ustawienia i zaproszenia","Налаштування та запрошення"],"Hilfe und Anleitung":["Help and guide","Yardım ve kılavuz","Pomoc i instrukcja","Довідка та інструкція"]
+};
+// Wiederkehrende Satzteile in dynamischen Texten
+const I18N_PART=[
+ [/^Heute, /,["Today, ","Bugün, ","Dziś, ","Сьогодні, "]],[/^🌙 Morgen, /,["🌙 Tomorrow, ","🌙 Yarın, ","🌙 Jutro, ","🌙 Завтра, "]],[/^Morgen, /,["Tomorrow, ","Yarın, ","Jutro, ","Завтра, "]],
+ [/\bKW (\d+)/,["Wk $1","Hf. $1","Tydz. $1","Тиж. $1"]],
+ [/^👁️ nur lesen · /,["👁️ read only · ","👁️ sadece okuma · ","👁️ tylko odczyt · ","👁️ лише перегляд · "]],
+ [/^Guten Morgen/,["Good morning","Günaydın","Dzień dobry","Доброго ранку"]],[/^Guten Abend/,["Good evening","İyi akşamlar","Dobry wieczór","Добрий вечір"]],[/^Gute Nacht/,["Good night","İyi geceler","Dobranoc","Добраніч"]],[/^Hallo(?=[,!])/,["Hello","Merhaba","Cześć","Привіт"]],
+ [/^Heute stehen (\d+) Termine an\.$/,["$1 events today.","Bugün $1 etkinlik var.","Dziś $1 wydarzeń.","Сьогодні $1 подій."]],[/^Heute steht 1 Termin an\.$/,["1 event today.","Bugün 1 etkinlik var.","Dziś 1 wydarzenie.","Сьогодні 1 подія."]],
+ [/^Heute ist nichts eingetragen\. Genieß den Tag!$/,["Nothing planned today. Enjoy your day!","Bugün plan yok. Gününün tadını çıkar!","Dziś nic nie zaplanowano. Miłego dnia!","Сьогодні нічого не заплановано. Гарного дня!"]],
+ [/^Schön, dass du vorbeischaust\.$/,["Nice to see you.","Gördüğüme sevindim.","Miło cię widzieć.","Радий тебе бачити."]],
+ [/ bei Papa\b/,[" at dad's"," babasında"," u taty"," у тата"]]
+];
+function T(t){if(LANG==="de"||t==null)return t;const r=I18N[t];if(r)return r[LI[LANG]];let o=t;for(const[re,v] of I18N_PART)o=o.replace(re,v[LI[LANG]]);return o}
+function trNode(n){const v=n.nodeValue;if(!v||!/[A-Za-zÄÖÜäöüß]/.test(v))return;const m=v.match(/^(\s*)([\s\S]*?)(\s*)$/);const x=T(m[2]);if(x!==m[2])n.nodeValue=m[1]+x+m[3]}
+const TR_ATTR=["placeholder","aria-label","title"];
+function trTree(root){
+  if(LANG==="de"||!root)return;
+  if(root.nodeType===3){const p=root.parentNode;if(p&&!p.closest("textarea,script,style,[data-notr]"))trNode(root);return}
+  if(root.nodeType!==1||root.closest("script,style,[data-notr]"))return;
+  for(const a of TR_ATTR){if(root.hasAttribute&&root.hasAttribute(a)){const v=root.getAttribute(a),x=T(v);if(x!==v)root.setAttribute(a,x)}}
+  root.querySelectorAll("[placeholder],[aria-label],[title]").forEach(el=>{for(const a of TR_ATTR){if(el.hasAttribute(a)){const v=el.getAttribute(a),x=T(v);if(x!==v)el.setAttribute(a,x)}}});
+  const w=document.createTreeWalker(root,NodeFilter.SHOW_TEXT,{acceptNode:n=>n.parentNode&&n.parentNode.closest("textarea,script,style,[data-notr]")?NodeFilter.FILTER_REJECT:NodeFilter.FILTER_ACCEPT});
+  let n;while((n=w.nextNode()))trNode(n);
+}
+if(LANG!=="de"){
+  document.documentElement.lang=LANG;
+  const L={en:[["Sun","Mon","Tue","Wed","Thu","Fri","Sat"],["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"],["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"],["January","February","March","April","May","June","July","August","September","October","November","December"]],
+    tr:[["Paz","Pzt","Sal","Çar","Per","Cum","Cmt"],["Pazar","Pazartesi","Salı","Çarşamba","Perşembe","Cuma","Cumartesi"],["Oca","Şub","Mar","Nis","May","Haz","Tem","Ağu","Eyl","Eki","Kas","Ara"],["Ocak","Şubat","Mart","Nisan","Mayıs","Haziran","Temmuz","Ağustos","Eylül","Ekim","Kasım","Aralık"]],
+    pl:[["Nd","Pn","Wt","Śr","Cz","Pt","So"],["Niedziela","Poniedziałek","Wtorek","Środa","Czwartek","Piątek","Sobota"],["sty","lut","mar","kwi","maj","cze","lip","sie","wrz","paź","lis","gru"],["Styczeń","Luty","Marzec","Kwiecień","Maj","Czerwiec","Lipiec","Sierpień","Wrzesień","Październik","Listopad","Grudzień"]],
+    uk:[["Нд","Пн","Вт","Ср","Чт","Пт","Сб"],["Неділя","Понеділок","Вівторок","Середа","Четвер","П'ятниця","Субота"],["січ","лют","бер","кві","тра","чер","лип","сер","вер","жов","лис","гру"],["Січень","Лютий","Березень","Квітень","Травень","Червень","Липень","Серпень","Вересень","Жовтень","Листопад","Грудень"]]}[LANG];
+  WD.splice(0,7,...L[0]);WDL.splice(0,7,...L[1]);MON.splice(0,12,...L[2]);MONL.splice(0,12,...L[3]);
+  for(const k of Object.keys(TYPN))TYPN[k]=T(TYPN[k]);
+  document.body.classList.add("lang-x");
+  trTree(document.body);
+  new MutationObserver(ms=>{for(const m of ms){if(m.type==="characterData")trTree(m.target);else m.addedNodes.forEach(trTree)}}).observe(document.body,{childList:true,subtree:true,characterData:true});
+}
+function langSelect(){return `<label class="f">🌐 Sprache · Language<select id="langSel">${LANGS.map(([k,n])=>`<option value="${k}" ${k===LANG?"selected":""}>${n}</option>`).join("")}</select></label>${LANG!=="de"?`<p class="hint" style="margin:0">Help pages and privacy policy are only available in German so far.</p>`:""}`}
+function wireLang(){const s=document.getElementById("langSel");if(s)s.onchange=()=>{try{localStorage.setItem("fk-lang",s.value)}catch(e){}location.reload()}}
 
 applyPrefs();
 init();
