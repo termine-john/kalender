@@ -22,7 +22,7 @@ html{-webkit-text-size-adjust:100%}:root{padding-top:env(safe-area-inset-top,0px
   --c-gem:#4d3ea3; --c-gem-bg:#d8d1f3;
   --work:#25343d; --work-bg:#d0d9de;
   --vac:#246b27; --vac-bg:#cbe5c6;
-  --today:#f3e2a3; --papa:#f4c4c4; --papa-fg:#9e1c1c; --bday:#8a4b00; --bday-bg:#ffe1a8; --star:#c98a00; --fer:#bfd8ee; --fer-fg:#164e78; --feier:#b02a1c;
+  --today:#f3e2a3; --imp:#d12a2a; --papa:#f4c4c4; --papa-fg:#9e1c1c; --bday:#8a4b00; --bday-bg:#ffe1a8; --star:#c98a00; --fer:#bfd8ee; --fer-fg:#164e78; --feier:#b02a1c;
   /* Systemschriften: keine Verbindung zu Google Fonts nötig (Datenschutz) */
   --f-display:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --f-body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
@@ -31,12 +31,12 @@ html{-webkit-text-size-adjust:100%}:root{padding-top:env(safe-area-inset-top,0px
   --bg:#0d1418; --surface:#162026; --fg:#e6edf1; --muted:#97a7b0; --line:#28353e; --accent:#6bb7d6; --band:#1b3442; --on-band:#eef6fa; --on-band-dim:#9ab6c4;
   --c-christin:#f08aaa; --c-christin-bg:#3a1f2a; --c-john:#6fd1c2; --c-john-bg:#16332f;
   --c-robert:#f0b26b; --c-robert-bg:#3a2a17; --c-gem:#a99bf2; --c-gem-bg:#2a2548;
-  --work:#c9d4da; --work-bg:#26333b; --vac:#8bd08e; --vac-bg:#1d3320; --today:#2c2a1a; --papa:#4a1d22; --papa-fg:#ff9e9e; --bday:#ffd27a; --bday-bg:#3d2d10; --star:#ffcc4d; --fer:#17324a; --fer-fg:#9ccbf0; --feier:#ff8a7a; color-scheme:dark}}
+  --work:#c9d4da; --work-bg:#26333b; --vac:#8bd08e; --vac-bg:#1d3320; --today:#2c2a1a; --imp:#ff6b6b; --papa:#4a1d22; --papa-fg:#ff9e9e; --bday:#ffd27a; --bday-bg:#3d2d10; --star:#ffcc4d; --fer:#17324a; --fer-fg:#9ccbf0; --feier:#ff8a7a; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0d1418; --surface:#162026; --fg:#e6edf1; --muted:#97a7b0; --line:#28353e; --accent:#6bb7d6; --band:#1b3442; --on-band:#eef6fa; --on-band-dim:#9ab6c4;
   --c-christin:#f08aaa; --c-christin-bg:#3a1f2a; --c-john:#6fd1c2; --c-john-bg:#16332f;
   --c-robert:#f0b26b; --c-robert-bg:#3a2a17; --c-gem:#a99bf2; --c-gem-bg:#2a2548;
-  --work:#c9d4da; --work-bg:#26333b; --vac:#8bd08e; --vac-bg:#1d3320; --today:#2c2a1a; --papa:#4a1d22; --papa-fg:#ff9e9e; --bday:#ffd27a; --bday-bg:#3d2d10; --star:#ffcc4d; --fer:#17324a; --fer-fg:#9ccbf0; --feier:#ff8a7a; color-scheme:dark}
+  --work:#c9d4da; --work-bg:#26333b; --vac:#8bd08e; --vac-bg:#1d3320; --today:#2c2a1a; --imp:#ff6b6b; --papa:#4a1d22; --papa-fg:#ff9e9e; --bday:#ffd27a; --bday-bg:#3d2d10; --star:#ffcc4d; --fer:#17324a; --fer-fg:#9ccbf0; --feier:#ff8a7a; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.4;
   padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));padding-block:12px 96px}
@@ -219,6 +219,18 @@ ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
 .tag.nw{background:var(--star);color:#1a1200}
 .tag.ed{background:var(--fer);color:var(--fer-fg)}
 body.offline .appbar{box-shadow:0 0 0 3px #d98a00}
+.chip.imp{background:color-mix(in srgb,var(--imp) 16%,var(--surface))!important;border:2px solid var(--imp);border-left:6px solid var(--imp);box-shadow:0 0 0 2px color-mix(in srgb,var(--imp) 25%,transparent);font-weight:700}
+.chip.imp .chip-label::before{content:"❗ ";}
+.mbar.imp{outline:2px solid var(--imp);outline-offset:-2px;font-weight:700}
+.mbar.imp::before{content:"❗";}
+.ydays .imp{box-shadow:inset 0 0 0 2px var(--imp);border-radius:50%}
+.impbtn{display:flex;align-items:center;justify-content:center;gap:8px;padding:11px;border-radius:10px;border:1px solid var(--line);font-weight:700}
+.impbtn[aria-pressed="true"]{background:var(--imp);border-color:var(--imp);color:#fff}
+.morning li.imp,.upcoming li{font-weight:700}
+.morning li.imp span:last-child{color:var(--imp)}
+.upcoming{margin:4px 0 0;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--imp) 12%,transparent);list-style:none;display:flex;flex-direction:column;gap:4px;grid-column:1/-1}
+.upcoming li{font-size:.85rem}
+.upcoming .ut{color:var(--imp)}
 .sec{font-family:var(--f-display);font-size:1.05rem;margin:6px 0 0}
 .empty-note{font-size:.85rem;color:var(--muted);text-align:center;padding:4px}
 
@@ -580,6 +592,7 @@ function startVoice(){
 const WDN={sonntag:0,montag:1,dienstag:2,mittwoch:3,donnerstag:4,freitag:5,samstag:6,sonnabend:6};
 function parseVoice(text){
   let t=" "+text.replace(/\s+/g," ")+" ";const low=t.toLowerCase();
+  const wichtig=/\b(wichtig|dringend)\b/.test(low);if(wichtig)t=t.replace(/\b(wichtig|dringend)\b/ig," ");
   const typ=/geburtstag/.test(low)?"geburtstag":/urlaub/.test(low)?"urlaub":/(arbeit|arbeite|dienst|schicht)/.test(low)?"arbeit":"termin";
   let person=typ==="termin"||typ==="geburtstag"?"gemeinsam":"";
   for(const[k,n] of PEOPLE.slice(0,3)){const re=new RegExp(`(^|[^a-zäöüß])${n.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}([^a-zäöüß]|$)`);if(n.length>1&&re.test(low)&&typ!=="geburtstag"){person=k;t=t.replace(new RegExp(n,"i")," ");break}}
@@ -608,7 +621,7 @@ function parseVoice(text){
     .replace(/\b(geburtstag|urlaub|arbeit|arbeite|dienst|schicht)\b/gi,m=>typ==="arbeit"&&/dienst|schicht/i.test(m)?m:" ")
     .replace(/[.,;:!?]+/g," ").replace(/\s{2,}/g," ").trim();
   titel=titel?titel[0].toUpperCase()+titel.slice(1):"";
-  const o={typ,person,titel,datum,endDatum:typ==="urlaub"?(endDatum||datum):endDatum,von:typ==="urlaub"||typ==="geburtstag"?"":von,bis:typ==="urlaub"||typ==="geburtstag"?"":bis};
+  const o={wichtig,typ,person,titel,datum,endDatum:typ==="urlaub"?(endDatum||datum):endDatum,von:typ==="urlaub"||typ==="geburtstag"?"":von,bis:typ==="urlaub"||typ==="geburtstag"?"":bis};
   return o;
 }
 function applyVoice(text){
@@ -639,10 +652,11 @@ function makeWidgetCanvas(){
   const show=list.slice(0,7);
   for(const e of show){
     const col=e.typ==="termin"?WCOL[e.person]:WCOL[e.typ];
-    g.fillStyle="rgba(255,255,255,.09)";rr(g,60,y,W-120,126,26);g.fill();
+    g.fillStyle=e.wichtig?"rgba(255,90,90,.22)":"rgba(255,255,255,.09)";rr(g,60,y,W-120,126,26);g.fill();
+    if(e.wichtig){g.strokeStyle="#ff6b6b";g.lineWidth=5;rr(g,60,y,W-120,126,26);g.stroke()}
     g.fillStyle=col;rr(g,60,y,14,126,7);g.fill();
     g.font=`700 34px ${F}`;g.fillStyle=WCOL[e.person]||col;g.fillText(fitText(g,PNAME[e.person]||"",W-220),106,y+48);
-    g.font=`600 46px ${F}`;g.fillStyle="#ffffff";g.fillText(fitText(g,entryLine(e,today),W-210),106,y+104);
+    g.font=`600 46px ${F}`;g.fillStyle="#ffffff";g.fillText(fitText(g,(e.wichtig?"❗ ":"")+entryLine(e,today),W-210),106,y+104);
     y+=146;
   }
   if(list.length>show.length){g.font=`600 38px ${F}`;g.fillStyle="#a9c4d2";g.fillText(`+ ${list.length-show.length} weitere`,90,y+30);y+=70}
@@ -770,7 +784,7 @@ async function ensureMember(cfg){
 function mirrorData(l){
   const sp=l.spalten||[];
   return entries.filter(e=>sp.includes(e.person)).map(e=>{const o={typ:e.typ,person:e.person,titel:e.titel||"",datum:e.datum};
-    if(e.endDatum)o.endDatum=e.endDatum;if(e.von)o.von=e.von;if(e.bis)o.bis=e.bis;if(e.geburtsjahr)o.geburtsjahr=e.geburtsjahr;return o})
+    if(e.endDatum)o.endDatum=e.endDatum;if(e.von)o.von=e.von;if(e.bis)o.bis=e.bis;if(e.geburtsjahr)o.geburtsjahr=e.geburtsjahr;if(e.wichtig)o.wichtig=true;return o})
     .sort((a,b)=>(a.datum+a.person+(a.von||"")+a.titel)<(b.datum+b.person+(b.von||"")+b.titel)?-1:1);
 }
 function scheduleMirror(){clearTimeout(mirrorTimer);mirrorTimer=setTimeout(syncMirrors,2500)}
@@ -941,7 +955,7 @@ function onDay(e,day){
 function ageOn(e,day){const j=+e.geburtsjahr;return j>1900&&j<=+day.slice(0,4)?(+day.slice(0,4))-j:0}
 function bdayLabel(e,day){const a=ageOn(e,day);return `🎂 ${e.titel}${a?` wird ${a}`:""}`}
 const ORDER={geburtstag:-1,urlaub:0,arbeit:1,termin:2};
-function sortE(a,b){return(ORDER[a.typ]-ORDER[b.typ])||((a.von||"99")<(b.von||"99")?-1:(a.von||"99")>(b.von||"99")?1:0)}
+function sortE(a,b){return(ORDER[a.typ]-ORDER[b.typ])||((!!b.wichtig)-(!!a.wichtig))||((a.von||"99")<(b.von||"99")?-1:(a.von||"99")>(b.von||"99")?1:0)}
 function timeTxt(e){if(e.typ==="urlaub")return"";if(e.von&&e.bis)return`${e.von}–${e.bis}`;if(e.von)return e.von;return""}
 function chipHTML(e,day){
   const multi=e.endDatum&&e.endDatum>e.datum;
@@ -949,7 +963,7 @@ function chipHTML(e,day){
   let label=e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?(e.titel||"Arbeit"):e.typ==="urlaub"?(e.titel?`Urlaub · ${e.titel}`:"Urlaub"):e.titel;
   const range=multi&&e.typ!=="geburtstag"?` <span class="rep">(${fmt(e.datum).slice(3)}–${fmt(e.endDatum).slice(3)})</span>`:"";
   const rep=e.serie?` <span class="rep">↻</span>`:"";
-  return `<button class="chip ${e.typ} ${e.person}" data-id="${esc(e.id)}">${t?`<span class="t">${t}</span>`:""}<span class="chip-label">${esc(label)}</span>${range}${rep}</button>`;
+  return `<button class="chip ${e.typ} ${e.person}${e.wichtig?" imp":""}" data-id="${esc(e.id)}">${t?`<span class="t">${t}</span>`:""}<span class="chip-label">${esc(label)}</span>${range}${rep}</button>`;
 }
 /* ---------- Ferien & Feiertage Berlin ---------- */
 // Quelle: Ferienordnung Berlin (Senatsverwaltung für Bildung), Stand Nov. 2026
@@ -995,7 +1009,8 @@ function renderMonth(){
   for(let day=start;day<=end;day=addDays(day,1)){
     const d=parse(day),fe=feierOf(day),fr=ferienOf(day);
     const list=entries.filter(e=>onDay(e,day)).sort(sortE);
-    const bars=list.slice(0,3).map(e=>{const cls=e.typ==="termin"?e.person:e.typ;const t=e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?`${PNAME[e.person][0]} ${e.von||"Arbeit"}`:e.typ==="urlaub"?`${PNAME[e.person]} Urlaub`:`${e.von?e.von+" ":""}${e.titel}`;return `<div class="mbar ${cls}">${esc(t)}</div>`}).join("");
+    list.sort((a,b)=>(!!b.wichtig)-(!!a.wichtig));
+    const bars=list.slice(0,3).map(e=>{const cls=e.typ==="termin"?e.person:e.typ;const t=e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?`${PNAME[e.person][0]} ${e.von||"Arbeit"}`:e.typ==="urlaub"?`${PNAME[e.person]} Urlaub`:`${e.von?e.von+" ":""}${e.titel}`;return `<div class="mbar ${cls}${e.wichtig?" imp":""}">${esc(t)}</div>`}).join("");
     const pp=papaOf(day);
     h+=`<button class="mcell${d.getMonth()!==m?" out":""}${pp?" papa":fr?" fer":""}${fe?" feier":""}${day===today?" today":""}" data-goday="${day}" aria-label="${fmt(day)}${fe?", "+fe:""}${fr?", "+fr:""}, ${list.length} Einträge"><span class="n">${d.getDate()}</span>${fe?`<span class="fname">${esc(fe)}</span>`:""}${bars}${list.length>3?`<span class="more">+${list.length-3} mehr</span>`:""}</button>`;
   }
@@ -1003,19 +1018,20 @@ function renderMonth(){
   document.getElementById("vOther").innerHTML=h;
 }
 function renderYear(){
-  const y=yearCur;document.getElementById("weekLbl").textContent=String(y);
+  const y=yearCur;const impDays=new Set();
+  for(const e of entries)if(e.wichtig){if(e.typ==="geburtstag"){impDays.add(bdayIn(e,y));continue}let d=e.datum,n=0;const end=e.endDatum&&e.endDatum>e.datum?e.endDatum:e.datum;while(d<=end&&n<60){impDays.add(d);d=addDays(d,1);n++}}document.getElementById("weekLbl").textContent=String(y);
   const busy={};
   for(const e of entries){if(e.typ==="geburtstag"){const b=bdayIn(e,y);(busy[b]||(busy[b]=new Set())).add(e.person);continue}let d=e.datum;const end=e.endDatum&&e.endDatum>e.datum?e.endDatum:e.datum;let n=0;while(d<=end&&n<400){if(d.startsWith(String(y))){(busy[d]||(busy[d]=new Set())).add(e.person)}d=addDays(d,1);n++}}
   let h=`<div class="ygrid">`;
   for(let m=0;m<12;m++){
     const first=iso(new Date(y,m,1));const off=(parse(first).getDay()+6)%7;const dim=new Date(y,m+1,0).getDate();
     let cells=["M","D","M","D","F","S","S"].map(x=>`<span class="h">${x}</span>`).join("")+"<span></span>".repeat(off);
-    for(let i=1;i<=dim;i++){const day=iso(new Date(y,m,i));const c=[papaOf(day)?"papa":ferienOf(day)?"fer":"",feierOf(day)?"feier":"",day===today?"today":"",""].filter(Boolean).join(" ");
+    for(let i=1;i<=dim;i++){const day=iso(new Date(y,m,i));const c=[papaOf(day)?"papa":ferienOf(day)?"fer":"",impDays.has(day)?"imp":"",feierOf(day)?"feier":"",day===today?"today":"",""].filter(Boolean).join(" ");
       const ps=busy[day]?PEOPLE.map(([k])=>k).filter(k=>busy[day].has(k)):[];
       cells+=`<span class="${c}"${feierOf(day)?` title="${esc(feierOf(day))}"`:""}>${i}<span class="pd">${ps.map(k=>`<i class="${k}"></i>`).join("")}</span></span>`}
     h+=`<button class="ymon" data-gomonth="${first}" aria-label="${MONL[m]} ${y} öffnen"><h4>${MONL[m]}</h4><div class="ydays">${cells}</div></button>`;
   }
-  h+=`</div><div class="key"><span><i style="background:var(--papa)"></i>bei Papa</span><span><i style="background:var(--fer)"></i>Schulferien</span><span style="color:var(--feier);font-weight:700">Feiertag</span>${PEOPLE.map(([k,n])=>`<span><span class="kd ${k}"></span>${n}</span>`).join("")}</div>`;
+  h+=`</div><div class="key"><span><i style="background:var(--papa)"></i>bei Papa</span><span><i style="box-shadow:inset 0 0 0 2px var(--imp);border-radius:50%"></i>wichtig</span><span><i style="background:var(--fer)"></i>Schulferien</span><span style="color:var(--feier);font-weight:700">Feiertag</span>${PEOPLE.map(([k,n])=>`<span><span class="kd ${k}"></span>${n}</span>`).join("")}</div>`;
   document.getElementById("vOther").innerHTML=h;
 }
 function renderFerien(){
@@ -1098,8 +1114,13 @@ function renderMorning(){
   document.getElementById("mTitle").textContent=`Heute, ${WDL[d.getDay()]} ${d.getDate()}. ${MON[d.getMonth()]}`;
   document.getElementById("mList").innerHTML=list.length?list.map(e=>{
     const t=timeTxt(e);const lbl=e.typ==="geburtstag"?bdayLabel(e,today):e.typ==="arbeit"?`Arbeit ${t}`:e.typ==="urlaub"?"Urlaub":`${t?t+" ":""}${e.titel}`;
-    return `<li><span class="who p-${e.person}" style="background:none">${PNAME[e.person]}</span><span>${esc(lbl)}${e.typ==="arbeit"&&e.titel&&e.titel!=="Arbeit"?" · "+esc(e.titel):""}</span></li>`}).join("")
+    return `<li${e.wichtig?' class="imp"':""}><span class="who p-${e.person}" style="background:none">${PNAME[e.person]}</span><span>${e.wichtig?"❗ ":""}${esc(lbl)}${e.typ==="arbeit"&&e.titel&&e.titel!=="Arbeit"?" · "+esc(e.titel):""}</span></li>`}).join("")
     :`<li>Heute steht nichts im Kalender.</li>`;
+  const up=[];for(let i=1;i<=7;i++){const dd=addDays(today,i);for(const e of entries)if(e.wichtig&&onDay(e,dd)&&!up.some(u=>u.e===e))up.push({e,dd})}
+  const old=box.querySelector(".upcoming");if(old)old.remove();
+  if(up.length){const ul=document.createElement("ul");ul.className="upcoming";
+    ul.innerHTML=`<li class="ut">❗ Wichtig in den nächsten 7 Tagen:</li>`+up.slice(0,5).map(({e,dd})=>`<li>${fmt(dd)}${e.von?" "+e.von:""} · ${esc(PNAME[e.person]||"")}: ${esc(e.typ==="geburtstag"?bdayLabel(e,dd):e.titel||TYPN[e.typ])}</li>`).join("");
+    box.appendChild(ul)}
   box.hidden=false;
 }
 document.getElementById("mImg").onclick=()=>showWidgetImage();
@@ -1132,6 +1153,7 @@ function drawSheet(){
     <div class="seg" style="--n:${peopleAllowed.length}">${peopleAllowed.map(([k,n])=>`<button class="p-${k}" data-person="${k}" aria-pressed="${d.person===k}">${n}</button>`).join("")}</div>
     ${bd?`<p class="hint">In welcher Spalte soll der Geburtstag stehen? Für Verwandte und Freunde passt „Gemeinsam“.</p>`:""}
     <label class="f">${bd?"Wer hat Geburtstag?":d.typ==="termin"?"Was?":"Notiz (optional)"}<input id="i-titel" value="${esc(d.titel)}" placeholder="${bd?"z. B. Oma Helga":d.typ==="termin"?"z. B. John bei Papa, Zahnarzt …":d.typ==="arbeit"?"z. B. Frühdienst":"z. B. Ostsee"}"></label>
+    <button class="impbtn" id="i-imp" aria-pressed="${!!d.wichtig}">❗ ${d.wichtig?"Als wichtig markiert":"Als wichtig markieren"}</button>
     ${bd?`<div class="row2"><label class="f">Geburtstag (Tag und Monat)<input type="date" id="i-datum" value="${d.datum}"></label>
       <label class="f">Geburtsjahr (optional)<input type="number" inputmode="numeric" id="i-jahr" min="1900" max="2100" value="${esc(d.geburtsjahr||"")}" placeholder="z. B. 1956"></label></div>
       <p class="hint">Kommt jedes Jahr automatisch wieder. Mit Geburtsjahr wird das Alter angezeigt.</p><input type="hidden" id="i-end" value="">`:`<div class="row2">
@@ -1177,6 +1199,7 @@ function drawSheet(){
   if($("i-wdhbis"))$("i-wdhbis").onchange=()=>{read();const p=$("wdhPrev");if(p)p.textContent=seriesPreview(d)};
   if($("i-datum"))$("i-datum").addEventListener("change",()=>{read();const p=$("wdhPrev");if(p)p.textContent=seriesPreview(d)});
   $("cancel").onclick=closeSheet;
+  $("i-imp").onclick=()=>{read();d.wichtig=!d.wichtig;drawSheet()};
   if($("voiceIn"))$("voiceIn").onclick=()=>startVoice();
   $("save").onclick=()=>{read();save()};
   if($("cont7"))$("cont7").onclick=()=>{read();continueSeries(7)};
@@ -1191,6 +1214,7 @@ function drawSheet(){
 function clean(d){
   const o={typ:d.typ,person:d.person,titel:d.titel||"",datum:d.datum,endDatum:(d.endDatum&&d.endDatum>d.datum)?d.endDatum:"",
     von:d.typ==="urlaub"?"":(d.von||""),bis:d.typ==="urlaub"?"":(d.bis||""),serie:d.serie||"",intervall:d.intervall||0};
+  if(d.wichtig)o.wichtig=true;
   if(d.typ==="geburtstag"){o.endDatum="";o.von="";o.bis="";o.serie="";o.intervall=0;o.geburtsjahr=String(d.geburtsjahr||"").replace(/\D/g,"").slice(0,4)}
   return o;
 }
