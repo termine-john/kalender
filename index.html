@@ -329,6 +329,12 @@ body.fold .day.empty .day-head{border-bottom:0}
 .nextcard.soon{border-color:var(--star);box-shadow:0 0 0 1px var(--star)}
 .nextcard.imp{border-color:var(--imp);box-shadow:0 0 0 1px var(--imp)}
 #searchBtn svg{width:22px;height:22px}
+.morning.remind{border-left-color:var(--star);background:color-mix(in srgb,var(--star) 9%,var(--surface))}
+.remrow{display:grid!important;grid-template-columns:1fr auto;gap:10px;align-items:center}
+.remrow .rt{min-width:0}
+.remrow .meta{font-size:.78rem;color:var(--muted)}
+.remrow .btn{padding:7px 10px;font-size:.8rem}
+.remrow.soon b{color:var(--imp)}
 .sec{font-family:var(--f-display);font-size:1.05rem;margin:6px 0 0}
 .empty-note{font-size:.85rem;color:var(--muted);text-align:center;padding:4px}
 
@@ -400,6 +406,12 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
   </header>
 
   <button class="nextcard" id="nextCard" hidden></button>
+
+  <section class="morning remind" id="remind" hidden>
+    <h2 id="remTitle">🔔 Erinnerungen</h2>
+    <span></span>
+    <ul id="remList"></ul>
+  </section>
 
   <section class="news" id="news" hidden>
     <div class="news-head"><h2 id="newsTitle">Neue Einträge</h2><button class="btn" id="newsAck">Gesehen ✓</button></div>
@@ -1220,7 +1232,7 @@ function renderInner(){
   document.getElementById("vOther").hidden=view==="woche";
   document.getElementById("navbar").hidden=view==="ferien"||view==="sterne";
   if(view==="tag")renderDay();else if(view==="monat")renderMonth();else if(view==="jahr")renderYear();else if(view==="ferien")renderFerien();else if(view==="sterne")renderStars();else renderWeek();
-  renderMorning();renderNews();renderEve();renderNext();
+  renderMorning();renderNews();renderEve();renderNext();renderRemind();
 }
 /* ---------- Tagesübersicht (Zeitstrahl) ---------- */
 const HPX=52;
@@ -1384,6 +1396,32 @@ function renderNews(){
 document.getElementById("newsAck").onclick=()=>{try{localStorage.setItem("fk-seen",nowISO())}catch(e){}document.getElementById("news").hidden=true;toast("Als gesehen markiert")};
 document.getElementById("newsList").addEventListener("click",ev=>{const b=ev.target.closest("[data-goday]");if(!b)return;weekStart=mondayOf(b.dataset.goday);setView("woche");setTimeout(()=>{const el=document.getElementById("d-"+b.dataset.goday);if(el)el.scrollIntoView({block:"center"})},60)});
 
+/* ---------- Vorlauf-Erinnerungen ---------- */
+// Geburtstage erinnern automatisch 7 Tage vorher, sonst nur wenn eingestellt
+function vlDays(e){if(e.vorlauf!==undefined&&e.vorlauf!==null&&e.vorlauf!=="")return +e.vorlauf||0;return e.typ==="geburtstag"?7:0}
+function vlText(e){if(e.vorlaufText)return e.vorlaufText;if(e.typ==="geburtstag")return "🎁 Geschenk besorgen";if(/eltern/i.test(e.titel||""))return "Fragen notieren";if(/arzt|zahn/i.test(e.titel||""))return "Versichertenkarte bereitlegen";return "Vorbereiten"}
+function eventDateOf(e){if(e.typ==="geburtstag"){const y=+today.slice(0,4);const a=bdayIn(e,y);return a>=today?a:bdayIn(e,y+1)}return e.datum}
+function dueReminders(){
+  const out=[];
+  for(const e of entries){const n=vlDays(e);if(!n)continue;const ev=eventDateOf(e);if(ev<today)continue;
+    const from=addDays(ev,-n);if(today<from)continue;
+    let ack=false;try{ack=localStorage.getItem(`fk-rem-${e.id}-${ev}`)==="1"}catch(x){}
+    if(!ack)out.push({e,ev,days:diffDays(today,ev)})}
+  return out.sort((a,b)=>a.ev.localeCompare(b.ev));
+}
+function renderRemind(){
+  const box=document.getElementById("remind");if(!box)return;
+  if(READONLY){box.hidden=true;return}
+  const list=dueReminders();if(!list.length){box.hidden=true;return}
+  document.getElementById("remTitle").textContent=`🔔 ${list.length} ${list.length===1?"Erinnerung":"Erinnerungen"}`;
+  document.getElementById("remList").innerHTML=list.map(({e,ev,days},i)=>{
+    const what=e.typ==="geburtstag"?`für ${e.titel}${ageOn(e,ev)?` (wird ${ageOn(e,ev)})`:""}`:`für ${PNAME[e.person]||""}: ${e.titel||TYPN[e.typ]}`;
+    const when=days===0?"heute":days===1?"morgen":`in ${days} Tagen`;
+    return `<li class="remrow${days<=1?" soon":""}"><span class="rt"><b>${esc(vlText(e))}</b><br><span class="meta">${esc(what)} · ${when}, ${fmt(ev)}${e.von?" "+e.von:""}</span></span><button class="btn ghost" data-remok="${i}">Erledigt ✓</button></li>`}).join("");
+  box.querySelectorAll("[data-remok]").forEach(b=>b.onclick=()=>{const r=list[+b.dataset.remok];try{localStorage.setItem(`fk-rem-${r.e.id}-${r.ev}`,"1")}catch(x){}toast("Abgehakt ✓");renderRemind()});
+  box.hidden=false;
+}
+
 /* ---------- Als Nächstes ---------- */
 function nextEntry(){
   const now=new Date(),nowMin=now.getHours()*60+now.getMinutes();let best=null;
@@ -1487,6 +1525,11 @@ function drawSheet(){
     <div class="seg" style="--n:${peopleAllowed.length}">${peopleAllowed.map(([k,n])=>`<button class="p-${k}" data-person="${k}" aria-pressed="${d.person===k}">${n}</button>`).join("")}</div>
     ${bd?`<p class="hint">In welcher Spalte soll der Geburtstag stehen? Für Verwandte und Freunde passt „Gemeinsam“.</p>`:""}
     <label class="f">${bd?"Wer hat Geburtstag?":d.typ==="termin"?"Was?":"Notiz (optional)"}<input id="i-titel" list="dlTitles" autocomplete="off" value="${esc(d.titel)}" placeholder="${bd?"z. B. Oma Helga":d.typ==="termin"?"z. B. John bei Papa, Zahnarzt …":d.typ==="arbeit"?"z. B. Frühdienst":"z. B. Ostsee"}"></label>
+    <div class="box">
+      <span class="lbl-s">🔔 Vorher erinnern</span>
+      <div class="seg" style="--n:5">${[[0,"Nein"],[1,"1 Tag"],[3,"3 Tage"],[7,"1 Woche"],[14,"2 Wo."]].map(([v,t])=>`<button class="typ" data-vl="${v}" aria-pressed="${vlDays(d)===v}">${t}</button>`).join("")}</div>
+      ${vlDays(d)?`<label class="f">Woran erinnern?<input id="i-vlt" maxlength="80" value="${esc(vlText(d))}" placeholder="z. B. Geschenk besorgen, Fragen notieren, Unterlagen raussuchen"></label>`:""}
+    </div>
     <button class="impbtn" id="i-imp" aria-pressed="${!!d.wichtig}">❗ ${d.wichtig?"Als wichtig markiert":"Als wichtig markieren"}</button>
     ${bd?`<div class="row2"><label class="f">Geburtstag (Tag und Monat)<input type="date" id="i-datum" value="${d.datum}"></label>
       <label class="f">Geburtsjahr (optional)<input type="number" inputmode="numeric" id="i-jahr" min="1900" max="2100" value="${esc(d.geburtsjahr||"")}" placeholder="z. B. 1956"></label></div>
@@ -1523,6 +1566,7 @@ function drawSheet(){
   const $=id=>document.getElementById(id);
   const read=()=>{d.titel=$("i-titel").value.trim();d.datum=$("i-datum").value||d.datum;d.endDatum=$("i-end").value;
     if($("i-jahr"))d.geburtsjahr=$("i-jahr").value.trim();
+    if($("i-vlt"))d.vorlaufText=$("i-vlt").value.trim();
     if($("i-von"))d.von=$("i-von").value;if($("i-bis"))d.bis=$("i-bis").value;
     if($("i-wdhbis"))d.wdhBis=$("i-wdhbis").value||d.wdhBis;};
   $("bd").onclick=ev=>{if(ev.target.id==="bd")closeSheet()};
@@ -1545,6 +1589,7 @@ function drawSheet(){
   if($("i-datum"))$("i-datum").addEventListener("change",()=>{read();const p=$("wdhPrev");if(p)p.textContent=seriesPreview(d)});
   $("cancel").onclick=closeSheet;
   $("i-imp").onclick=()=>{read();d.wichtig=!d.wichtig;drawSheet()};
+  document.querySelectorAll(".sheet [data-vl]").forEach(b=>b.onclick=()=>{read();d.vorlauf=+b.dataset.vl;if(d.vorlauf&&!d.vorlaufText)d.vorlaufText=vlText(d);drawSheet()});
   if($("voiceIn"))$("voiceIn").onclick=()=>startVoice();
   $("save").onclick=()=>{read();save()};
   if($("cont7"))$("cont7").onclick=()=>{read();continueSeries(7)};
@@ -1560,6 +1605,7 @@ function clean(d){
   const o={typ:d.typ,person:d.person,titel:d.titel||"",datum:d.datum,endDatum:(d.endDatum&&d.endDatum>d.datum)?d.endDatum:"",
     von:d.typ==="urlaub"?"":(d.von||""),bis:d.typ==="urlaub"?"":(d.bis||""),serie:d.serie||"",intervall:d.intervall||0};
   if(d.wichtig)o.wichtig=true;
+  if(d.vorlauf!==undefined&&d.vorlauf!==null&&d.vorlauf!==""){o.vorlauf=+d.vorlauf||0;if(o.vorlauf)o.vorlaufText=String(d.vorlaufText||vlText(d)).slice(0,80)}
   if(d.typ==="geburtstag"){o.endDatum="";o.von="";o.bis="";o.serie="";o.intervall=0;o.geburtsjahr=String(d.geburtsjahr||"").replace(/\D/g,"").slice(0,4)}
   return o;
 }
