@@ -403,7 +403,7 @@ body.fold .day.empty .day-head{border-bottom:0}
 .seg button[aria-pressed="true"]{border-color:currentColor;border-width:2px}
 .seg .typ[aria-pressed="true"]{color:var(--accent);background:color-mix(in srgb,var(--accent) 12%,transparent)}
 label.f{display:flex;flex-direction:column;gap:5px;font-size:.82rem;color:var(--muted);font-weight:600;letter-spacing:.02em}
-label.f input,label.f select{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 10px;width:100%;min-width:0}
+label.f input,label.f select,label.f textarea{font:inherit;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:11px 10px;width:100%;min-width:0}
 .row2{display:grid;grid-template-columns:1fr 1fr;gap:10px}
 .actions{display:flex;flex-wrap:wrap;gap:8px}
 .actions .btn{flex:1 1 140px}
@@ -415,6 +415,24 @@ label.f input,label.f select{font:inherit;color:var(--fg);background:var(--bg);b
 @media (min-width:700px){.chip{font-size:.8rem}.legend div{font-size:.85rem}}
 .gear{width:44px;height:44px;border-radius:12px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center}
 .gear svg{width:22px;height:22px}
+.gear{position:relative}
+body.haspbg{background:transparent}
+html:has(body.haspbg){background:var(--bg)}
+body.haspbg::before,body.haspbg::after{content:"";position:fixed;inset:0;height:auto;z-index:-1;pointer-events:none}
+body.haspbg::before{background:var(--pbg) center/cover no-repeat}
+body.haspbg::after{background:var(--bg);opacity:var(--pdim,.55)}
+.pbgrid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.pbgrid button{aspect-ratio:1;border-radius:12px;border:2px solid var(--line);background:var(--surface);color:var(--fg);font-size:11px;font-weight:700;display:flex;align-items:flex-end;justify-content:center;padding:4px;background-size:cover;background-position:center;text-shadow:0 1px 3px rgba(0,0,0,.7)}
+.pbgrid button[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.pbgrid button span{background:rgba(0,0,0,.45);color:#fff;border-radius:6px;padding:1px 5px}
+.pbrange{width:100%}
+body.haspbg .nav{background:color-mix(in srgb,var(--bg) 70%,transparent);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px)}
+.gear .badge{position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;border-radius:9px;background:#e5484d;color:#fff;font-size:11px;font-weight:800;display:flex;align-items:center;justify-content:center;padding:0 4px}
+.supmsg{border:1px solid var(--line);border-radius:12px;padding:10px 12px;background:var(--surface);margin:8px 0;line-height:1.45}
+.supmsg.neu{border-color:#e5484d}
+.supmsg .sm-h{display:flex;justify-content:space-between;gap:8px;font-size:12px;opacity:.75;margin-bottom:4px}
+.supmsg .sm-t{white-space:pre-wrap;word-break:break-word}
+.supmsg .rw-btns{margin-top:8px}
 textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;color:var(--fg);background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;width:100%;min-height:150px}
 .linkbox{font-family:ui-monospace,monospace;font-size:.72rem;word-break:break-all;background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:10px;user-select:all}
 .steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px;font-size:.9rem}
@@ -749,6 +767,8 @@ function showSettings(){
     <p class="hint">Tipp: Im Browser-Menü „Zum Startbildschirm hinzufügen“ wählen, dann hat jeder die App als Symbol auf dem Handy.</p>
     ${isStandalone()?"":`<button class="btn" id="installSet">📲 Als App installieren</button>`}
     <button class="btn ghost" id="tourAgain">❓ Hilfe & Anleitung</button>
+    <button class="btn ghost" id="supBtn">💬 Support · Nachricht an den Entwickler</button>
+    <div id="adminBox"></div>
     <h4 class="sub">Darstellung</h4>
     <div class="rw">
       <label class="pick" style="justify-content:space-between"><span>Kompakt-Modus (mehr auf einen Blick)</span><input type="checkbox" id="optCompact" ${prefOn("compact")?"checked":""}></label>
@@ -756,6 +776,7 @@ function showSettings(){
       <label class="pick" style="justify-content:space-between"><span>Pfeile zusätzlich zum Wischen zeigen</span><input type="checkbox" id="optArrows" ${prefOn("arrows")?"checked":""}></label>
       <p class="hint" style="margin:0">Gilt nur für dieses Handy.</p>
     </div>
+    ${pbgBox()}
     <div class="rw"><b>Hintergrundbild oben</b>
       ${bgImage()?`<img src="${bgImage()}" alt="" style="width:100%;max-height:110px;object-fit:cover;border-radius:10px">`:""}
       <div class="rw-btns"><button id="bgPick">${bgImage()?"Anderes Bild wählen":"Bild wählen"}</button>${bgImage()?'<button id="bgDel">Entfernen</button>':""}</div>
@@ -778,8 +799,10 @@ function showSettings(){
   document.getElementById("exp").onclick=exportICS;wireReadLinks();wireBackups();
   {const ib=document.getElementById("installSet");if(ib)ib.onclick=()=>{closeSheet();setTimeout(installApp,200)}}
   document.getElementById("tourAgain").onclick=()=>{closeSheet();setTimeout(showHelp,200)};
+  document.getElementById("supBtn").onclick=()=>{closeSheet();setTimeout(showSupport,200)};adminBoxFill();
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{setTheme(b.dataset.themeSet);showSettings()});
   [["optCompact","compact"],["optFold","fold"],["optArrows","arrows"]].forEach(([id,k])=>{const el=document.getElementById(id);if(el)el.onchange=()=>{setPref(k,el.checked);render()}});
+  wirePbg(showSettings);
   const bp=document.getElementById("bgPick"),bi=document.getElementById("bgIn"),bd=document.getElementById("bgDel");
   if(bp)bp.onclick=()=>bi.click();
   if(bi)bi.onchange=async()=>{const f=bi.files&&bi.files[0];bi.value="";if(!f)return;try{const d=await shrinkBg(f);try{localStorage.setItem("fk-bg",d)}catch(e){toast("Bild ist zu groß");return}applyPrefs();toast("Hintergrundbild gesetzt");showSettings()}catch(e){toast("Das Bild konnte nicht geöffnet werden")}};
@@ -887,7 +910,8 @@ const HELP=[
 <li>Kompakt-Modus: mehr auf einen Blick</li>
 <li>Leere Tage schmal anzeigen</li>
 <li>Pfeile zusätzlich zum Wischen</li>
-<li>Eigenes Hintergrundbild oben, z. B. ein Familienfoto</li></ul>
+<li>Eigenes Hintergrundbild oben, z. B. ein Familienfoto</li>
+<li><b>Kalender-Hintergrund:</b> Farbverlauf (Meer, Wald, Abend …) oder ein eigenes Foto hinter dem ganzen Kalender. Mit dem Regler dunkelst du ihn ab, damit alles lesbar bleibt.</li></ul>
 <p>Diese Einstellungen gelten nur für dein Handy.</p>`],
 ["sperr","📱","Bild für den Sperrbildschirm",`<p>In der Tagesübersicht auf <b>🖼</b> tippen (oder Einstellungen → „Sperrbildschirm“). Die App erstellt ein Bild mit den heutigen Terminen. Speichern und in den Handy-Einstellungen als Sperrbildschirm festlegen.</p>`],
 ["app","📲","Als App installieren",`<p>Oben erscheint der Hinweis <b>„Als App aufs Handy holen“</b> → „Installieren“. Oder: Einstellungen → <b>„📲 Als App installieren“</b>.</p>
@@ -899,6 +923,8 @@ const HELP=[
 <li><b>Wiederherstellen:</b> Einstellungen → „Sicherungen“ → Sicherung antippen. Gelöschte Einträge kommen zurück, vorhandene bleiben unverändert.</li>
 <li><b>Als Datei:</b> „Als Datei speichern“ zum Aufheben, „Aus Datei wiederherstellen“ zum Zurückholen.</li>
 <li><b>Export (.ics):</b> alle Termine für Google Kalender oder andere Kalender-Apps.</li></ul>`],
+["support","💬","Support & Feedback",`<p>Frage, Fehler oder Idee? In den Einstellungen oder ganz unten in dieser Hilfe auf <b>„💬 Nachricht an den Entwickler“</b> tippen, Art wählen, Nachricht schreiben, absenden.</p>
+<p>Wenn du eine Antwort möchtest, trag eine E-Mail-Adresse oder Handynummer ein. Die Nachricht sieht nur der Entwickler.</p>`],
 ["probleme","🛠","Probleme lösen",`<ul><li><b>Einträge der anderen fehlen:</b> oben die Kalender-Nummer vergleichen. Ist sie verschieden, den Einladungslink nochmal öffnen.</li>
 <li><b>„Du hast nur Leserechte“:</b> jemand mit Schreibrechten muss dich unter „Mitglieder & Rechte“ auf ✏️ stellen.</li>
 <li><b>Etwas sieht alt aus:</b> App schließen und neu öffnen, dann lädt die neue Version.</li>
@@ -911,7 +937,10 @@ function showHelp(open){
     <label class="f hsearch">Suchen<input id="hQ" type="search" placeholder="z. B. Person, Link, Geburtstag …"></label>
     <div id="hList">${HELP.map(([k,ic,t,b])=>`<details data-hk="${k}"${k===open?" open":""}><summary>${ic} ${t}</summary><div class="hb">${b}</div></details>`).join("")}</div>
     <p class="hint" id="hNone" hidden>Nichts gefunden. Probier ein anderes Wort.</p>
+    <h4 class="sub">Nicht weitergekommen?</h4>
+    <button class="btn" id="hSupport" style="width:100%">💬 Nachricht an den Entwickler</button>
     <div class="actions"><button class="btn ghost" id="hClose">Schließen</button></div></div>`);
+  document.getElementById("hSupport").onclick=()=>{closeSheet();setTimeout(showSupport,200)};
   document.getElementById("hTour").onclick=()=>{closeSheet();setTimeout(startTour,250)};
   document.getElementById("hClose").onclick=closeSheet;
   const q=document.getElementById("hQ");
@@ -1154,6 +1183,90 @@ function openRewardSheet(r){
 
 /* ---------- Nur-Lese-Links ---------- */
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
+
+/* ---------- Support ---------- */
+const APP_VER="v40";
+const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
+function supDB(){
+  if(FS)return FS;
+  if(!window.firebase)return null;
+  const app=firebase.apps.length?firebase.app():firebase.initializeApp(DEFAULT_FIREBASE);
+  return firebase.firestore(app);
+}
+function showSupport(){
+  let art="frage";const draft={};
+  const draw=()=>{
+    sheet("💬 Support",`<p class="hint">Frage, Fehler oder Idee? Schreib mir direkt. Die Nachricht landet nur bei mir, niemand sonst kann sie lesen.</p>
+      <div class="seg" style="--n:3">${[["frage","❓ Frage"],["fehler","🐞 Fehler"],["idee","💡 Idee"]].map(([k,n])=>`<button class="typ" data-art="${k}" aria-pressed="${art===k}">${n}</button>`).join("")}</div>
+      <label class="f">Deine Nachricht<textarea id="supT" rows="6" maxlength="1000" placeholder="${art==="fehler"?"Was ist passiert? Was hast du vorher gemacht?":art==="idee"?"Was würde dir die App erleichtern?":"Wobei kann ich helfen?"}">${esc(draft.supT||"")}</textarea></label>
+      <label class="f">Dein Name (optional)<input id="supN" maxlength="60" value="${esc(draft.supN||"")}"></label>
+      <label class="f">Wie kann ich dir antworten? (optional)<input id="supK" maxlength="100" value="${esc(draft.supK||"")}" placeholder="E-Mail oder Handynummer"></label>
+      <p class="hint">Ohne Kontaktangabe kann ich nicht antworten. Mitgeschickt werden nur App-Version und Gerätetyp, keine Termine. Mehr dazu im <a href="datenschutz.html">Datenschutz</a>.</p>
+      <div class="actions"><button class="btn" id="supGo">Absenden</button><button class="btn ghost" id="supX">Abbrechen</button></div>`);
+    const keep=()=>{draft.supT=document.getElementById("supT").value;draft.supN=document.getElementById("supN").value;draft.supK=document.getElementById("supK").value};
+    document.querySelectorAll("[data-art]").forEach(b=>b.onclick=()=>{keep();art=b.dataset.art;const d={...draft};draw();Object.assign(draft,d)});
+    document.getElementById("supX").onclick=closeSheet;
+    document.getElementById("supGo").onclick=async()=>{keep();
+      const t=(draft.supT||"").trim();if(t.length<3){toast("Bitte eine Nachricht schreiben");return}
+      let last=0;try{last=+localStorage.getItem("fk-sup-last")||0}catch(e){}
+      if(Date.now()-last<60000){toast("Bitte kurz warten, bevor du noch eine Nachricht schickst");return}
+      const db=supDB();if(!db||!navigator.onLine){toast("Gerade keine Verbindung. Bitte später nochmal versuchen.");return}
+      const ua=navigator.userAgent;const dev=/Android/.test(ua)?"Android":/iPhone|iPad/.test(ua)?"iPhone/iPad":"Computer";
+      const br=/SamsungBrowser/.test(ua)?"Samsung":/; wv\)|WhatsApp/.test(ua)?"In-App-Browser":/Firefox/.test(ua)?"Firefox":/Chrome/.test(ua)?"Chrome":/Safari/.test(ua)?"Safari":"anderer";
+      const o={art,text:t.slice(0,1000),name:(draft.supN||"").trim().slice(0,60),kontakt:(draft.supK||"").trim().slice(0,100),
+        info:`${APP_VER} · ${dev} · ${br}${isStandalone()?" · installiert":""} · ${location.hostname}`.slice(0,300),zeit:nowISO(),status:"neu"};
+      const btn=document.getElementById("supGo");btn.disabled=true;btn.textContent="Wird gesendet …";
+      try{await Promise.race([db.collection("support").add(o),new Promise((_,j)=>setTimeout(()=>j({code:"timeout"}),12000))]);
+        try{localStorage.setItem("fk-sup-last",String(Date.now()))}catch(e){}
+        draft.supT="";closeSheet();toast("Danke! Deine Nachricht ist angekommen 💌")}
+      catch(e){console.warn(e);btn.disabled=false;btn.textContent="Absenden";toast(e&&e.code==="permission-denied"?"Senden ist gerade nicht möglich (Regeln fehlen)":"Senden hat nicht geklappt. Bitte später nochmal.")}
+    };
+  };
+  draw();
+}
+/* Postfach nur für den Betreiber (Freischaltung über admins/{uid} in Firebase) */
+let IS_ADMIN=false,SUP_NEW=0;
+async function checkAdmin(){
+  try{if(!FS||!firebase.auth)return;const u=firebase.auth().currentUser;if(!u)return;
+    const a=await FS.doc(`admins/${u.uid}`).get({source:"server"});IS_ADMIN=a.exists;if(!IS_ADMIN)return;
+    const sn=await FS.collection("support").where("status","==","neu").get({source:"server"});SUP_NEW=sn.size;markGear();
+    if(SUP_NEW)toast(`📬 ${SUP_NEW} neue Support-${SUP_NEW===1?"Nachricht":"Nachrichten"}`);
+  }catch(e){IS_ADMIN=false}
+}
+function markGear(){const g=document.getElementById("gear");if(!g)return;let b=g.querySelector(".badge");if(!SUP_NEW){if(b)b.remove();return}if(!b){b=document.createElement("span");b.className="badge";g.appendChild(b)}b.textContent=SUP_NEW}
+function adminBoxFill(){
+  const box=document.getElementById("adminBox");if(!box)return;
+  if(IS_ADMIN){box.innerHTML=`<button class="btn" id="inboxBtn">📬 Support-Postfach${SUP_NEW?` (${SUP_NEW} neu)`:""}</button>`;document.getElementById("inboxBtn").onclick=()=>{closeSheet();setTimeout(showInbox,200)};return}
+  if(!IS_MAIN_SITE)return;
+  let uid="";try{uid=firebase.auth().currentUser.uid}catch(e){}
+  if(!uid)return;
+  box.innerHTML=`<details class="rw"><summary class="hint" style="cursor:pointer">📬 Support-Postfach einrichten (nur für dich als Betreiber)</summary>
+    <ol class="steps"><li>console.firebase.google.com → Projekt <b>familienkalender</b> → <b>Firestore</b> → Daten</li>
+    <li><b>+ Sammlung starten</b> → Sammlungs-ID: <b>admins</b></li>
+    <li>Dokument-ID: diesen Code einfügen:</li></ol>
+    <div class="linkbox" id="myUid">${esc(uid)}</div><button class="btn ghost" id="uidCopy">Code kopieren</button>
+    <ol class="steps" start="4"><li>Feld: <b>name</b>, Wert: <b>Robert</b> → Speichern</li><li>App neu öffnen. Hier erscheint dann das Postfach.</li></ol></details>`;
+  document.getElementById("uidCopy").onclick=async()=>{try{await navigator.clipboard.writeText(uid);toast("Code kopiert")}catch(e){toast("Bitte den Code markieren und kopieren")}};
+}
+async function showInbox(){
+  sheet("📬 Support-Postfach",`<div id="inbox"><p class="hint">Lade Nachrichten …</p></div><div class="actions"><button class="btn ghost" id="ibClose">Schließen</button></div>`);
+  document.getElementById("ibClose").onclick=closeSheet;
+  let list=[];
+  try{const sn=await FS.collection("support").orderBy("zeit","desc").limit(100).get({source:"server"});list=sn.docs.map(d=>({...d.data(),id:d.id}))}
+  catch(e){document.getElementById("inbox").innerHTML=`<p class="hint">Postfach nicht erreichbar.</p>`;return}
+  const AR={frage:"❓ Frage",fehler:"🐞 Fehler",idee:"💡 Idee"};
+  const link=k=>{k=String(k||"");if(/@/.test(k))return `<a href="mailto:${esc(k)}">${esc(k)}</a>`;const n=k.replace(/[^\d+]/g,"");if(n.length>=6){const w=n.replace(/^\+/,"").replace(/^0/,"49");return `${esc(k)} · <a href="tel:${esc(n)}">anrufen</a> · <a href="https://wa.me/${esc(w)}" target="_blank" rel="noopener">WhatsApp</a>`}return esc(k)};
+  const draw=()=>{SUP_NEW=list.filter(m=>m.status==="neu").length;markGear();
+    document.getElementById("inbox").innerHTML=list.length?list.map(m=>`<div class="supmsg${m.status==="neu"?" neu":""}" data-sid="${esc(m.id)}">
+      <div class="sm-h"><span>${AR[m.art]||"Nachricht"}${m.status==="neu"?" · <b>neu</b>":""}</span><span>${esc(String(m.zeit||"").slice(0,16).replace("T"," "))}</span></div>
+      <div class="sm-t">${esc(m.text||"")}</div>
+      <div class="hint" style="margin:6px 0 0">${m.name?"Von: <b>"+esc(m.name)+"</b>":"Ohne Namen"}${m.kontakt?" · "+link(m.kontakt):""}<br>${esc(m.info||"")}</div>
+      <div class="rw-btns">${m.status==="neu"?'<button data-sdone>✓ Erledigt</button>':""}<button data-sdel>Löschen</button></div></div>`).join(""):`<p class="hint">Keine Nachrichten. 🎉</p>`;};
+  draw();
+  document.getElementById("inbox").onclick=async ev=>{const c=ev.target.closest("[data-sid]");if(!c)return;const id=c.dataset.sid;
+    if(ev.target.closest("[data-sdone]")){try{await FS.doc(`support/${id}`).update({status:"erledigt"});list=list.map(m=>m.id===id?{...m,status:"erledigt"}:m);draw()}catch(e){toast("Hat nicht geklappt")}}
+    if(ev.target.closest("[data-sdel]")){if(!await askConfirm("Diese Nachricht löschen?"))return;try{await FS.doc(`support/${id}`).delete();list=list.filter(m=>m.id!==id);draw()}catch(e){toast("Hat nicht geklappt")}}};
+}
 /* ---------- Mitglieder & Rechte ---------- */
 let ROLE=null,MY_UID="",MY_MEMBER=null,memberSub=null,memberP=null,RULES_OLD=false;
 function applyRole(r){
@@ -1192,7 +1305,7 @@ async function _ensureMember(cfg){
     try{sessionStorage.removeItem("fk-joined")}catch(e){}
     if(cfg.wtok){const c2=getCfg();if(c2){delete c2.wtok;setCfg(c2)}}
     if(!RULES_OLD&&!memberSub)memberSub=ref.onSnapshot(s=>{if(!s.exists)return;MY_MEMBER=s.data();applyRole(MY_MEMBER.rolle==="lesen"?"lesen":"schreiben");setTimeout(maybeAskName,3500)},()=>{});
-    memberOK=true;if(ROLE!=="lesen")scheduleMirror();return true;
+    memberOK=true;if(ROLE!=="lesen")scheduleMirror();setTimeout(checkAdmin,2000);return true;
   }catch(e){memberOK=false;memberErr=e&&e.code||"";console.warn("Mitglied",e);return false}
 }
 const dmy=x=>x?x.slice(8,10)+"."+x.slice(5,7)+"."+x.slice(0,4):"";
@@ -1267,6 +1380,7 @@ function showReaderSettings(){
     ${nameBox()}
     ${isStandalone()?"":`<button class="btn" id="installSet">📲 Als App installieren</button>`}
     <button class="btn ghost" id="rHelp">❓ Hilfe & Anleitung</button>
+    <button class="btn ghost" id="rSup">💬 Support · Nachricht an den Entwickler</button>
     <h4 class="sub">Darstellung</h4>
     <div class="seg" style="--n:3">${[["dark","🌙 Dunkel"],["light","☀️ Hell"],["auto","📱 Wie Handy"]].map(([k,n])=>`<button class="typ" data-theme-set="${k}" aria-pressed="${themeNow()===k}">${n}</button>`).join("")}</div>
     <div class="rw">
@@ -1274,13 +1388,14 @@ function showReaderSettings(){
       <label class="pick" style="justify-content:space-between"><span>Leere Tage in der Woche schmal anzeigen</span><input type="checkbox" id="optFold" ${prefOn("fold")?"checked":""}></label>
       <label class="pick" style="justify-content:space-between"><span>Pfeile zusätzlich zum Wischen zeigen</span><input type="checkbox" id="optArrows" ${prefOn("arrows")?"checked":""}></label>
     </div>
+    ${pbgBox()}
     <button class="btn ghost" id="setImg">🖼 Bild mit den heutigen Terminen erstellen</button>
     <button class="btn ghost" id="exp">Alle Termine exportieren (.ics)</button>
     <h4 class="sub">Mit einem anderen Kalender verbinden</h4>
     ${joinBox()}
     <p class="hint"><a href="datenschutz.html">Datenschutz, Impressum & Nutzungshinweise</a></p>
     <div class="actions"><button class="btn danger" id="disc">Auf diesem Handy trennen</button><button class="btn ghost" id="setClose">Schließen</button></div>`);
-  wireNameBox(null);wireJoin();document.getElementById("rHelp").onclick=()=>{closeSheet();setTimeout(showHelp,200)};
+  wireNameBox(null);wireJoin();wirePbg(showSettings);document.getElementById("rHelp").onclick=()=>{closeSheet();setTimeout(showHelp,200)};document.getElementById("rSup").onclick=()=>{closeSheet();setTimeout(showSupport,200)};
   {const ib=document.getElementById("installSet");if(ib)ib.onclick=()=>{closeSheet();setTimeout(installApp,200)}}
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{setTheme(b.dataset.themeSet);showSettings()});
   [["optCompact","compact"],["optFold","fold"],["optArrows","arrows"]].forEach(([id,k])=>{const el=document.getElementById(id);if(el)el.onchange=()=>{setPref(k,el.checked);render()}});
@@ -1451,8 +1566,45 @@ function askConfirm(text,ok="Löschen",danger=true){
 }
 function prefOn(k){try{return localStorage.getItem("fk-"+k)==="1"}catch(e){return false}}
 function setPref(k,v){try{localStorage.setItem("fk-"+k,v?"1":"0")}catch(e){}applyPrefs()}
+
+/* ---------- Eigener Kalender-Hintergrund (pro Handy) ---------- */
+const PBG={
+  meer:["🌊 Meer","linear-gradient(160deg,#0b486b 0%,#3b8686 45%,#79bd9a 100%)"],
+  wald:["🌲 Wald","linear-gradient(160deg,#0f2e1d 0%,#2d6a4f 50%,#95d5b2 100%)"],
+  sonne:["🌅 Abend","linear-gradient(160deg,#2b1055 0%,#d53369 55%,#fbb03b 100%)"],
+  lavendel:["💜 Lavendel","linear-gradient(160deg,#41295a 0%,#7b5ea7 50%,#e0c3fc 100%)"],
+  himmel:["☁️ Himmel","linear-gradient(180deg,#4facfe 0%,#a1c4fd 55%,#e0f3ff 100%)"],
+  nacht:["🌌 Nacht","radial-gradient(circle at 20% 15%,rgba(255,255,255,.35) 0 1px,transparent 2px),radial-gradient(circle at 70% 40%,rgba(255,255,255,.3) 0 1px,transparent 2px),radial-gradient(circle at 40% 75%,rgba(255,255,255,.25) 0 1px,transparent 2px),linear-gradient(180deg,#020024 0%,#090979 60%,#1c3b70 100%)"],
+  pfirsich:["🍑 Pfirsich","linear-gradient(160deg,#ffecd2 0%,#fcb69f 100%)"]
+};
+function pbgGet(){try{return localStorage.getItem("fk-pbg")||""}catch(e){return ""}}
+function pbgDim(){let v=35;try{const x=localStorage.getItem("fk-pbg-dim");if(x!==null&&x!=="")v=+x}catch(e){}return Math.max(0,Math.min(90,v))}
+function pbgCSS(v){if(!v)return "";if(v.startsWith("preset:")){const p=PBG[v.slice(7)];return p?p[1]:""}return `url(${v})`}
+function applyPbg(){const c=pbgCSS(pbgGet());const b=document.body;
+  if(c){b.style.setProperty("--pbg",c);b.style.setProperty("--pdim",String(pbgDim()/100));b.classList.add("haspbg")}else{b.classList.remove("haspbg");b.style.removeProperty("--pbg")}}
+function pbgBox(){const cur=pbgGet(),own=cur&&!cur.startsWith("preset:");
+  return `<div class="rw"><b>Kalender-Hintergrund</b>
+    <div class="pbgrid">
+      <button data-pbg="" aria-pressed="${!cur}"><span>Keiner</span></button>
+      ${Object.entries(PBG).map(([k,[n,css]])=>`<button data-pbg="preset:${k}" aria-pressed="${cur==="preset:"+k}" style="background-image:${css}"><span>${n}</span></button>`).join("")}
+      <button data-pbg="own" aria-pressed="${own}" ${own?`style="background-image:url(${cur})"`:""}><span>📷 ${own?"Foto ändern":"Eigenes Foto"}</span></button>
+    </div>
+    ${cur?`<label class="f">Abdunkeln, damit alles lesbar bleibt<input type="range" class="pbrange" id="pbDim" min="0" max="90" step="5" value="${pbgDim()}"></label>`:""}
+    <input type="file" id="pbIn" accept="image/*" hidden>
+    <p class="hint" style="margin:0">Jeder kann sich seinen eigenen Hintergrund aussuchen. Gilt nur für dieses Handy, die anderen sehen ihren eigenen.</p></div>`}
+function wirePbg(again0){
+  const again=()=>{const sh=document.querySelector(".sheet");const t=sh?sh.scrollTop:0;again0();const n=document.querySelector(".sheet");if(n)n.scrollTop=t};
+  const inp=document.getElementById("pbIn");
+  document.querySelectorAll("[data-pbg]").forEach(b=>b.onclick=()=>{const v=b.dataset.pbg;
+    if(v==="own"){inp.click();return}
+    try{if(v)localStorage.setItem("fk-pbg",v);else localStorage.removeItem("fk-pbg")}catch(e){}applyPbg();again()});
+  if(inp)inp.onchange=async()=>{const f=inp.files&&inp.files[0];inp.value="";if(!f)return;
+    try{const d=await shrinkBg(f);try{localStorage.setItem("fk-pbg",d)}catch(e){toast("Bild ist zu groß");return}applyPbg();toast("Hintergrund gesetzt");again()}catch(e){toast("Das Bild konnte nicht geöffnet werden")}};
+  const r=document.getElementById("pbDim");if(r)r.oninput=()=>{try{localStorage.setItem("fk-pbg-dim",r.value)}catch(e){}applyPbg()};
+}
 function bgImage(){try{return localStorage.getItem("fk-bg")||""}catch(e){return ""}}
 function applyPrefs(){
+  applyPbg();
   document.body.classList.toggle("compact",prefOn("compact"));
   document.body.classList.toggle("fold",prefOn("fold"));
   document.body.classList.toggle("arrows",prefOn("arrows"));
