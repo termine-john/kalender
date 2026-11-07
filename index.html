@@ -231,6 +231,17 @@ body.offline .appbar{box-shadow:0 0 0 3px #d98a00}
 .upcoming{margin:4px 0 0;padding:8px 10px;border-radius:10px;background:color-mix(in srgb,var(--imp) 12%,transparent);list-style:none;display:flex;flex-direction:column;gap:4px;grid-column:1/-1}
 .upcoming li{font-size:.85rem}
 .upcoming .ut{color:var(--imp)}
+.topbtns{display:flex;gap:8px;flex:none}
+#helpBtn{font-size:1.2rem;font-weight:800}
+.tour-hole{position:fixed;z-index:70;border-radius:14px;box-shadow:0 0 0 9999px rgba(3,10,14,.72);pointer-events:none;transition:all .25s ease;outline:3px solid var(--star)}
+.tour-hole.none{box-shadow:0 0 0 9999px rgba(3,10,14,.72);outline:none;width:0;height:0;left:50%;top:40%}
+.tour-card{position:fixed;z-index:71;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));max-width:420px;margin:0 auto;background:var(--surface);color:var(--fg);border-radius:16px;padding:16px;box-shadow:0 12px 30px rgba(0,0,0,.4);display:flex;flex-direction:column;gap:10px}
+.tour-card h3{margin:0;font-family:var(--f-display);font-size:1.1rem}
+.tour-card p{margin:0;line-height:1.45}
+.tour-card .tour-step{font-size:.75rem;color:var(--muted);font-weight:700;letter-spacing:.05em}
+.tour-card .actions .btn{flex:1 1 0}
+.tour-skip{font-size:.85rem;color:var(--muted);text-decoration:underline;align-self:center}
+@media (prefers-reduced-motion:reduce){.tour-hole{transition:none}}
 .sec{font-family:var(--f-display);font-size:1.05rem;margin:6px 0 0}
 .empty-note{font-size:.85rem;color:var(--muted);text-align:center;padding:4px}
 
@@ -293,7 +304,8 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
       <h1>Familienkalender</h1>
       <div class="status" id="status">Verbinde …</div>
     </div>
-    <button class="gear" id="gear" aria-label="Einstellungen und Familie einladen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M17 8v6M14 11h6"/></svg></button>
+    <div class="topbtns"><button class="gear" id="helpBtn" aria-label="Anleitung starten">?</button>
+    <button class="gear" id="gear" aria-label="Einstellungen und Familie einladen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M17 8v6M14 11h6"/></svg></button></div>
   </div>
   <div class="tabs" role="tablist" aria-label="Ansicht">
     <button role="tab" data-view="woche">Woche</button><button role="tab" data-view="monat">Monat</button><button role="tab" data-view="jahr">Jahr</button><button role="tab" data-view="ferien">Ferien</button><button role="tab" data-view="sterne">Sterne</button>
@@ -516,6 +528,7 @@ function showSettings(){
     <div class="linkbox" id="appl">${esc(appLink)}</div>
     <button class="btn ghost" id="applCopy">App-Link kopieren</button>
     <p class="hint">Tipp: Im Browser-Menü „Zum Startbildschirm hinzufügen“ wählen, dann hat jeder die App als Symbol auf dem Handy.</p>
+    <button class="btn ghost" id="tourAgain">📖 Anleitung ansehen</button>
     <h4 class="sub">Darstellung</h4>
     <div class="seg" style="--n:3">${[["dark","🌙 Dunkel"],["light","☀️ Hell"],["auto","📱 Wie Handy"]].map(([k,n])=>`<button class="typ" data-theme-set="${k}" aria-pressed="${themeNow()===k}">${n}</button>`).join("")}</div>
     <h4 class="sub">Sperrbildschirm</h4>
@@ -533,6 +546,7 @@ function showSettings(){
     <p class="hint"><a href="datenschutz.html">Datenschutz, Impressum & Nutzungshinweise</a></p>
     <div class="actions"><button class="btn danger" id="disc">Auf diesem Handy trennen</button><button class="btn ghost" id="setClose">Schließen</button></div>`);
   document.getElementById("exp").onclick=exportICS;wireReadLinks();wireBackups();
+  document.getElementById("tourAgain").onclick=()=>{closeSheet();setTimeout(startTour,250)};
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{setTheme(b.dataset.themeSet);showSettings()});
   document.getElementById("setImg").onclick=()=>showWidgetImage();wireJoin();
   document.getElementById("wipe").onclick=async()=>{if(!await askConfirm("Den ganzen Kalender mit allen Einträgen, Aufgaben und Sternen für ALLE löschen? Das lässt sich nicht rückgängig machen.","Endgültig löschen"))return;
@@ -546,6 +560,7 @@ function showSettings(){
   document.getElementById("disc").onclick=async()=>{if(!await askConfirm("Dieses Handy vom Kalender trennen? Die Termine bleiben für die anderen erhalten. Zum erneuten Verbinden brauchst du den Einladungslink.","Trennen"))return;localStorage.removeItem(CFG_KEY);location.reload()};
 }
 document.getElementById("gear").onclick=showSettings;
+document.getElementById("helpBtn").onclick=()=>startTour();
 async function wipeAll(){
   try{await store.wipe()}catch(e){toast("Löschen hat nicht geklappt. Bitte Internetverbindung prüfen.");return}
   try{localStorage.removeItem(CFG_KEY);localStorage.removeItem("fk-namen")}catch(e){}
@@ -1502,7 +1517,80 @@ window.addEventListener("online",()=>{
   bkDone=false;setTimeout(()=>{autoBackup();scheduleMirror()},3000);
 });
 if(!navigator.onLine)document.body.classList.add("offline");
+/* ---------- Anleitung (Tutorial) ---------- */
+const TOUR=[
+  {t:"Willkommen im Familienkalender! 👋",p:"In einer Minute zeige ich dir, wie alles funktioniert. Du kannst jederzeit überspringen und die Anleitung später über das ?-Symbol oben wieder starten."},
+  {s:".tabs",t:"Ansichten",p:"Hier wechselst du zwischen Woche, Monat und Jahr. Unter „Ferien“ stehen alle Berliner Schulferien und Feiertage, unter „Sterne“ Aufgaben und Belohnungen für die Kinder."},
+  {s:".legend",v:"woche",t:"Eine Spalte pro Person",p:"Jede Person hat ihre eigene Spalte und Farbe. „Gemeinsam“ ist für Familientermine. Die Namen kannst du in den Einstellungen ändern."},
+  {s:"#days .cell",v:"woche",t:"Schnell eintragen",p:"Tippe einfach in ein Feld. Dann ist der Eintrag gleich für diese Person und diesen Tag vorbereitet."},
+  {s:"#fab",t:"Neuer Eintrag",p:"Wähle Termin, Arbeitszeit, Urlaub oder Geburtstag. Termine kannst du jede Woche oder alle 2 Wochen wiederholen lassen und mit ❗ als wichtig markieren."},
+  {s:"#micBtn",t:"Per Sprache",p:"Sag zum Beispiel: „Donnerstag 15 Uhr Elternabend John“. Das Formular füllt sich von selbst, du prüfst es nur noch."},
+  {s:"#photoBtn",t:"Per Foto",p:"Fotografiere einen Terminzettel, Brief oder Dienstplan. Die App liest Datum und Uhrzeit heraus und schlägt die Einträge vor."},
+  {s:"#days .chip",v:"woche",t:"Eintrag bearbeiten",p:"Tippe auf einen Eintrag, um ihn zu ändern oder zu löschen. Dort kannst du ihn auch jede Woche oder alle 2 Wochen fortlaufend eintragen. Vor dem Löschen fragt die App immer nach."},
+  {s:"#morning",t:"Deine Tagesübersicht",p:"Hier steht alles für heute und die wichtigen Termine der nächsten Tage. Mit „Gelesen ✓“ blendest du sie aus. 🖼 erstellt ein Bild für deinen Sperrbildschirm."},
+  {s:"#news",t:"Neue Einträge",p:"Hier siehst du, was die anderen neu eingetragen oder geändert haben, mit Anzahl und Uhrzeit."},
+  {s:"#navbar",v:"woche",t:"Blättern",p:"Mit ‹ und › gehst du eine Woche vor oder zurück. „Heute“ bringt dich zurück zum aktuellen Tag."},
+  {s:"#status",t:"Alles übertragen?",p:"Hier siehst du, ob deine Einträge bei allen angekommen sind. Ohne Internet kannst du trotzdem eintragen, alles wird später automatisch übertragen."},
+  {s:"#gear",t:"Teilen & Einstellungen",p:"Hier lädst du die Familie ein, erstellst Nur-Lese-Links (z. B. für Papa), änderst Namen und Darstellung, findest Sicherungen und den Export."},
+  {t:"Fertig! 🎉",p:"Das war's. Viel Spaß – und keine Ausreden mehr, dass jemand einen Termin nicht wusste. 😉 Die Anleitung findest du jederzeit wieder über das ?-Symbol oben."}
+];
+let tourI=0,tourEls=null;
+function visibleEl(sel){const el=document.querySelector(sel);if(!el)return null;if(el.hidden||el.closest("[hidden]"))return null;const r=el.getBoundingClientRect();return r.width>0&&r.height>0?el:null}
+function tourSteps(){return TOUR.filter(st=>!st.s||(READONLY&&/#fab|#micBtn|#photoBtn|#gear|#news/.test(st.s)?false:true))}
+function startTour(){
+  if(tourEls)endTour(false);
+  if(document.querySelector("#sheetHost .backdrop"))closeSheet();
+  if(view!=="woche")setView("woche");
+  tourI=0;
+  const hole=document.createElement("div");hole.className="tour-hole none";
+  const card=document.createElement("div");card.className="tour-card";card.setAttribute("role","dialog");card.setAttribute("aria-live","polite");
+  document.body.append(hole,card);tourEls={hole,card};
+  showTourStep(0);
+  window.addEventListener("resize",placeTour);window.addEventListener("scroll",placeTour,{passive:true});
+}
+function endTour(done=true){
+  if(!tourEls)return;tourEls.hole.remove();tourEls.card.remove();tourEls=null;
+  window.removeEventListener("resize",placeTour);window.removeEventListener("scroll",placeTour);
+  if(done){try{localStorage.setItem("fk-tour","1")}catch(e){}}
+}
+function showTourStep(dir){
+  const steps=tourSteps();
+  while(tourI>=0&&tourI<steps.length&&steps[tourI].s&&!visibleEl(steps[tourI].s))tourI+=dir||1;
+  if(tourI<0)tourI=0;
+  if(tourI>=steps.length){endTour(true);return}
+  const st=steps[tourI];const real=steps.filter(x=>!x.s||visibleEl(x.s));const pos=real.indexOf(st)+1;
+  tourEls.card.innerHTML=`<span class="tour-step">${pos} / ${real.length}</span><h3>${esc(st.t)}</h3><p>${esc(st.p)}</p>
+    <div class="actions">${pos>1?'<button class="btn ghost" data-tour="back">Zurück</button>':""}<button class="btn" data-tour="next">${pos===real.length?"Los geht's":"Weiter"}</button></div>
+    ${pos<real.length?'<button class="tour-skip" data-tour="skip">Anleitung überspringen</button>':""}`;
+  tourEls.card.onclick=ev=>{const b=ev.target.closest("[data-tour]");if(!b)return;const a=b.dataset.tour;
+    if(a==="skip"){endTour(true);return}
+    if(a==="next"){tourI++;showTourStep(1)}else{tourI--;showTourStep(-1)}};
+  const el=st.s?visibleEl(st.s):null;
+  if(el){const r=el.getBoundingClientRect();if(r.top<70||r.bottom>innerHeight-220)el.scrollIntoView({block:"center",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}
+  setTimeout(placeTour,el?350:0);placeTour();
+  const nb=tourEls.card.querySelector('[data-tour="next"]');if(nb)nb.focus({preventScroll:true});
+}
+function placeTour(){
+  if(!tourEls)return;const steps=tourSteps();const st=steps[tourI];const {hole,card}=tourEls;
+  const el=st&&st.s?visibleEl(st.s):null;
+  if(!el){hole.className="tour-hole none";hole.style.cssText="";card.style.top="";card.style.bottom="";card.style.top="30%";return}
+  const r=el.getBoundingClientRect(),pad=6;
+  hole.className="tour-hole";
+  Object.assign(hole.style,{left:(r.left-pad)+"px",top:(r.top-pad)+"px",width:(r.width+pad*2)+"px",height:(r.height+pad*2)+"px"});
+  const ch=card.offsetHeight||200;
+  if(r.bottom+pad+ch+16<innerHeight){card.style.top=(r.bottom+pad+12)+"px";card.style.bottom=""}
+  else if(r.top-pad-ch-16>0){card.style.top=(r.top-pad-ch-12)+"px";card.style.bottom=""}
+  else{card.style.top="";card.style.bottom="16px"}
+}
+document.addEventListener("keydown",ev=>{if(!tourEls)return;if(ev.key==="Escape")endTour(true);else if(ev.key==="ArrowRight"){tourI++;showTourStep(1)}else if(ev.key==="ArrowLeft"){tourI--;showTourStep(-1)}});
+function maybeAutoTour(){
+  let done=false;try{done=localStorage.getItem("fk-tour")==="1"}catch(e){}
+  if(done||READONLY||!getCfg())return;
+  setTimeout(()=>{if(!document.querySelector(".backdrop")&&!document.querySelector(".cbackdrop")&&!tourEls)startTour()},1200);
+}
+
 init();
+setTimeout(maybeAutoTour,600);
 if("serviceWorker" in navigator){
   navigator.serviceWorker.register("sw.js").then(r=>{swReg=r;
     r.addEventListener("updatefound",()=>{const w=r.installing;if(!w)return;w.addEventListener("statechange",()=>{if(w.state==="activated"&&navigator.serviceWorker.controller)toast("Neue Version geladen – wird beim nächsten Öffnen aktiv")})});
