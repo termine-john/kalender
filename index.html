@@ -257,9 +257,9 @@ body.offline .appbar{box-shadow:0 0 0 3px #d98a00}
 .day-head{cursor:pointer}
 .dhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px}
 .dhead b{font-family:var(--f-display);font-size:1.1rem}
-.dallday{display:flex;flex-direction:column;gap:4px}
+.dallday{display:flex;flex-direction:column;gap:6px;margin:6px 0 14px}
 .dallday .chip{font-size:.85rem;padding:7px 9px}
-.dlegend{display:grid;grid-template-columns:44px repeat(var(--n),minmax(0,1fr));gap:2px;font-size:.72rem;font-weight:700;text-align:center}
+.dlegend{margin-top:8px;display:grid;grid-template-columns:44px repeat(var(--n),minmax(0,1fr));gap:2px;font-size:.72rem;font-weight:700;text-align:center}
 .dlegend::before{content:""}
 .dlegend div{border-radius:6px;padding:4px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .dgrid{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;--cw:calc((100% - 0px) / var(--n))}
@@ -1078,7 +1078,7 @@ function feiertage(y){
   return _feierCache[y]=f;
 }
 // Tage, an denen John bei Papa ist (Eintrag in Johns Spalte mit "Papa" im Titel)
-const papaOf=day=>entries.some(e=>e.person==="john"&&e.typ==="termin"&&/papa/i.test(e.titel||"")&&onDay(e,day));
+const papaOf=day=>entries.some(e=>e.person==="john"&&e.typ==="termin"&&/papa|pascal/i.test(e.titel||"")&&onDay(e,day));
 const feierOf=day=>feiertage(+day.slice(0,4))[day]||"";
 const ferienOf=day=>{const f=FERIEN.find(([n,a,b])=>a<=day&&day<=b);return f?f[0]:""};
 
