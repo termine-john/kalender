@@ -704,18 +704,20 @@ async function init(){
     const app=firebase.apps.length?firebase.app():firebase.initializeApp(cfg.firebase);
     const fs=firebase.firestore(app);
     try{await fs.enablePersistence({synchronizeTabs:true})}catch(e){}
-    col=fs.collection(`familien/${cfg.code}/eintraege`);
+    col=fs.collection(`familien/${cfg.code}/eintraege`);PRIVCOL=fs.collection(`familien/${cfg.code}/privat`);
     FS=fs;
   }catch(e){store=localStore();setStatus("Verbindung fehlerhaft · Einstellungen prüfen");render();return}
   const failed=e=>{console.error(e);toast("Nicht gespeichert: "+(e&&e.code==="permission-denied"?"kein Zugriff auf diesen Kalender":"Verbindungsproblem")+". Bitte App neu laden.")};
   const roBlock=()=>{if(ROLE==="lesen"){toast("Du hast in diesem Kalender nur Leserechte");return true}return false};
   store={mode:"db",
-    add(o){if(roBlock())return;col.add(stampNew(o)).catch(failed)},
-    set(id,o){if(roBlock())return;col.doc(id).set(stampEdit(id,o)).catch(failed)},
-    del(id){if(roBlock())return;col.doc(id).delete().catch(failed)},
+    add(o){if(roBlock())return;const x=stampNew(o);if(isPrivObj(x)){if(!MY_UID){toast("Gerade keine Verbindung");return}PRIVCOL.add(x).catch(failed)}else col.add(x).catch(failed)},
+    set(id,o){if(roBlock())return;const x=stampEdit(id,o);const wasP=isPrivId(id);
+      if(isPrivObj(x)){PRIVCOL.doc(id).set(x).catch(failed);if(!wasP&&!String(id).startsWith("_"))col.doc(id).delete().catch(()=>{})}
+      else{col.doc(id).set(x).catch(failed);if(wasP)PRIVCOL.doc(id).delete().catch(()=>{})}},
+    del(id){if(roBlock())return;(isPrivId(id)?PRIVCOL:col).doc(id).delete().catch(failed)},
     async names(n,keys){if(roBlock())return;await col.doc("_config").set({typ:"config",namen:n,personen:keys||SLOTS},{merge:true})},
     async conf(o){if(roBlock())return;await col.doc("_config").set({typ:"config",...o},{merge:true})},
-    async wipe(){if(roBlock())throw new Error("ro");const snap=await col.get();let b=col.firestore.batch(),n=0;for(const d of snap.docs){const x=d.data();if(x.geschuetzt&&x.ersteller&&x.ersteller!==MY_UID)continue;b.delete(d.ref);if(++n%400===0){await b.commit();b=col.firestore.batch()}}await b.commit()}};
+    async wipe(){if(roBlock())throw new Error("ro");for(const e of PRIV){if(e.ersteller===MY_UID){try{await PRIVCOL.doc(e.id).delete()}catch(x){}}}const snap=await col.get();let b=col.firestore.batch(),n=0;for(const d of snap.docs){const x=d.data();if(x.geschuetzt&&x.ersteller&&x.ersteller!==MY_UID)continue;b.delete(d.ref);if(++n%400===0){await b.commit();b=col.firestore.batch()}}await b.commit()}};
   {let r=null;try{r=localStorage.getItem("fk-rolle-"+cfg.code)}catch(e){}if(r)applyRole(r)}
   await Promise.race([ensureMember(cfg),new Promise(r=>setTimeout(r,5000))]);
   try{const nn=sessionStorage.getItem("fk-namen-neu");if(nn){sessionStorage.removeItem("fk-namen-neu");await store.names(JSON.parse(nn))}}catch(e){}
@@ -737,7 +739,7 @@ async function init(){
     if(conf&&conf.data().bilder)setPhotos(conf.data().bilder);
     if(conf)setFarben(conf.data().farben||{});
     watchWishes();
-    splitData(snap.docs.filter(d=>d.id!=="_config").map(d=>({...d.data(),id:d.id})));
+    PUB=snap.docs.filter(d=>d.id!=="_config").map(d=>({...d.data(),id:d.id}));splitData([...PUB,...PRIV]);
     const nr=calNr()+(ROLE==="lesen"?" · 👁️ nur lesen":"");
     if(snap.metadata.hasPendingWrites)setStatus(`Kalender ${nr} · Änderungen werden übertragen …`);
     else if(!snap.metadata.fromCache){clearTimeout(timer);setStatus(`Kalender ${nr} · alles übertragen ✓`)}
@@ -943,6 +945,7 @@ const HELP=[
 ["aendern","✏️","Ändern, löschen, rückgängig",`<ul><li><b>Ändern:</b> auf den Eintrag tippen, anpassen, speichern.</li>
 <li><b>Löschen:</b> im Eintrag unten auf „Löschen“. Die App fragt vorher nach.</li>
 <li><b>Rückgängig:</b> nach dem Löschen erscheint unten kurz „Rückgängig“.</li>
+<li><b>👥 Nur für bestimmte Personen:</b> Im Eintrag bei „Wer darf diesen Termin sehen?“ auf „Nur ausgewählte“ tippen und die Familienmitglieder ankreuzen. Alle anderen sehen den Termin gar nicht. Solche Termine haben ein 👥 vor dem Titel. Die Auswahl kann nur ändern, wer den Termin eingetragen hat.</li>
 <li><b>🔒 Schützen:</b> Im Eintrag „Vor dem Löschen durch andere schützen“ antippen. Dann kann nur noch die Person, die den Termin eingetragen hat, ihn löschen. Die anderen können ihn weiter ansehen und ändern. Geschützte Termine haben ein 🔒 vor dem Titel.</li>
 <li>Bei Serien kannst du nur diesen Eintrag oder die ganze Serie auf einmal löschen.</li></ul>`],
 ["foto","📷","Per Foto oder Sprache eintragen",`<p><b>📷 Foto:</b> Terminzettel, Brief oder Dienstplan fotografieren. Die App liest Datum und Uhrzeit heraus und schlägt Einträge vor. Du prüfst und speicherst.</p>
@@ -1256,7 +1259,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v47";
+const APP_VER="v48";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -1506,7 +1509,7 @@ async function _ensureMember(cfg){
     try{sessionStorage.removeItem("fk-joined")}catch(e){}
     if(cfg.wtok){const c2=getCfg();if(c2){delete c2.wtok;setCfg(c2)}}
     if(!RULES_OLD&&!memberSub)memberSub=ref.onSnapshot(s=>{if(!s.exists)return;MY_MEMBER=s.data();applyRole(MY_MEMBER.rolle==="lesen"?"lesen":"schreiben");setTimeout(maybeAskName,3500)},()=>{});
-    memberOK=true;if(ROLE!=="lesen")scheduleMirror();setTimeout(checkAdmin,2000);return true;
+    memberOK=true;if(ROLE!=="lesen")scheduleMirror();setTimeout(checkAdmin,2000);if(!RULES_OLD)startPriv();return true;
   }catch(e){memberOK=false;memberErr=e&&e.code||"";console.warn("Mitglied",e);return false}
 }
 const dmy=x=>x?x.slice(8,10)+"."+x.slice(5,7)+"."+x.slice(0,4):"";
@@ -1608,7 +1611,7 @@ function showReaderSettings(){
 }
 function mirrorData(l){
   const sp=l.spalten||[];
-  return entries.filter(e=>sp.includes(e.person)).map(e=>{const o={typ:e.typ,person:e.person,titel:e.titel||"",datum:e.datum};
+  return entries.filter(e=>sp.includes(e.person)&&!e._privat).map(e=>{const o={typ:e.typ,person:e.person,titel:e.titel||"",datum:e.datum};
     if(e.endDatum)o.endDatum=e.endDatum;if(e.von)o.von=e.von;if(e.bis)o.bis=e.bis;if(e.geburtsjahr)o.geburtsjahr=e.geburtsjahr;if(e.wichtig)o.wichtig=true;return o})
     .sort((a,b)=>(a.datum+a.person+(a.von||"")+a.titel)<(b.datum+b.person+(b.von||"")+b.titel)?-1:1);
 }
@@ -1705,9 +1708,9 @@ function startReader(cfg){
 
 /* ---------- Automatische Sicherung ---------- */
 const BK_LOCAL="fk-sicherungen";
-function snapshotData(){
-  const strip=({id,...o})=>({id,...o});
-  return {version:1,stand:nowISO(),namen:NAMES,eintraege:[...entries,...tasks,...taskLogs,...rewards,...redeems].map(strip)};
+function snapshotData(ohnePrivat){
+  const strip=({id,_privat,...o})=>({id,...o});
+  return {version:1,stand:nowISO(),namen:NAMES,eintraege:[...entries,...tasks,...taskLogs,...rewards,...redeems].filter(e=>!(ohnePrivat&&e._privat)).map(strip)};
 }
 function localBackups(){try{return JSON.parse(localStorage.getItem(BK_LOCAL)||"[]")}catch(e){return []}}
 function saveLocalBackup(force){
@@ -1721,7 +1724,7 @@ async function saveCloudBackup(force){
   if(!store||store.mode!=="db"||ROLE==="lesen")return false;
   const newest=backups.map(b=>b.datum).sort().pop()||"";
   if(!force&&newest&&diffDays(newest,today)<7)return false;
-  const data=snapshotData();if(!data.eintraege.length)return false;
+  const data=snapshotData(true);if(!data.eintraege.length)return false;
   const txt=JSON.stringify(data);if(txt.length>900000)return false;
   await store.set(`_sicherung_${today}`,{typ:"sicherung",datum:today,anzahl:data.eintraege.length,daten:txt});
   const old=backups.filter(b=>b.id!==`_sicherung_${today}`).sort((a,b)=>a.datum<b.datum?1:-1).slice(3);
@@ -1884,7 +1887,7 @@ function timeTxt(e){if(e.typ==="urlaub")return"";if(e.von&&e.bis)return`${e.von}
 function chipHTML(e,day){
   const multi=e.endDatum&&e.endDatum>e.datum;
   const t=timeTxt(e);
-  let label=(e.geschuetzt?"🔒 ":"")+(e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?(e.titel||"Arbeit"):e.typ==="urlaub"?(e.titel?`Urlaub · ${e.titel}`:"Urlaub"):e.titel);
+  let label=(e._privat?"👥 ":"")+(e.geschuetzt?"🔒 ":"")+(e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?(e.titel||"Arbeit"):e.typ==="urlaub"?(e.titel?`Urlaub · ${e.titel}`:"Urlaub"):e.titel);
   const range=multi&&e.typ!=="geburtstag"?` <span class="rep">(${fmt(e.datum).slice(3)}–${fmt(e.endDatum).slice(3)})</span>`:"";
   const rep=e.serie?` <span class="rep">↻</span>`:"";
   return `<button class="chip ${e.typ} ${e.person}${e.wichtig?" imp":""}${CLASH.has(e.id)?" clash":""}" data-id="${esc(e.id)}" ${CLASH.has(e.id)?'title="Überschneidet sich mit einem anderen Termin"':""}>${t?`<span class="t">${CLASH.has(e.id)?"⚠️ ":""}${t}</span>`:""}<span class="chip-label">${esc(label)}</span>${range}${rep}</button>`;
@@ -2071,11 +2074,25 @@ function isAck(){try{return localStorage.getItem(ackKey())==="1"}catch(e){return
 /* ---------- Neue & geänderte Einträge ---------- */
 let DEVICE_ID="";try{DEVICE_ID=localStorage.getItem("fk-dev")||"";if(!DEVICE_ID){DEVICE_ID="d"+Math.random().toString(36).slice(2,10);localStorage.setItem("fk-dev",DEVICE_ID)}}catch(e){DEVICE_ID="d"+Math.random().toString(36).slice(2,10)}
 const nowISO=()=>new Date().toISOString();
-function stampNew(o){const r={...o,erstellt:nowISO(),geraet:DEVICE_ID};if(MY_UID&&!r.ersteller)r.ersteller=MY_UID;const nm=MY_MEMBER&&MY_MEMBER.name;if(nm&&!r.vonName)r.vonName=nm;if(r.geschuetzt&&r.ersteller!==MY_UID)delete r.geschuetzt;return r}
+function stampNew(o){const r={...o,erstellt:nowISO(),geraet:DEVICE_ID};delete r._privat;if(isPrivObj(r))r.ersteller=MY_UID;if(MY_UID&&!r.ersteller)r.ersteller=MY_UID;const nm=MY_MEMBER&&MY_MEMBER.name;if(nm&&!r.vonName)r.vonName=nm;if(r.geschuetzt&&r.ersteller!==MY_UID)delete r.geschuetzt;return r}
 function stampEdit(id,o){const prev=[...entries,...tasks,...rewards].find(x=>x.id===id);const r={...o,erstellt:(prev&&prev.erstellt)||o.erstellt||nowISO(),geaendert:nowISO(),geraet:DEVICE_ID};
   if(prev&&prev.ersteller&&!r.ersteller)r.ersteller=prev.ersteller;if(prev&&prev.vonName&&!r.vonName)r.vonName=prev.vonName;
   if(prev&&prev.geschuetzt&&prev.ersteller!==MY_UID)r.geschuetzt=true; // nur der Ersteller kann den Schutz aufheben
+  delete r._privat;
+  if(prev&&prev._privat&&prev.ersteller!==MY_UID){r.sichtbar=prev.sichtbar;r.ersteller=prev.ersteller} // nur der Ersteller ändert die Sichtbarkeit
+  if(isPrivObj(r)&&!r.ersteller)r.ersteller=MY_UID;
   return r}
+/* Sichtbarkeit: private Termine liegen getrennt und sind nur für ausgewählte Mitglieder lesbar */
+var PUB=[],PRIV=[],PRIVCOL=null,privSub=null,MEMBERS=[];
+const isPrivObj=o=>Array.isArray(o&&o.sichtbar)&&o.sichtbar.length>0;
+const isPrivId=id=>!!entries.find(x=>x.id===id&&x._privat);
+function startPriv(){
+  if(privSub||!PRIVCOL||!MY_UID)return;
+  privSub=PRIVCOL.where("sichtbar","array-contains",MY_UID).onSnapshot(sn=>{PRIV=sn.docs.map(d=>({...d.data(),id:d.id,_privat:true}));splitData([...PUB,...PRIV]);render()},e=>console.warn("privat",e));
+  loadMembers2();
+}
+async function loadMembers2(){const c=getCfg();if(!c||!c.code||!FS)return;try{const sn=await FS.collection(`familien/${c.code}/mitglieder`).get();MEMBERS=sn.docs.map(d=>({...d.data(),id:d.id}))}catch(e){}}
+const memName=id=>{const m=MEMBERS.find(x=>x.id===id);return id===MY_UID?"du":(m&&m.name)||"Gerät ohne Namen"};
 /* Termin-Schutz: nur der Ersteller darf löschen */
 function isMine(e){return !!e&&((!!e.ersteller&&e.ersteller===MY_UID)||(!e.ersteller&&e.geraet===DEVICE_ID))}
 function canDel(e){return !e||!e.geschuetzt||!e.ersteller||e.ersteller===MY_UID}
@@ -2338,6 +2355,11 @@ function drawSheet(){
       ${vlDays(d)?`<label class="f">Woran erinnern?<input id="i-vlt" maxlength="80" value="${esc(vlText(d))}" placeholder="z. B. Geschenk besorgen, Fragen notieren, Unterlagen raussuchen"></label>`:""}
     </div>
     <button class="impbtn" id="i-imp" aria-pressed="${!!d.wichtig}">❗ ${d.wichtig?"Als wichtig markiert":"Als wichtig markieren"}</button>
+    ${store&&store.mode==="db"&&MY_UID&&!RULES_OLD&&(!isEdit||isMine(d))?`<div class="box"><span class="lbl-s">👥 Wer darf diesen Termin sehen?</span>
+      <div class="seg" style="--n:2"><button class="typ" data-vis="alle" aria-pressed="${!isPrivObj(d)}">Alle</button><button class="typ" data-vis="auswahl" aria-pressed="${isPrivObj(d)}">Nur ausgewählte</button></div>
+      ${isPrivObj(d)?`<div class="rw">${(MEMBERS.length?MEMBERS:[{id:MY_UID}]).slice().sort((a,b)=>(a.id===MY_UID?-1:b.id===MY_UID?1:0)).map(m=>`<label class="pick" style="justify-content:space-between"><span>${esc(m.id===MY_UID?"Du":(m.name||"Gerät ohne Namen"))}</span><input type="checkbox" data-visu="${esc(m.id)}" ${m.id===MY_UID?"checked disabled":d.sichtbar.includes(m.id)?"checked":""}></label>`).join("")}</div>
+        <p class="hint" style="margin:0">Alle anderen sehen diesen Termin nicht, auch nicht über Nur-Lese-Links oder Sicherungen in der Cloud.</p>`:""}</div>`
+      :isPrivObj(d)?`<p class="hint">👥 Nur sichtbar für: ${d.sichtbar.map(memName).join(", ")}</p>`:""}
     ${store&&store.mode==="db"&&(!isEdit||isMine(d))?`<button class="impbtn" id="i-lock" aria-pressed="${!!d.geschuetzt}">🔒 ${d.geschuetzt?"Geschützt: nur du kannst löschen":"Vor dem Löschen durch andere schützen"}</button>`
       :d.geschuetzt&&!canDel(d)?`<p class="hint">🔒 Geschützt von <b>${esc(d.vonName||"der Person, die ihn eingetragen hat")}</b>. Nur sie kann ihn löschen. Ändern darfst du ihn trotzdem.</p>`:""}
     ${bd?`<div class="row2"><label class="f">Geburtstag (Tag und Monat)<input type="date" id="i-datum" value="${d.datum}"></label>
@@ -2378,7 +2400,8 @@ function drawSheet(){
     if($("i-jahr"))d.geburtsjahr=$("i-jahr").value.trim();
     if($("i-vlt"))d.vorlaufText=$("i-vlt").value.trim();
     if($("i-von"))d.von=$("i-von").value;if($("i-bis"))d.bis=$("i-bis").value;
-    if($("i-wdhbis"))d.wdhBis=$("i-wdhbis").value||d.wdhBis;};
+    if($("i-wdhbis"))d.wdhBis=$("i-wdhbis").value||d.wdhBis;
+    const vb=document.querySelectorAll(".sheet [data-visu]");if(vb.length&&isPrivObj(d))d.sichtbar=[MY_UID,...[...vb].filter(x=>x.checked&&x.dataset.visu!==MY_UID).map(x=>x.dataset.visu)];};
   $("bd").onclick=ev=>{if(ev.target.id==="bd")closeSheet()};
   document.querySelectorAll(".sheet [data-typ]").forEach(b=>b.onclick=()=>{read();d.typ=b.dataset.typ;if(d.typ==="urlaub"){d.von="";d.bis=""}drawSheet()});
   document.querySelectorAll(".sheet [data-person]").forEach(b=>b.onclick=()=>{read();d.person=b.dataset.person;drawSheet()});
@@ -2401,6 +2424,7 @@ function drawSheet(){
   showClash(d);
   $("cancel").onclick=closeSheet;
   $("i-imp").onclick=()=>{read();d.wichtig=!d.wichtig;drawSheet()};
+  document.querySelectorAll(".sheet [data-vis]").forEach(b=>b.onclick=()=>{read();d.sichtbar=b.dataset.vis==="auswahl"?(isPrivObj(d)?d.sichtbar:[MY_UID]):[];if(b.dataset.vis==="auswahl"&&!MEMBERS.length)loadMembers2().then(()=>drawSheet());drawSheet()});
   if($("i-lock"))$("i-lock").onclick=()=>{read();if(!MY_UID){toast("Gerade keine Verbindung · bitte später nochmal");return}d.geschuetzt=!d.geschuetzt;if(d.geschuetzt&&!d.ersteller)d.ersteller=MY_UID;toast(d.geschuetzt?"🔒 Nur du kannst diesen Termin löschen":"Schutz aufgehoben");drawSheet()};
   document.querySelectorAll(".sheet [data-vl]").forEach(b=>b.onclick=()=>{read();d.vorlauf=+b.dataset.vl;if(d.vorlauf&&!d.vorlaufText)d.vorlaufText=vlText(d);drawSheet()});
   if($("voiceIn"))$("voiceIn").onclick=()=>startVoice();
@@ -2419,6 +2443,7 @@ function clean(d){
     von:d.typ==="urlaub"?"":(d.von||""),bis:d.typ==="urlaub"?"":(d.bis||""),serie:d.serie||"",intervall:d.intervall||0};
   if(d.wichtig)o.wichtig=true;
   if(d.geschuetzt){o.geschuetzt=true;if(d.ersteller)o.ersteller=d.ersteller}
+  if(isPrivObj(d)){o.sichtbar=[...new Set([...(d.sichtbar||[]),...(MY_UID&&(!d.ersteller||d.ersteller===MY_UID)?[MY_UID]:[])])].slice(0,30);o.ersteller=d.ersteller||MY_UID}
   if(d.vonName)o.vonName=d.vonName;
   if(d.vorlauf!==undefined&&d.vorlauf!==null&&d.vorlauf!==""){o.vorlauf=+d.vorlauf||0;if(o.vorlauf)o.vorlaufText=String(d.vorlaufText||vlText(d)).slice(0,80)}
   if(d.typ==="geburtstag"){o.endDatum="";o.von="";o.bis="";o.serie="";o.intervall=0;o.geburtsjahr=String(d.geburtsjahr||"").replace(/\D/g,"").slice(0,4)}
@@ -2895,8 +2920,9 @@ setTimeout(watchAnn,2500);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN anfügen. v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
-  {v:"2026-11-07f",d:"2026-11-07",t:"Termine schützen",items:[
-    "🔒 Termine schützen: Wer einen Termin eingetragen hat, kann ihn so sperren, dass nur er selbst ihn löschen kann (im Termin „Vor dem Löschen durch andere schützen“)"]},
+  {v:"2026-11-07f",d:"2026-11-07",t:"Termine schützen & Sichtbarkeit",items:[
+    "🔒 Termine schützen: Wer einen Termin eingetragen hat, kann ihn so sperren, dass nur er selbst ihn löschen kann (im Termin „Vor dem Löschen durch andere schützen“)",
+    "👥 Sichtbarkeit: Beim Eintragen festlegen, welche Familienmitglieder einen Termin sehen dürfen (im Termin „Wer darf diesen Termin sehen?“)"]},
   {v:"2026-11-07e",d:"2026-11-07",t:"Ideen-Wand & Umfragen",items:[
     "💡 Ideen-Wand: Wünsche für die App vorschlagen und mit 👍 abstimmen (Einstellungen → Ideen-Wand)",
     "📊 Kurze Umfragen erscheinen oben als Karte, ein Tipp zum Abstimmen",
