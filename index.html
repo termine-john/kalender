@@ -350,9 +350,19 @@ body.fold .day.empty .day-head{border-bottom:0}
 @keyframes aurora{to{transform:rotate(360deg)}}
 .brand{display:flex;align-items:center;gap:8px;min-width:0;transform:perspective(600px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transform-style:preserve-3d;transition:transform .25s ease-out;will-change:transform}
 .brandtxt{min-width:0}
-.cal3d{width:36px;height:36px;flex:none;filter:drop-shadow(0 6px 8px rgba(0,0,0,.35));transform:translateZ(24px) rotate(-6deg);animation:calbob 6s ease-in-out infinite}
+.appbar .top{display:grid;grid-template-columns:minmax(0,1fr) auto;grid-template-areas:"brand brand" "status btns";gap:8px 10px;align-items:center}
+.appbar .top .brand{grid-area:brand}
+.appbar .top #status{grid-area:status;min-width:0;font-size:.85rem;line-height:1.3}
+.appbar .top .topbtns{grid-area:btns}
+.titlerow{display:flex;align-items:center;gap:6px;min-width:0}
+.titlerow h1{min-width:0}
+.year3d{flex:none;font-weight:900;font-size:clamp(.78rem,3.6vw,1rem);line-height:1;padding:4px 7px 3px;border-radius:8px;color:#3a2600;letter-spacing:.3px;transform:translateZ(22px) rotate(-3deg);
+  background:linear-gradient(180deg,#ffe9a8 0%,#ffcc4d 45%,#e0a21f 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.7),inset 0 -2px 0 rgba(120,70,0,.35),0 2px 0 #a8730f,0 3px 0 #8a5e0c,0 6px 10px rgba(0,0,0,.4);
+  text-shadow:0 1px 0 rgba(255,255,255,.5)}
+.cal3d{width:42px;height:42px;flex:none;filter:drop-shadow(0 6px 8px rgba(0,0,0,.35));transform:translateZ(24px) rotate(-6deg);animation:calbob 6s ease-in-out infinite}
 @keyframes calbob{0%,100%{transform:translateZ(24px) rotate(-6deg) translateY(0)}50%{transform:translateZ(24px) rotate(-3deg) translateY(-2px)}}
-.appbar h1.t3d{font-size:clamp(.9rem,4.4vw,1.45rem);font-weight:900;letter-spacing:-.1px;line-height:1.15;padding-bottom:2px;transform:translateZ(18px);
+.appbar h1.t3d{font-size:clamp(1.05rem,5.6vw,1.7rem);font-weight:900;letter-spacing:-.1px;line-height:1.15;padding-bottom:2px;transform:translateZ(18px);
   background:linear-gradient(110deg,#ffffff 0%,#dff4ff 38%,#ffffff 46%,#9fdcf5 54%,#e6f6ff 70%,#bfe6f7 100%);background-size:260% 100%;
   -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
   filter:drop-shadow(0 1px 0 #6db8d6) drop-shadow(0 1px 0 #4e9cbd) drop-shadow(0 1px 0 #357f9f) drop-shadow(0 1px 0 #226482) drop-shadow(0 5px 6px rgba(0,0,0,.5));
@@ -531,10 +541,10 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
         <text id="cal3dDay" x="31" y="48.5" text-anchor="middle" font-size="22" font-weight="900" fill="#173041" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif">7</text>
       </svg>
       <div class="brandtxt">
-      <h1 class="t3d">Familienkalender</h1>
-      <div class="status" id="status">Verbinde …</div>
+      <div class="titlerow"><h1 class="t3d">Familienkalender</h1><span class="year3d" id="year3d">2026</span></div>
       </div>
     </div>
+    <div class="status" id="status">Verbinde …</div>
     <div class="topbtns"><button class="gear" id="searchBtn" aria-label="Termine suchen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg></button><button class="gear" id="helpBtn" aria-label="Hilfe und Anleitung">?</button>
     <button class="gear" id="gear" aria-label="Einstellungen und Familie einladen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M17 8v6M14 11h6"/></svg></button></div>
   </div>
@@ -1311,7 +1321,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v50";
+const APP_VER="v51";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -2979,6 +2989,7 @@ setTimeout(watchAnn,2500);
 /* ---------- 3D-Kopf: Neigung & Datum, persönliche Begrüßung ---------- */
 (function(){
   const d=document.getElementById("cal3dDay");if(d)d.textContent=String(+today.slice(8,10));
+  const yr=document.getElementById("year3d");if(yr)yr.textContent=today.slice(0,4);
   const b=document.getElementById("brand");if(!b||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
   const set=(x,y)=>{b.style.setProperty("--ry",(x*10).toFixed(2)+"deg");b.style.setProperty("--rx",(-y*8).toFixed(2)+"deg")};
   const bar=document.querySelector(".appbar");
