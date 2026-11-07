@@ -377,6 +377,7 @@ body.fold .day.empty .day-head{border-bottom:0}
 .clog{border:1px solid var(--line);border-radius:12px;background:var(--surface);padding:10px 14px;margin:8px 0}
 .clog h4{margin:0 0 4px;font-size:15px}.clog .cd{font-size:12px;opacity:.7;font-weight:400;margin-left:6px}
 .clog ul{margin:4px 0;padding-left:20px;line-height:1.45}.clog li{margin:3px 0}
+.pgrid{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0 4px}
 #adminCards{display:contents}
 .acard{grid-template-columns:auto 1fr auto;align-items:start}
 .acard .ib-t{white-space:pre-wrap;word-break:break-word}
@@ -1259,7 +1260,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v48";
+const APP_VER="v49";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -2161,14 +2162,21 @@ function renderWishes(){
 function decideWish({l,w},yes){
   const col=(l.spalten||[]).find(k=>k!=="gemeinsam")||"john";
   sheet(yes?"Wunsch annehmen":"Wunsch ablehnen",`<p><b>${esc(wishRange(w))}</b>${w.text?` – „${esc(w.text)}“`:""}</p>
-    ${yes?`<p class="hint">Es wird ein Eintrag „${esc(PNAME[col])} bei Papa“ in ${esc(PNAME[col])}s Spalte angelegt. Die Tage werden rot markiert.</p>`:""}
+    ${yes?`<span class="lbl-s">Automatisch eintragen bei:</span>
+      <div class="pgrid">${PEOPLE.map(([k,n])=>`<label class="pick p-${k}"><input type="checkbox" data-wcol="${k}" ${k===col?"checked":""}> ${esc(n)}</label>`).join("")}</div>
+      <p class="hint">Eintrag: „${esc(PNAME[col])} bei Papa“${w.text?" mit seiner Nachricht":""}. Die Tage werden rot markiert. Über die Spalte ${esc(PNAME[col])} sieht ${esc(l.name||"der Empfänger")} den Termin auch sofort auf seiner Seite.</p>`:""}
     <label class="f">Antwort (optional, sieht ${esc(l.name||"der Empfänger")})<input id="wAns" maxlength="200" placeholder="${yes?"z. B. Passt, wir bringen ihn um 10 Uhr":"z. B. Da sind wir leider im Urlaub"}"></label>
     <div class="actions"><button class="btn" id="wGo">${yes?"Annehmen":"Ablehnen"}</button><button class="btn ghost" id="wCancel">Abbrechen</button></div>`);
   document.getElementById("wCancel").onclick=closeSheet;
   document.getElementById("wGo").onclick=async()=>{
     const ans=document.getElementById("wAns").value.trim().slice(0,200);
     try{
-      if(yes){await store.add({typ:"termin",person:col,titel:`${PNAME[col]} bei Papa${w.text?" · "+w.text.slice(0,60):""}`,datum:w.von,endDatum:w.bis&&w.bis>w.von?w.bis:"",von:"",bis:"",serie:"",intervall:0})}
+      if(yes){const cols=[...document.querySelectorAll("[data-wcol]")].filter(x=>x.checked).map(x=>x.dataset.wcol);
+        if(!cols.length){toast("Bitte mindestens eine Spalte wählen");return}
+        const end=w.bis&&w.bis>w.von?w.bis:"";
+        for(const k of cols){const dup=entries.find(e=>e.person===k&&e.datum===w.von&&(e.endDatum||"")===end&&/papa|pascal/i.test(e.titel||""));if(dup)continue;
+          await store.add({typ:"termin",person:k,titel:`${PNAME[col]} bei Papa${w.text?" · "+w.text.slice(0,60):""}`,datum:w.von,endDatum:end,von:"",bis:"",serie:"",intervall:0,wunsch:w.id})}
+        setTimeout(()=>{try{syncMirrors()}catch(e){}},2500)}
       await FS.doc(`lesen/${l.rc}/wuensche/${w.id}`).update({status:yes?"angenommen":"abgelehnt",antwort:ans,entschieden:nowISO()});
       closeSheet();toast(yes?"Angenommen und eingetragen ✓":"Abgelehnt");
     }catch(e){console.warn(e);toast("Das hat nicht geklappt. Sind die neuen Datenbank-Regeln veröffentlicht?")}
@@ -2922,6 +2930,7 @@ setTimeout(watchAnn,2500);
 const CHANGELOG=[
   {v:"2026-11-07f",d:"2026-11-07",t:"Termine schützen & Sichtbarkeit",items:[
     "🔒 Termine schützen: Wer einen Termin eingetragen hat, kann ihn so sperren, dass nur er selbst ihn löschen kann (im Termin „Vor dem Löschen durch andere schützen“)",
+    "✅ Angenommene Wünsche von Nur-Lese-Seiten werden automatisch eingetragen, auf Wunsch in mehreren Spalten",
     "👥 Sichtbarkeit: Beim Eintragen festlegen, welche Familienmitglieder einen Termin sehen dürfen (im Termin „Wer darf diesen Termin sehen?“)"]},
   {v:"2026-11-07e",d:"2026-11-07",t:"Ideen-Wand & Umfragen",items:[
     "💡 Ideen-Wand: Wünsche für die App vorschlagen und mit 👍 abstimmen (Einstellungen → Ideen-Wand)",
