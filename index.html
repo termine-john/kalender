@@ -22,7 +22,7 @@ html{-webkit-text-size-adjust:100%}:root{padding-top:env(safe-area-inset-top,0px
   --c-gem:#4d3ea3; --c-gem-bg:#d8d1f3;
   --work:#25343d; --work-bg:#d0d9de;
   --vac:#246b27; --vac-bg:#cbe5c6;
-  --today:#f3e2a3; --bday:#8a4b00; --bday-bg:#ffe1a8; --star:#c98a00; --fer:#bfd8ee; --fer-fg:#164e78; --feier:#b02a1c;
+  --today:#f3e2a3; --papa:#f4c4c4; --papa-fg:#9e1c1c; --bday:#8a4b00; --bday-bg:#ffe1a8; --star:#c98a00; --fer:#bfd8ee; --fer-fg:#164e78; --feier:#b02a1c;
   /* Systemschriften: keine Verbindung zu Google Fonts nötig (Datenschutz) */
   --f-display:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
   --f-body:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
@@ -31,12 +31,12 @@ html{-webkit-text-size-adjust:100%}:root{padding-top:env(safe-area-inset-top,0px
   --bg:#0d1418; --surface:#162026; --fg:#e6edf1; --muted:#97a7b0; --line:#28353e; --accent:#6bb7d6; --band:#1b3442; --on-band:#eef6fa; --on-band-dim:#9ab6c4;
   --c-christin:#f08aaa; --c-christin-bg:#3a1f2a; --c-john:#6fd1c2; --c-john-bg:#16332f;
   --c-robert:#f0b26b; --c-robert-bg:#3a2a17; --c-gem:#a99bf2; --c-gem-bg:#2a2548;
-  --work:#c9d4da; --work-bg:#26333b; --vac:#8bd08e; --vac-bg:#1d3320; --today:#2c2a1a; --bday:#ffd27a; --bday-bg:#3d2d10; --star:#ffcc4d; --fer:#17324a; --fer-fg:#9ccbf0; --feier:#ff8a7a; color-scheme:dark}}
+  --work:#c9d4da; --work-bg:#26333b; --vac:#8bd08e; --vac-bg:#1d3320; --today:#2c2a1a; --papa:#4a1d22; --papa-fg:#ff9e9e; --bday:#ffd27a; --bday-bg:#3d2d10; --star:#ffcc4d; --fer:#17324a; --fer-fg:#9ccbf0; --feier:#ff8a7a; color-scheme:dark}}
 :root[data-theme="dark"]{
   --bg:#0d1418; --surface:#162026; --fg:#e6edf1; --muted:#97a7b0; --line:#28353e; --accent:#6bb7d6; --band:#1b3442; --on-band:#eef6fa; --on-band-dim:#9ab6c4;
   --c-christin:#f08aaa; --c-christin-bg:#3a1f2a; --c-john:#6fd1c2; --c-john-bg:#16332f;
   --c-robert:#f0b26b; --c-robert-bg:#3a2a17; --c-gem:#a99bf2; --c-gem-bg:#2a2548;
-  --work:#c9d4da; --work-bg:#26333b; --vac:#8bd08e; --vac-bg:#1d3320; --today:#2c2a1a; --bday:#ffd27a; --bday-bg:#3d2d10; --star:#ffcc4d; --fer:#17324a; --fer-fg:#9ccbf0; --feier:#ff8a7a; color-scheme:dark}
+  --work:#c9d4da; --work-bg:#26333b; --vac:#8bd08e; --vac-bg:#1d3320; --today:#2c2a1a; --papa:#4a1d22; --papa-fg:#ff9e9e; --bday:#ffd27a; --bday-bg:#3d2d10; --star:#ffcc4d; --fer:#17324a; --fer-fg:#9ccbf0; --feier:#ff8a7a; color-scheme:dark}
 *{box-sizing:border-box}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.4;
   padding-left:max(12px,env(safe-area-inset-left,0px));padding-right:max(12px,env(safe-area-inset-right,0px));padding-block:12px 96px}
@@ -114,11 +114,16 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .badge.feier{background:color-mix(in srgb,var(--feier) 14%,transparent);color:var(--feier)}
 .day.is-fer .day-head{background:var(--fer)}
 .day.is-today.is-fer .day-head{background:var(--today)}
+.day.is-papa{background:var(--papa);border-color:var(--papa-fg)}
+.day.is-papa .day-head{background:var(--papa)}
+.day.is-papa .cell{border-color:color-mix(in srgb,var(--papa-fg) 25%,transparent)}
+.badge.papa{background:var(--papa-fg);color:var(--surface)}
 .mgrid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
 .mhead{font-size:.72rem;font-weight:600;color:var(--muted);text-align:center;padding:2px 0;letter-spacing:.03em}
 .mcell{background:var(--surface);border:1px solid var(--line);border-radius:8px;min-height:74px;padding:3px;display:flex;flex-direction:column;gap:2px;text-align:left;min-width:0;overflow:hidden}
 .mcell.out{opacity:.38}
 .mcell.fer{background:var(--fer)}
+.mcell.papa{background:var(--papa);border-color:var(--papa-fg)}
 .mcell.today{border:2px solid var(--accent)}
 .mcell .n{font-size:.8rem;font-weight:700;font-variant-numeric:tabular-nums}
 .mcell.feier .n{color:var(--feier)}
@@ -139,6 +144,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .ydays>span{padding:2px 0;border-radius:4px;position:relative;line-height:1.3}
 .ydays .h{color:var(--muted);font-weight:600}
 .ydays .fer{background:var(--fer);color:var(--fer-fg)}
+.ydays .papa{background:var(--papa);color:var(--papa-fg);font-weight:700}
 .ydays .feier{color:var(--feier);font-weight:700}
 .ydays .today{outline:2px solid var(--accent);outline-offset:-1px}
 .ydays>span{display:flex;flex-direction:column;align-items:center;min-height:22px}
@@ -201,6 +207,17 @@ body.ro .cell{cursor:default}
 label.pick{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;font-size:.85rem;font-weight:600}
 label.pick input{width:18px;height:18px}
 ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
+.news{background:var(--surface);border-left:5px solid var(--star);border-radius:14px;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+.news-head{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.news h2{font-family:var(--f-display);font-size:1.05rem;margin:0}
+.news #newsAck{padding:8px 14px;font-size:.88rem;flex:none}
+.news ul{margin:0;padding:0;list-style:none;display:flex;flex-direction:column;gap:6px}
+.newsrow{display:flex;gap:10px;align-items:flex-start;text-align:left;width:100%;padding:4px 0}
+.newsrow .nt{min-width:0}
+.newsrow .meta{font-size:.78rem;color:var(--muted)}
+.tag{flex:none;font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+.tag.nw{background:var(--star);color:#1a1200}
+.tag.ed{background:var(--fer);color:var(--fer-fg)}
 .sec{font-family:var(--f-display);font-size:1.05rem;margin:6px 0 0}
 .empty-note{font-size:.85rem;color:var(--muted);text-align:center;padding:4px}
 
@@ -264,6 +281,11 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
   </div>
   </header>
 
+  <section class="news" id="news" hidden>
+    <div class="news-head"><h2 id="newsTitle">Neue Einträge</h2><button class="btn" id="newsAck">Gesehen ✓</button></div>
+    <ul id="newsList"></ul>
+  </section>
+
   <section class="morning" id="morning" hidden>
     <h2 id="mTitle">Guten Morgen</h2>
     <div class="mbtns"><button class="btn ghost" id="mImg" aria-label="Bild für den Sperrbildschirm erstellen">🖼</button><button class="btn" id="mAck">Gelesen ✓</button></div>
@@ -317,13 +339,14 @@ const WDL=["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Sams
 const MON=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
 const TYPN={termin:"Termin",arbeit:"Arbeit",urlaub:"Urlaub",geburtstag:"Geburtstag"};
 const CAL_TYPES=["termin","arbeit","urlaub","geburtstag"];
-let tasks=[],taskLogs=[],rewards=[],redeems=[];
+let tasks=[],taskLogs=[],rewards=[],redeems=[],backups=[];
 function splitData(all){
   entries=all.filter(e=>!e.typ||CAL_TYPES.includes(e.typ));
   tasks=all.filter(e=>e.typ==="aufgabe");
   taskLogs=all.filter(e=>e.typ==="erledigt");
   rewards=all.filter(e=>e.typ==="belohnung");
   redeems=all.filter(e=>e.typ==="einloesung");
+  backups=all.filter(e=>e.typ==="sicherung");
 }
 
 const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
@@ -350,7 +373,7 @@ function localStore(){
   const upd=()=>{save(all);splitData(all);render()};
   return{mode:"lokal",
     async add(o){const id="l"+Math.random().toString(36).slice(2,10);all.push({...o,id});upd()},
-    async set(id,o){all=all.map(e=>e.id===id?{...o,id}:e);upd()},
+    async set(id,o){if(all.some(e=>e.id===id))all=all.map(e=>e.id===id?{...o,id}:e);else all.push({...o,id});upd()},
     async del(id){all=all.filter(e=>e.id!==id);upd()},
     async names(n){try{localStorage.setItem("fk-namen",JSON.stringify(n))}catch(e){}applyNames(n);render()},
     async wipe(){all=[];save(all);splitData(all);try{localStorage.removeItem("fk-namen")}catch(e){}}};
@@ -388,7 +411,7 @@ async function init(){
   const cfg=getCfg();
   if(!cfg){if(!_ln){applyNames([]);render()}store=localStore();setStatus("Noch nicht eingerichtet · tippe oben rechts");render();showSetup();return}
   if(cfg.lesen){startReader(cfg);return}
-  if(cfg.local||!window.firebase){store=localStore();setStatus(cfg.local?"Nur auf diesem Gerät gespeichert":"Datenbank nicht erreichbar · nur auf diesem Gerät");render();return}
+  if(cfg.local||!window.firebase){store=localStore();setStatus(cfg.local?"Nur auf diesem Gerät gespeichert":"Datenbank nicht erreichbar · nur auf diesem Gerät");render();autoBackup();return}
   let col;
   try{
     const app=firebase.apps.length?firebase.app():firebase.initializeApp(cfg.firebase);
@@ -399,8 +422,8 @@ async function init(){
   }catch(e){store=localStore();setStatus("Verbindung fehlerhaft · Einstellungen prüfen");render();return}
   const failed=e=>{console.error(e);toast("Nicht gespeichert: "+(e&&e.code==="permission-denied"?"kein Zugriff auf diesen Kalender":"Verbindungsproblem")+". Bitte App neu laden.")};
   store={mode:"db",
-    add(o){col.add(o).catch(failed)},
-    set(id,o){col.doc(id).set(o).catch(failed)},
+    add(o){col.add(stampNew(o)).catch(failed)},
+    set(id,o){col.doc(id).set(stampEdit(id,o)).catch(failed)},
     del(id){col.doc(id).delete().catch(failed)},
     async names(n){await col.doc("_config").set({typ:"config",namen:n},{merge:true})},
     async conf(o){await col.doc("_config").set({typ:"config",...o},{merge:true})},
@@ -427,7 +450,7 @@ async function init(){
     else if(!snap.metadata.fromCache){clearTimeout(timer);setStatus(`Kalender ${nr} · alles übertragen ✓`)}
     else setStatus(`Kalender ${nr} · offline, zeigt gespeicherten Stand`);
     render();
-    if(!snap.metadata.fromCache&&!snap.metadata.hasPendingWrites)scheduleMirror();
+    if(!snap.metadata.fromCache&&!snap.metadata.hasPendingWrites){scheduleMirror();autoBackup()}
   },err=>{clearTimeout(timer);setStatus(err&&err.code==="permission-denied"?"Kein Zugriff · Datenbank-Regeln prüfen (Anleitung Schritt 4)":"Fehler beim Laden der Termine");});
 }
 
@@ -476,6 +499,11 @@ function showSettings(){
     <p class="hint">Tipp: Im Browser-Menü „Zum Startbildschirm hinzufügen“ wählen, dann hat jeder die App als Symbol auf dem Handy.</p>
     <h4 class="sub">Sperrbildschirm</h4>
     <button class="btn ghost" id="setImg">🖼 Bild mit den heutigen Terminen erstellen</button>
+    <h4 class="sub">Sicherungen</h4>
+    <div class="rw"><p class="hint" style="margin:0">Läuft automatisch: <b>täglich</b> auf diesem Handy (die letzten 7 Tage) und <b>wöchentlich</b> in der Cloud (die letzten 4 Wochen). Beim Wiederherstellen kommen gelöschte Einträge zurück, vorhandene bleiben unverändert.</p>
+      <div id="bkList" class="tasklist"></div>
+      <div class="rw-btns"><button id="bkNow">Jetzt sichern</button><button id="bkFile">Als Datei speichern</button><button id="bkLoad">Aus Datei wiederherstellen</button></div>
+      <input type="file" id="bkIn" accept=".json,application/json" hidden></div>
     <h4 class="sub">Deine Daten</h4>
     <button class="btn ghost" id="exp">Alle Termine exportieren (.ics)</button>
     <p class="hint">Die Datei kannst du z. B. in Google Kalender importieren oder als Sicherung aufheben.</p>
@@ -483,7 +511,7 @@ function showSettings(){
     <p class="hint">Löscht alle Einträge und Namen dieses Kalenders für alle Beteiligten. Das lässt sich nicht rückgängig machen.</p>
     <p class="hint"><a href="datenschutz.html">Datenschutz, Impressum & Nutzungshinweise</a></p>
     <div class="actions"><button class="btn danger" id="disc">Auf diesem Handy trennen</button><button class="btn ghost" id="setClose">Schließen</button></div>`);
-  document.getElementById("exp").onclick=exportICS;wireReadLinks();
+  document.getElementById("exp").onclick=exportICS;wireReadLinks();wireBackups();
   document.getElementById("setImg").onclick=()=>showWidgetImage();wireJoin();
   document.getElementById("wipe").onclick=async()=>{if(!await askConfirm("Den ganzen Kalender mit allen Einträgen, Aufgaben und Sternen für ALLE löschen? Das lässt sich nicht rückgängig machen.","Endgültig löschen"))return;
     if(!await askConfirm("Bist du ganz sicher?","Ja, alles löschen"))return;wipeAll()};
@@ -829,6 +857,56 @@ function startReader(cfg){
   }catch(e){setStatus("Termine konnten nicht geladen werden.")}
 }
 
+/* ---------- Automatische Sicherung ---------- */
+const BK_LOCAL="fk-sicherungen";
+function snapshotData(){
+  const strip=({id,...o})=>({id,...o});
+  return {version:1,stand:nowISO(),namen:NAMES,eintraege:[...entries,...tasks,...taskLogs,...rewards,...redeems].map(strip)};
+}
+function localBackups(){try{return JSON.parse(localStorage.getItem(BK_LOCAL)||"[]")}catch(e){return []}}
+function saveLocalBackup(force){
+  const list=localBackups();if(!force&&list[0]&&list[0].datum===today)return false;
+  const data=snapshotData();if(!data.eintraege.length)return false;
+  const neu=[{datum:today,stand:data.stand,anzahl:data.eintraege.length,daten:data},...list.filter(b=>b.datum!==today)].slice(0,7);
+  for(let n=neu.length;n>0;n--){try{localStorage.setItem(BK_LOCAL,JSON.stringify(neu.slice(0,n)));return true}catch(e){}}
+  return false;
+}
+async function saveCloudBackup(force){
+  if(!store||store.mode!=="db")return false;
+  const newest=backups.map(b=>b.datum).sort().pop()||"";
+  if(!force&&newest&&diffDays(newest,today)<7)return false;
+  const data=snapshotData();if(!data.eintraege.length)return false;
+  const txt=JSON.stringify(data);if(txt.length>900000)return false;
+  await store.set(`_sicherung_${today}`,{typ:"sicherung",datum:today,anzahl:data.eintraege.length,daten:txt});
+  const old=backups.filter(b=>b.id!==`_sicherung_${today}`).sort((a,b)=>a.datum<b.datum?1:-1).slice(3);
+  for(const b of old)await store.del(b.id);
+  return true;
+}
+let bkDone=false;
+async function autoBackup(){if(bkDone)return;bkDone=true;try{saveLocalBackup(false);await saveCloudBackup(false)}catch(e){console.warn("Sicherung",e)}}
+async function restoreBackup(data,label){
+  const list=(data&&data.eintraege)||[];
+  const have=new Set([...entries,...tasks,...taskLogs,...rewards,...redeems].map(e=>e.id));
+  const missing=list.filter(e=>e&&e.id&&!have.has(e.id)&&e.typ!=="sicherung");
+  if(!missing.length){toast("Alles aus dieser Sicherung ist schon vorhanden");return}
+  if(!await askConfirm(`Sicherung ${label} wiederherstellen? ${missing.length} gelöschte ${missing.length===1?"Eintrag kommt":"Einträge kommen"} zurück. Vorhandene Einträge bleiben unverändert.`,"Wiederherstellen",false))return;
+  for(const {id,...o} of missing)await store.set(id,o);
+  toast(`${missing.length} Einträge wiederhergestellt`);closeSheet();
+}
+function wireBackups(){
+  const box=document.getElementById("bkList");if(!box)return;
+  const rows=[...backups.map(b=>({src:"cloud",datum:b.datum,anzahl:b.anzahl,get:()=>JSON.parse(b.daten)})),...localBackups().map(b=>({src:"lokal",datum:b.datum,anzahl:b.anzahl,get:()=>b.daten}))]
+    .sort((a,b)=>a.datum<b.datum?1:a.datum>b.datum?-1:a.src.localeCompare(b.src));
+  box.innerHTML=rows.length?rows.map((r,i)=>`<div class="task" style="grid-template-columns:1fr auto"><span class="tt">${r.src==="cloud"?"☁️ Cloud":"📱 Dieses Handy"} · ${fmt(r.datum)} ${r.datum.slice(0,4)}<br><span class="meta">${r.anzahl} Einträge</span></span><button class="btn ghost" style="padding:7px 10px;font-size:.8rem" data-bk="${i}">Wiederherstellen</button></div>`).join("")
+    :'<p class="hint">Noch keine Sicherung vorhanden. Die erste entsteht automatisch beim nächsten Öffnen.</p>';
+  box.querySelectorAll("[data-bk]").forEach(b=>b.onclick=()=>{const r=rows[+b.dataset.bk];let d;try{d=r.get()}catch(e){toast("Sicherung ist beschädigt");return}restoreBackup(d,`vom ${fmt(r.datum)}`)});
+  document.getElementById("bkNow").onclick=async()=>{const a=saveLocalBackup(true);let c=false;try{c=await saveCloudBackup(true)}catch(e){}toast(a||c?"Gesichert":"Nichts zu sichern");setTimeout(showSettings,600)};
+  document.getElementById("bkFile").onclick=()=>{const blob=new Blob([JSON.stringify(snapshotData(),null,1)],{type:"application/json"});const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=`familienkalender-sicherung-${today}.json`;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},1000);toast("Sicherungsdatei gespeichert")};
+  const inp=document.getElementById("bkIn");
+  document.getElementById("bkLoad").onclick=()=>inp.click();
+  inp.onchange=()=>{const f=inp.files&&inp.files[0];inp.value="";if(!f)return;const rd=new FileReader();rd.onload=()=>{let d;try{d=JSON.parse(rd.result)}catch(e){toast("Das ist keine gültige Sicherungsdatei");return}if(!d||!Array.isArray(d.eintraege)){toast("Das ist keine gültige Sicherungsdatei");return}restoreBackup(d,"aus der Datei")};rd.readAsText(f)};
+}
+
 /* ---------- Rückfrage-Dialog ---------- */
 function askConfirm(text,ok="Löschen",danger=true){
   return new Promise(res=>{
@@ -887,6 +965,8 @@ function feiertage(y){
   if(y===2028)f["2028-06-17"]="Jahrestag 17. Juni 1953";
   return _feierCache[y]=f;
 }
+// Tage, an denen John bei Papa ist (Eintrag in Johns Spalte mit "Papa" im Titel)
+const papaOf=day=>entries.some(e=>e.person==="john"&&e.typ==="termin"&&/papa/i.test(e.titel||"")&&onDay(e,day));
 const feierOf=day=>feiertage(+day.slice(0,4))[day]||"";
 const ferienOf=day=>{const f=FERIEN.find(([n,a,b])=>a<=day&&day<=b);return f?f[0]:""};
 
@@ -902,7 +982,7 @@ function render(){
   document.getElementById("vOther").hidden=view==="woche";
   document.getElementById("navbar").hidden=view==="ferien"||view==="sterne";
   if(view==="monat")renderMonth();else if(view==="jahr")renderYear();else if(view==="ferien")renderFerien();else if(view==="sterne")renderStars();else renderWeek();
-  renderMorning();
+  renderMorning();renderNews();
 }
 function renderMonth(){
   const m0=parse(monthCur);const y=m0.getFullYear(),m=m0.getMonth();
@@ -913,9 +993,10 @@ function renderMonth(){
     const d=parse(day),fe=feierOf(day),fr=ferienOf(day);
     const list=entries.filter(e=>onDay(e,day)).sort(sortE);
     const bars=list.slice(0,3).map(e=>{const cls=e.typ==="termin"?e.person:e.typ;const t=e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?`${PNAME[e.person][0]} ${e.von||"Arbeit"}`:e.typ==="urlaub"?`${PNAME[e.person]} Urlaub`:`${e.von?e.von+" ":""}${e.titel}`;return `<div class="mbar ${cls}">${esc(t)}</div>`}).join("");
-    h+=`<button class="mcell${d.getMonth()!==m?" out":""}${fr?" fer":""}${fe?" feier":""}${day===today?" today":""}" data-goday="${day}" aria-label="${fmt(day)}${fe?", "+fe:""}${fr?", "+fr:""}, ${list.length} Einträge"><span class="n">${d.getDate()}</span>${fe?`<span class="fname">${esc(fe)}</span>`:""}${bars}${list.length>3?`<span class="more">+${list.length-3} mehr</span>`:""}</button>`;
+    const pp=papaOf(day);
+    h+=`<button class="mcell${d.getMonth()!==m?" out":""}${pp?" papa":fr?" fer":""}${fe?" feier":""}${day===today?" today":""}" data-goday="${day}" aria-label="${fmt(day)}${fe?", "+fe:""}${fr?", "+fr:""}, ${list.length} Einträge"><span class="n">${d.getDate()}</span>${fe?`<span class="fname">${esc(fe)}</span>`:""}${bars}${list.length>3?`<span class="more">+${list.length-3} mehr</span>`:""}</button>`;
   }
-  h+=`</div><div class="key"><span><i style="background:var(--fer)"></i>Schulferien Berlin</span><span style="color:var(--feier);font-weight:600">Feiertag</span><span>Tippe auf einen Tag für die Wochenansicht</span></div>`;
+  h+=`</div><div class="key"><span><i style="background:var(--papa)"></i>John bei Papa</span><span><i style="background:var(--fer)"></i>Schulferien Berlin</span><span style="color:var(--feier);font-weight:600">Feiertag</span><span>Tippe auf einen Tag für die Wochenansicht</span></div>`;
   document.getElementById("vOther").innerHTML=h;
 }
 function renderYear(){
@@ -926,12 +1007,12 @@ function renderYear(){
   for(let m=0;m<12;m++){
     const first=iso(new Date(y,m,1));const off=(parse(first).getDay()+6)%7;const dim=new Date(y,m+1,0).getDate();
     let cells=["M","D","M","D","F","S","S"].map(x=>`<span class="h">${x}</span>`).join("")+"<span></span>".repeat(off);
-    for(let i=1;i<=dim;i++){const day=iso(new Date(y,m,i));const c=[ferienOf(day)?"fer":"",feierOf(day)?"feier":"",day===today?"today":"",""].filter(Boolean).join(" ");
+    for(let i=1;i<=dim;i++){const day=iso(new Date(y,m,i));const c=[papaOf(day)?"papa":ferienOf(day)?"fer":"",feierOf(day)?"feier":"",day===today?"today":"",""].filter(Boolean).join(" ");
       const ps=busy[day]?PEOPLE.map(([k])=>k).filter(k=>busy[day].has(k)):[];
       cells+=`<span class="${c}"${feierOf(day)?` title="${esc(feierOf(day))}"`:""}>${i}<span class="pd">${ps.map(k=>`<i class="${k}"></i>`).join("")}</span></span>`}
     h+=`<button class="ymon" data-gomonth="${first}" aria-label="${MONL[m]} ${y} öffnen"><h4>${MONL[m]}</h4><div class="ydays">${cells}</div></button>`;
   }
-  h+=`</div><div class="key"><span><i style="background:var(--fer)"></i>Schulferien</span><span style="color:var(--feier);font-weight:700">Feiertag</span>${PEOPLE.map(([k,n])=>`<span><span class="kd ${k}"></span>${n}</span>`).join("")}</div>`;
+  h+=`</div><div class="key"><span><i style="background:var(--papa)"></i>bei Papa</span><span><i style="background:var(--fer)"></i>Schulferien</span><span style="color:var(--feier);font-weight:700">Feiertag</span>${PEOPLE.map(([k,n])=>`<span><span class="kd ${k}"></span>${n}</span>`).join("")}</div>`;
   document.getElementById("vOther").innerHTML=h;
 }
 function renderFerien(){
@@ -959,7 +1040,8 @@ function renderWeek(){
     const day=addDays(weekStart,i);const d=parse(day);
     const list=entries.filter(e=>onDay(e,day));
     const fe=feierOf(day),fr=ferienOf(day);
-    html+=`<article class="day${day===today?" is-today":""}${fr?" is-fer":""}" id="d-${day}"><div class="day-head"><b>${WDL[d.getDay()]}, ${d.getDate()}. ${MON[d.getMonth()]}${fe?`<span class="badge feier">${esc(fe)}</span>`:""}${fr?`<span class="badge fer">${esc(fr)}</span>`:""}</b><span>${day===today?"heute · ":""}${list.length?list.length+(list.length===1?" Eintrag":" Einträge"):"frei"}</span></div><div class="cols">`;
+    const pp=papaOf(day);
+    html+=`<article class="day${day===today?" is-today":""}${fr?" is-fer":""}${pp?" is-papa":""}" id="d-${day}"><div class="day-head"><b>${WDL[d.getDay()]}, ${d.getDate()}. ${MON[d.getMonth()]}${pp?`<span class="badge papa">bei Papa</span>`:""}${fe?`<span class="badge feier">${esc(fe)}</span>`:""}${fr?`<span class="badge fer">${esc(fr)}</span>`:""}</b><span>${day===today?"heute · ":""}${list.length?list.length+(list.length===1?" Eintrag":" Einträge"):"frei"}</span></div><div class="cols">`;
     for(const[p] of PEOPLE){
       const cell=list.filter(e=>e.person===p).sort(sortE);
       html+=`<div class="cell" role="button" tabindex="0" data-day="${day}" data-person="${p}" aria-label="${PNAME[p]}, ${fmt(day)}: Eintrag hinzufügen">${cell.map(e=>chipHTML(e,day)).join("")}<span class="plus" aria-hidden="true">+</span></div>`;
@@ -973,6 +1055,38 @@ function isoWeek(d){const t=new Date(Date.UTC(d.getFullYear(),d.getMonth(),d.get
 /* ---------- Morgen-Übersicht (bleibt bis "Gelesen") ---------- */
 function ackKey(){return"fk-gelesen-"+today}
 function isAck(){try{return localStorage.getItem(ackKey())==="1"}catch(e){return false}}
+/* ---------- Neue & geänderte Einträge ---------- */
+let DEVICE_ID="";try{DEVICE_ID=localStorage.getItem("fk-dev")||"";if(!DEVICE_ID){DEVICE_ID="d"+Math.random().toString(36).slice(2,10);localStorage.setItem("fk-dev",DEVICE_ID)}}catch(e){DEVICE_ID="d"+Math.random().toString(36).slice(2,10)}
+const nowISO=()=>new Date().toISOString();
+function stampNew(o){return {...o,erstellt:nowISO(),geraet:DEVICE_ID}}
+function stampEdit(id,o){const prev=[...entries,...tasks,...rewards].find(x=>x.id===id);return {...o,erstellt:(prev&&prev.erstellt)||o.erstellt||nowISO(),geaendert:nowISO(),geraet:DEVICE_ID}}
+function seenAt(){try{let v=localStorage.getItem("fk-seen");if(!v){v=nowISO();localStorage.setItem("fk-seen",v)}return v}catch(e){return nowISO()}}
+function whenTxt(isoStr){const d=new Date(isoStr);const day=iso(d);const t=d.toTimeString().slice(0,5);
+  if(day===today)return `heute ${t} Uhr`;if(day===addDays(today,-1))return `gestern ${t} Uhr`;return `${fmt(day)}, ${t} Uhr`}
+function renderNews(){
+  const box=document.getElementById("news");if(!box)return;
+  if(READONLY){box.hidden=true;return}
+  const seen=seenAt();
+  const items=entries.filter(e=>e.geraet&&e.geraet!==DEVICE_ID&&((e.geaendert||e.erstellt||"")>seen));
+  if(!items.length){box.hidden=true;return}
+  const groups=[];const bySerie={};
+  for(const e of items){if(e.serie){if(!bySerie[e.serie]){bySerie[e.serie]={...e,anzahl:0,erster:e.datum};groups.push(bySerie[e.serie])}const g=bySerie[e.serie];g.anzahl++;if(e.datum<g.erster)g.erster=e.datum;if((e.geaendert||e.erstellt)>(g.geaendert||g.erstellt))Object.assign(g,{geaendert:e.geaendert,erstellt:e.erstellt})}else groups.push({...e,anzahl:1,erster:e.datum})}
+  groups.sort((a,b)=>(b.geaendert||b.erstellt).localeCompare(a.geaendert||a.erstellt));
+  const isEd=g=>g.geaendert&&g.geaendert>seen&&!(g.erstellt>seen);
+  const nEd=groups.filter(isEd).length,nNew=groups.length-nEd;
+  document.getElementById("newsTitle").textContent=`🔔 ${[nNew?`${nNew} ${nNew===1?"neuer Eintrag":"neue Einträge"}`:"",nEd?`${nEd} ${nEd===1?"Änderung":"Änderungen"}`:""].filter(Boolean).join(", ")}`;
+  document.getElementById("newsList").innerHTML=groups.slice(0,8).map(g=>{
+    const ed=isEd(g);
+    const what=g.typ==="geburtstag"?bdayLabel(g,g.datum):g.typ==="arbeit"?`Arbeit ${timeTxt(g)}`:g.typ==="urlaub"?"Urlaub":`${g.von?g.von+" ":""}${g.titel}`;
+    const termin=g.anzahl>1?`Serie mit ${g.anzahl} Terminen ab ${fmt(g.erster)}`:g.typ==="geburtstag"?fmt(bdayIn(g,+today.slice(0,4))<today?bdayIn(g,+today.slice(0,4)+1):bdayIn(g,+today.slice(0,4))):fmt(g.datum)+(g.endDatum&&g.endDatum>g.datum?` – ${fmt(g.endDatum)}`:"");
+    return `<li><button class="newsrow" data-goday="${g.erster}"><span class="tag ${ed?"ed":"nw"}">${ed?"geändert":"neu"}</span>
+      <span class="nt"><b class="p-${g.person}" style="background:none">${esc(PNAME[g.person]||"")}</b> ${esc(what)}<br><span class="meta">📅 ${esc(termin)} · ${ed?"geändert":"eingetragen"} ${esc(whenTxt(ed?g.geaendert:g.erstellt))}</span></span></button></li>`}).join("")
+    +(groups.length>8?`<li class="meta">… und ${groups.length-8} weitere</li>`:"");
+  box.hidden=false;
+}
+document.getElementById("newsAck").onclick=()=>{try{localStorage.setItem("fk-seen",nowISO())}catch(e){}document.getElementById("news").hidden=true;toast("Als gesehen markiert")};
+document.getElementById("newsList").addEventListener("click",ev=>{const b=ev.target.closest("[data-goday]");if(!b)return;weekStart=mondayOf(b.dataset.goday);setView("woche");setTimeout(()=>{const el=document.getElementById("d-"+b.dataset.goday);if(el)el.scrollIntoView({block:"center"})},60)});
+
 function renderMorning(){
   const box=document.getElementById("morning");
   if(isAck()){box.hidden=true;return}
