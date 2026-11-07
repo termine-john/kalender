@@ -369,6 +369,8 @@ body.fold .day.empty .day-head{border-bottom:0}
 .chip.clash{box-shadow:inset 0 0 0 2px var(--star)}
 .installbar{display:grid;grid-template-columns:auto 1fr auto auto;gap:10px;align-items:center;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 30%,var(--surface)),var(--surface));border:1px solid var(--accent);border-radius:14px;padding:10px 12px}
 .installbar .ib-ico{font-size:1.6rem}
+.anncard{grid-template-columns:auto 1fr auto;align-items:start}
+.anncard .ib-t{white-space:pre-wrap;word-break:break-word}
 .installbar .ib-t{min-width:0;font-size:.92rem}
 .installbar .meta{font-size:.78rem;color:var(--muted)}
 .installbar .btn{padding:9px 12px;font-size:.88rem}
@@ -461,6 +463,9 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
   </div>
   </header>
 
+  <section class="installbar anncard" id="annCard" hidden>
+    <span class="ib-ico">📢</span><span class="ib-t" id="annTxt"></span><button class="ib-x" id="annX" aria-label="Mitteilung schließen">✕</button>
+  </section>
   <section class="installbar" id="installBar" hidden>
     <span class="ib-ico">📲</span><span class="ib-t"><b>Als App aufs Handy holen</b><br><span class="meta">Mit eigenem Symbol, startet wie eine richtige App.</span></span>
     <button class="btn" id="installBtn">Installieren</button><button class="ib-x" id="installX" aria-label="Hinweis schließen">✕</button>
@@ -1237,7 +1242,7 @@ async function checkAdmin(){
 function markGear(){const g=document.getElementById("gear");if(!g)return;let b=g.querySelector(".badge");if(!SUP_NEW){if(b)b.remove();return}if(!b){b=document.createElement("span");b.className="badge";g.appendChild(b)}b.textContent=SUP_NEW}
 function adminBoxFill(){
   const box=document.getElementById("adminBox");if(!box)return;
-  if(IS_ADMIN){box.innerHTML=`<button class="btn" id="inboxBtn">📬 Support-Postfach${SUP_NEW?` (${SUP_NEW} neu)`:""}</button>`;document.getElementById("inboxBtn").onclick=()=>{closeSheet();setTimeout(showInbox,200)};return}
+  if(IS_ADMIN){box.innerHTML=`<button class="btn" id="inboxBtn">📬 Postfach & 📢 Nachricht an alle${SUP_NEW?` (${SUP_NEW} neu)`:""}</button>`;document.getElementById("inboxBtn").onclick=()=>{closeSheet();setTimeout(showInbox,200)};return}
   if(!IS_MAIN_SITE)return;
   let uid="";try{uid=firebase.auth().currentUser.uid}catch(e){}
   if(!uid)return;
@@ -1255,8 +1260,27 @@ function adminBoxFill(){
   document.getElementById("uidCopy").onclick=async()=>{try{await navigator.clipboard.writeText(uid);toast("Code kopiert")}catch(e){toast("Bitte den Code markieren und kopieren")}};
 }
 async function showInbox(){
-  sheet("📬 Support-Postfach",`<div id="inbox"><p class="hint">Lade Nachrichten …</p></div><div class="actions"><button class="btn ghost" id="ibClose">Schließen</button></div>`);
+  const a=ANN&&ANN.id&&ANN.text?ANN:null;
+  sheet("📬 Postfach & Mitteilungen",`<div class="rw"><b>📢 Nachricht an alle Nutzer</b>
+      <p class="hint" style="margin:0">Erscheint bei allen beim nächsten Öffnen der App oben als Karte. Jeder kann sie mit ✕ ausblenden.</p>
+      ${a?`<p class="hint" style="margin:0">Gerade aktiv: <b>${esc(a.titel||a.text.slice(0,40))}</b>${a.bis?" · bis "+dmy(a.bis):""}</p>`:""}
+      <label class="f">Überschrift (optional)<input id="anT" maxlength="60" value="${esc(a&&a.titel||"")}" placeholder="z. B. 🎉 Neu in der App"></label>
+      <label class="f">Text<textarea id="anX" rows="4" maxlength="500" placeholder="Was möchtest du allen sagen?">${esc(a&&a.text||"")}</textarea></label>
+      <label class="f">Anzeigen bis (optional)<input type="date" id="anB" value="${esc(a&&a.bis||"")}"></label>
+      <label class="pick" style="justify-content:space-between"><span>Auch auf Nur-Lese-Seiten zeigen (z. B. Papa)</span><input type="checkbox" id="anP" ${a&&a.papa?"checked":""}></label>
+      <div class="rw-btns"><button id="anGo">📢 An alle senden</button>${a?'<button id="anDel">Zurückziehen</button>':""}</div></div>
+    <h4 class="sub">Support-Nachrichten</h4>
+    <div id="inbox"><p class="hint">Lade Nachrichten …</p></div><div class="actions"><button class="btn ghost" id="ibClose">Schließen</button></div>`);
   document.getElementById("ibClose").onclick=closeSheet;
+  document.getElementById("anGo").onclick=async()=>{
+    const t=document.getElementById("anT").value.trim().slice(0,60),x=document.getElementById("anX").value.trim().slice(0,500),b=document.getElementById("anB").value,pp=document.getElementById("anP").checked;
+    if(x.length<3){toast("Bitte einen Text schreiben");return}
+    if(b&&b<today){toast("Das Datum liegt in der Vergangenheit");return}
+    if(!await askConfirm("Diese Nachricht jetzt an alle Nutzer der App senden?","An alle senden",false))return;
+    try{await FS.doc("info/aktuell").set({id:"a"+Date.now(),titel:t,text:x,bis:b||"",papa:pp,zeit:nowISO()});try{localStorage.removeItem("fk-ann-x")}catch(e){}toast("📢 Nachricht ist raus");closeSheet()}
+    catch(e){toast(e&&e.code==="permission-denied"?"Keine Berechtigung · Regeln aktualisieren":"Senden hat nicht geklappt")}};
+  {const d=document.getElementById("anDel");if(d)d.onclick=async()=>{if(!await askConfirm("Die Nachricht für alle zurückziehen?","Zurückziehen"))return;
+    try{await FS.doc("info/aktuell").delete();toast("Zurückgezogen");closeSheet()}catch(e){toast("Hat nicht geklappt")}}}
   let list=[];
   try{const sn=await FS.collection("support").orderBy("zeit","desc").limit(100).get({source:"server"});list=sn.docs.map(d=>({...d.data(),id:d.id}))}
   catch(e){document.getElementById("inbox").innerHTML=`<p class="hint">Postfach nicht erreichbar.</p>`;return}
@@ -2590,6 +2614,26 @@ async function installApp(){
 document.getElementById("installBtn").onclick=installApp;
 document.getElementById("installX").onclick=()=>{try{localStorage.setItem("fk-install-x","1")}catch(e){}document.getElementById("installBar").hidden=true;toast("Installieren geht auch später unter Einstellungen")};
 setTimeout(showInstallBar,1500);
+/* ---------- Mitteilung an alle (vom Betreiber) ---------- */
+let ANN=null,annSub=null;
+function annReader(){const c=getCfg();return IS_READER_SITE||!!(c&&c.lesen)}
+function renderAnn(){
+  const el=document.getElementById("annCard");if(!el)return;
+  let x="";try{x=localStorage.getItem("fk-ann-x")||""}catch(e){}
+  const a=ANN;const ok=a&&a.id&&a.text&&(!a.bis||a.bis>=today)&&(!annReader()||a.papa)&&x!==a.id;
+  el.hidden=!ok;if(!ok)return;
+  document.getElementById("annTxt").innerHTML=`${a.titel?`<b>${esc(a.titel)}</b><br>`:""}<span>${esc(a.text)}</span>`;
+}
+function watchAnn(){
+  if(annSub)return;
+  let db=FS||(typeof FSR!=="undefined"&&FSR)||null;
+  try{if(!db)db=supDB()}catch(e){}
+  if(!db)return;
+  annSub=db.doc("info/aktuell").onSnapshot(d=>{ANN=d.exists?d.data():null;renderAnn()},()=>{});
+}
+document.getElementById("annX").onclick=()=>{if(ANN&&ANN.id){try{localStorage.setItem("fk-ann-x",ANN.id)}catch(e){}}document.getElementById("annCard").hidden=true};
+setTimeout(watchAnn,2500);
+
 
 applyPrefs();
 init();
