@@ -802,10 +802,10 @@ async function init(){
     if(conf)setFarben(conf.data().farben||{});
     watchWishes();
     PUB=snap.docs.filter(d=>d.id!=="_config").map(d=>({...d.data(),id:d.id}));splitData([...PUB,...PRIV]);DATA_READY=true;
-    const nr=calNr()+(ROLE==="lesen"?" · 👁️ nur lesen":"");
-    if(snap.metadata.hasPendingWrites)setStatus(`Kalender ${nr} · Änderungen werden übertragen …`);
-    else if(!snap.metadata.fromCache){clearTimeout(timer);setStatus(`Kalender ${nr} · alles übertragen ✓`)}
-    else setStatus(`Kalender ${nr} · offline, zeigt gespeicherten Stand`);
+    const nr=ROLE==="lesen"?"👁️ nur lesen · ":"";
+    if(snap.metadata.hasPendingWrites)setStatus(`${nr}Änderungen werden übertragen …`);
+    else if(!snap.metadata.fromCache){clearTimeout(timer);setStatus(`${nr}alles übertragen ✓`)}
+    else setStatus(`${nr}offline, zeigt gespeicherten Stand`);
     render();
     if(!snap.metadata.fromCache&&!snap.metadata.hasPendingWrites){scheduleMirror();autoBackup()}
   },err=>{clearTimeout(timer);setStatus(err&&err.code==="permission-denied"?"Kein Zugriff · Datenbank-Regeln prüfen (Anleitung Schritt 4)":"Fehler beim Laden der Termine");});
@@ -856,7 +856,7 @@ function showSettings(){
   if(ROLE==="lesen"){showReaderSettings();return}
   const link=inviteLink(c);let curLink=link;
   const appLink=location.origin+location.pathname;
-  sheet("Teilen & Einstellungen",`<p class="hint">Dieses Handy ist mit <b>Kalender ${calNr()}</b> verbunden. Bei allen in der Familie muss hier dieselbe Nummer stehen.</p>
+  sheet("Teilen & Einstellungen",`<details class="rw"><summary class="hint" style="cursor:pointer">🔑 Kalender-Nummer anzeigen</summary><p class="hint" style="margin:6px 0 0">Dieses Handy ist mit <b>Kalender ${calNr()}</b> verbunden. Bei allen in der Familie muss hier dieselbe Nummer stehen.</p></details>
     <h4 class="sub">Familie einladen</h4><p class="hint">Wähle zuerst, was die eingeladene Person darf. Gib die Links nur an die Familie weiter.</p>
     <div class="seg" style="--n:2"><button class="typ" data-inv="lesen" aria-pressed="true">👁️ Nur lesen</button><button class="typ" data-inv="schreiben" aria-pressed="false">✏️ Darf mitschreiben</button></div>
     <div class="linkbox" id="inv">${esc(link)}</div>
@@ -970,7 +970,7 @@ const HELP=[
 <ol><li>Beim ersten Öffnen trägst du die Namen ein und tippst auf <b>„Neuen Kalender starten“</b>.</li>
 <li>Danach lädst du die Familie ein (siehe „Familie einladen & Rechte“).</li>
 <li>Alles, was jemand einträgt, sehen die anderen sofort.</li></ol>
-<p class="tipp">Oben unter dem Titel steht z. B. „Kalender 8QXY · alles übertragen ✓“. Diese 4 Zeichen müssen bei allen in der Familie gleich sein, sonst seid ihr in verschiedenen Kalendern.</p>`],
+<p class="tipp">Unter Einstellungen → „🔑 Kalender-Nummer anzeigen“ steht eine 4-stellige Nummer, z. B. 8QXY. Sie muss bei allen in der Familie gleich sein, sonst seid ihr in verschiedenen Kalendern.</p>`],
 ["personen","👨‍👩‍👦","Haushaltsmitglieder hinzufügen",`<ol><li>Oben rechts auf das Symbol mit der <b>Person und dem +</b> tippen (Teilen & Einstellungen).</li>
 <li>Nach unten zu <b>„Personen im Haushalt“</b> scrollen.</li>
 <li><b>„+ Person hinzufügen“</b> tippen, eine neue Zeile erscheint.</li>
@@ -1057,7 +1057,7 @@ const HELP=[
 <p>Ab und zu erscheint oben eine <b>📊 Umfrage</b>. Ein Tipp auf eine Antwort genügt, mit ✕ blendest du sie aus.</p>`],
 ["support","💬","Support & Feedback",`<p>Frage, Fehler oder Idee? In den Einstellungen oder ganz unten in dieser Hilfe auf <b>„💬 Nachricht an den Entwickler“</b> tippen, Art wählen, Nachricht schreiben, absenden.</p>
 <p>Die Antwort erscheint oben in der App als Karte „💬 Antwort vom Entwickler“. Die Nachricht sieht nur der Entwickler.</p>`],
-["probleme","🛠","Probleme lösen",`<ul><li><b>Einträge der anderen fehlen:</b> oben die Kalender-Nummer vergleichen. Ist sie verschieden, den Einladungslink nochmal öffnen.</li>
+["probleme","🛠","Probleme lösen",`<ul><li><b>Einträge der anderen fehlen:</b> in den Einstellungen unter „🔑 Kalender-Nummer anzeigen“ die Nummer vergleichen. Ist sie verschieden, den Einladungslink nochmal öffnen.</li>
 <li><b>„Du hast nur Leserechte“:</b> jemand mit Schreibrechten muss dich unter „Mitglieder & Rechte“ auf ✏️ stellen.</li>
 <li><b>Etwas sieht alt aus:</b> App schließen und neu öffnen, dann lädt die neue Version.</li>
 <li><b>„Änderungen werden übertragen …“ bleibt stehen:</b> Internet prüfen. Nichts geht verloren.</li></ul>`]
@@ -1321,7 +1321,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v52";
+const APP_VER="v53";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -1456,7 +1456,7 @@ async function admAll(body){
 }
 async function admFam(body){
   const sn=await FS.collection("famhinweis").get({source:"server"});const list=sn.docs.map(d=>({...d.data(),nr:d.id}));
-  body.innerHTML=`<p class="hint">Nachricht nur an einen Kalender. Die Kalender-Nummer (4 Zeichen, z. B. 8QXY) steht bei der Familie oben unter dem Titel. Du siehst dabei keine Termine.</p>
+  body.innerHTML=`<p class="hint">Nachricht nur an einen Kalender. Die Kalender-Nummer (4 Zeichen, z. B. 8QXY) findet die Familie unter Einstellungen → „🔑 Kalender-Nummer anzeigen“. Du siehst dabei keine Termine.</p>
     <label class="f">Kalender-Nummer<input id="fmN" maxlength="4" placeholder="z. B. 8QXY" style="text-transform:uppercase"></label>
     <label class="f">Nachricht<textarea id="fmX" rows="3" maxlength="500"></textarea></label>
     <label class="f">Anzeigen bis (optional)<input type="date" id="fmB"></label>
@@ -2786,10 +2786,10 @@ document.addEventListener("keydown",ev=>{if(ev.key==="Escape"&&draft)closeSheet(
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&iso(new Date())!==today)render()});
 /* ---------- Offline & automatische Aktualisierung ---------- */
 let swReg=null;
-window.addEventListener("offline",()=>{document.body.classList.add("offline");setStatus(`${READONLY?"Nur ansehen":"Kalender "+calNr()} · offline – Änderungen werden gespeichert`)});
+window.addEventListener("offline",()=>{document.body.classList.add("offline");setStatus(`${READONLY?"Nur ansehen · ":""}offline – Änderungen werden gespeichert`)});
 window.addEventListener("online",()=>{
   document.body.classList.remove("offline");
-  setStatus(`${READONLY?"Nur ansehen":"Kalender "+calNr()} · wieder online – übertrage …`);
+  setStatus(`${READONLY?"Nur ansehen · ":""}wieder online – übertrage …`);
   if(swReg)swReg.update().catch(()=>{});
   try{const c=getCfg();if(c&&c.code&&FS&&!memberOK)ensureMember(c)}catch(e){}
   bkDone=false;setTimeout(()=>{autoBackup();scheduleMirror()},3000);
