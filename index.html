@@ -218,6 +218,7 @@ ol.steps{margin:0;padding-left:20px;display:flex;flex-direction:column;gap:6px}
 .tag{flex:none;font-size:.68rem;font-weight:700;padding:2px 7px;border-radius:999px;text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
 .tag.nw{background:var(--star);color:#1a1200}
 .tag.ed{background:var(--fer);color:var(--fer-fg)}
+body.offline .appbar{box-shadow:0 0 0 3px #d98a00}
 .sec{font-family:var(--f-display);font-size:1.05rem;margin:6px 0 0}
 .empty-note{font-size:.85rem;color:var(--muted);text-align:center;padding:4px}
 
@@ -760,7 +761,8 @@ async function ensureMember(cfg){
   try{
     if(!firebase.auth)throw{code:"no-auth"};
     const a=firebase.auth();
-    if(!a.currentUser)await a.signInAnonymously();
+    const cur=await new Promise(res=>{const un=a.onAuthStateChanged(u=>{un();res(u)})});
+    if(!cur)await a.signInAnonymously();
     await FS.doc(`familien/${cfg.code}/mitglieder/${a.currentUser.uid}`).set({seit:today},{merge:true});
     memberOK=true;scheduleMirror();return true;
   }catch(e){memberOK=false;memberErr=e&&e.code||"";console.warn("Mitglied",e);return false}
@@ -841,6 +843,7 @@ function startReader(cfg){
   try{
     const app=firebase.apps.length?firebase.app():firebase.initializeApp(cfg.firebase||DEFAULT_FIREBASE);
     const fs=firebase.firestore(app);
+    fs.enablePersistence().catch(()=>{});
     fs.doc(`lesen/${cfg.lesen}`).onSnapshot(doc=>{
       if(!doc.exists){entries=[];render();setStatus("Dieser Link ist nicht mehr gültig.");return}
       const d=doc.data();if(Array.isArray(d.namen))applyNames(d.namen);
@@ -1451,8 +1454,24 @@ document.getElementById("vOther").addEventListener("click",ev=>{
 document.getElementById("fab").onclick=()=>openSheet(null,{day:today>=weekStart&&today<=addDays(weekStart,6)?today:weekStart,person:"gemeinsam"});
 document.addEventListener("keydown",ev=>{if(ev.key==="Escape"&&draft)closeSheet()});
 document.addEventListener("visibilitychange",()=>{if(!document.hidden&&iso(new Date())!==today)render()});
+/* ---------- Offline & automatische Aktualisierung ---------- */
+let swReg=null;
+window.addEventListener("offline",()=>{document.body.classList.add("offline");setStatus(`${READONLY?"Nur ansehen":"Kalender "+calNr()} · offline – Änderungen werden gespeichert`)});
+window.addEventListener("online",()=>{
+  document.body.classList.remove("offline");
+  setStatus(`${READONLY?"Nur ansehen":"Kalender "+calNr()} · wieder online – übertrage …`);
+  if(swReg)swReg.update().catch(()=>{});
+  try{const c=getCfg();if(c&&c.code&&FS&&!memberOK)ensureMember(c)}catch(e){}
+  bkDone=false;setTimeout(()=>{autoBackup();scheduleMirror()},3000);
+});
+if(!navigator.onLine)document.body.classList.add("offline");
 init();
-if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});
+if("serviceWorker" in navigator){
+  navigator.serviceWorker.register("sw.js").then(r=>{swReg=r;
+    r.addEventListener("updatefound",()=>{const w=r.installing;if(!w)return;w.addEventListener("statechange",()=>{if(w.state==="activated"&&navigator.serviceWorker.controller)toast("Neue Version geladen – wird beim nächsten Öffnen aktiv")})});
+    setInterval(()=>{if(navigator.onLine)r.update().catch(()=>{})},30*60*1000);
+  }).catch(()=>{});
+}
 </script>
 </body>
 </html>
