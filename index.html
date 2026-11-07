@@ -106,7 +106,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .chip-label{color:var(--fg);font-weight:500}
 .plus{color:var(--muted);font-size:.9rem;opacity:.35;align-self:center;margin-top:auto}
 
-.tabs{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px}
+.tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px}
 .tabs button{padding:9px 4px;border-radius:9px;font-weight:600;font-size:.88rem;color:var(--muted)}
 .tabs button[aria-selected="true"]{background:var(--accent);color:var(--surface)}
 .badge{display:inline-block;font-size:.7rem;font-weight:600;padding:2px 6px;border-radius:6px;margin-left:6px;vertical-align:1px}
@@ -202,7 +202,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .cdialog p{margin:0;font-size:1rem;font-weight:600}
 .btn.danger.solid{background:var(--c-christin);color:#fff;border-color:var(--c-christin)}
 body.ro .foot,body.ro .fabs,body.ro #gear,body.ro [data-view="sterne"],body.ro .plus,body.ro .empty-note,body.ro #mImg{display:none!important}
-body.ro .tabs{grid-template-columns:repeat(4,minmax(0,1fr))}
+body.ro .tabs{grid-template-columns:repeat(5,minmax(0,1fr))}
 body.ro .cell{cursor:default}
 label.pick{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;font-size:.85rem;font-weight:600}
 label.pick input{width:18px;height:18px}
@@ -253,6 +253,29 @@ body.offline .appbar{box-shadow:0 0 0 3px #d98a00}
 .avpick img{width:100%;height:100%;object-fit:cover}
 .avname{font-size:.8rem;font-weight:600;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .avdel{font-size:.72rem;color:var(--muted);text-decoration:underline}
+.tabs button{font-size:.8rem}
+.day-head{cursor:pointer}
+.dhead{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px}
+.dhead b{font-family:var(--f-display);font-size:1.1rem}
+.dallday{display:flex;flex-direction:column;gap:4px}
+.dallday .chip{font-size:.85rem;padding:7px 9px}
+.dlegend{display:grid;grid-template-columns:44px repeat(var(--n),minmax(0,1fr));gap:2px;font-size:.72rem;font-weight:700;text-align:center}
+.dlegend::before{content:""}
+.dlegend div{border-radius:6px;padding:4px 2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dgrid{position:relative;background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;--cw:calc((100% - 0px) / var(--n))}
+.dlines{position:absolute;inset:0}
+.dh{position:absolute;left:0;right:0;border-top:1px solid var(--line);height:0}
+.dh span{position:absolute;left:4px;top:2px;font-size:.66rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.dcols{position:absolute;top:0;bottom:0;left:44px;right:0;--cw:calc(100% / var(--n))}
+.dcol{position:absolute;top:0;bottom:0;width:var(--cw);border-left:1px dashed var(--line);cursor:copy}
+.dblk{position:absolute;display:flex;flex-direction:column;justify-content:flex-start;align-items:stretch;border-radius:7px;padding:3px 5px;font-size:.72rem;line-height:1.2;text-align:left;overflow:hidden;border-left:3px solid currentColor;z-index:2}
+.dblk .t{display:block;font-weight:700;font-variant-numeric:tabular-nums}
+.dblk.christin{color:var(--c-christin);background:var(--c-christin-bg)}.dblk.john{color:var(--c-john);background:var(--c-john-bg)}.dblk.robert{color:var(--c-robert);background:var(--c-robert-bg)}.dblk.gemeinsam{color:var(--c-gem);background:var(--c-gem-bg)}
+.dblk.arbeit{color:var(--work);background:var(--work-bg);background-image:repeating-linear-gradient(135deg,transparent 0 6px,color-mix(in srgb,var(--work) 10%,transparent) 6px 12px)}
+.dblk .chip-label{color:var(--fg);font-weight:500}
+.dblk.imp{outline:2px solid var(--imp);font-weight:700}
+.dnow{position:absolute;left:0;right:0;border-top:2px solid var(--imp);z-index:3;pointer-events:none}
+.dnow span{position:absolute;left:-44px;top:-9px;background:var(--imp);color:#fff;font-size:.64rem;font-weight:700;padding:1px 4px;border-radius:4px}
 .sec{font-family:var(--f-display);font-size:1.05rem;margin:6px 0 0}
 .empty-note{font-size:.85rem;color:var(--muted);text-align:center;padding:4px}
 
@@ -319,7 +342,7 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
     <button class="gear" id="gear" aria-label="Einstellungen und Familie einladen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M17 8v6M14 11h6"/></svg></button></div>
   </div>
   <div class="tabs" role="tablist" aria-label="Ansicht">
-    <button role="tab" data-view="woche">Woche</button><button role="tab" data-view="monat">Monat</button><button role="tab" data-view="jahr">Jahr</button><button role="tab" data-view="ferien">Ferien</button><button role="tab" data-view="sterne">Sterne</button>
+    <button role="tab" data-view="tag">Tag</button><button role="tab" data-view="woche">Woche</button><button role="tab" data-view="monat">Monat</button><button role="tab" data-view="jahr">Jahr</button><button role="tab" data-view="ferien">Ferien</button><button role="tab" data-view="sterne">Sterne</button>
   </div>
   </header>
 
@@ -1061,7 +1084,7 @@ const ferienOf=day=>{const f=FERIEN.find(([n,a,b])=>a<=day&&day<=b);return f?f[0
 
 /* ---------- Ansichten ---------- */
 let view="woche";try{view=localStorage.getItem("fk-view")||"woche"}catch(e){}
-let monthCur=iso(new Date()).slice(0,7)+"-01",yearCur=new Date().getFullYear();
+let monthCur=iso(new Date()).slice(0,7)+"-01",yearCur=new Date().getFullYear(),dayCur=iso(new Date());
 const MONL=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 function setView(v){if(READONLY&&v==="sterne")v="woche";view=v;try{localStorage.setItem("fk-view",v)}catch(e){}render();window.scrollTo({top:0})}
 function render(){
@@ -1070,8 +1093,59 @@ function render(){
   document.getElementById("vWoche").hidden=view!=="woche";
   document.getElementById("vOther").hidden=view==="woche";
   document.getElementById("navbar").hidden=view==="ferien"||view==="sterne";
-  if(view==="monat")renderMonth();else if(view==="jahr")renderYear();else if(view==="ferien")renderFerien();else if(view==="sterne")renderStars();else renderWeek();
+  if(view==="tag")renderDay();else if(view==="monat")renderMonth();else if(view==="jahr")renderYear();else if(view==="ferien")renderFerien();else if(view==="sterne")renderStars();else renderWeek();
   renderMorning();renderNews();
+}
+/* ---------- Tagesübersicht (Zeitstrahl) ---------- */
+const HPX=52;
+const toMin=t=>{const[h,m]=String(t||"0:0").split(":").map(Number);return h*60+(m||0)};
+function renderDay(){
+  const day=dayCur,d=parse(day);
+  document.getElementById("weekLbl").textContent=`${WDL[d.getDay()]}, ${d.getDate()}. ${MONL[d.getMonth()]}`;
+  const list=entries.filter(e=>onDay(e,day)).sort(sortE);
+  const timed=[],allday=[];
+  for(const e of list){const multi=e.endDatum&&e.endDatum>e.datum;
+    if(e.von&&e.typ!=="urlaub"&&e.typ!=="geburtstag"&&(!multi||e.datum===day))timed.push(e);else allday.push(e)}
+  let startH=7,endH=21;
+  for(const e of timed){const a=toMin(e.von),b=e.bis?toMin(e.bis):a+60;startH=Math.min(startH,Math.floor(a/60));endH=Math.max(endH,b<a?24:Math.ceil(b/60))}
+  endH=Math.min(24,Math.max(endH,startH+1));
+  const fe=feierOf(day),fr=ferienOf(day),pp=papaOf(day);
+  const badges=[pp?`<span class="badge papa">bei Papa</span>`:"",fe?`<span class="badge feier">${esc(fe)}</span>`:"",fr?`<span class="badge fer">${esc(fr)}</span>`:""].join("");
+  const cols=PEOPLE.map(([k])=>k);
+  const lab=e=>e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?`Arbeit${e.titel&&e.titel!=="Arbeit"?" · "+e.titel:""}`:e.typ==="urlaub"?`Urlaub${e.titel?" · "+e.titel:""}`:e.titel;
+  const adHTML=allday.length?`<div class="dallday">${allday.map(e=>`<button class="chip ${e.typ} ${e.person}${e.wichtig?" imp":""}" data-id="${esc(e.id)}">${av(e.person,"av sm")}<b>${esc(PNAME[e.person]||"")}</b> · <span class="chip-label">${esc(lab(e))}</span></button>`).join("")}</div>`:"";
+  // Spalten mit Überlappungs-Verteilung
+  let blocks="";
+  cols.forEach((k,ci)=>{
+    const ev=timed.filter(e=>e.person===k).map(e=>{const a=toMin(e.von);let b=e.bis?toMin(e.bis):a+60;if(b<=a)b=e.bis?24*60:a+60;return{e,a,b}}).sort((x,y)=>x.a-y.a);
+    const lanes=[];for(const x of ev){let l=lanes.findIndex(end=>end<=x.a);if(l<0){l=lanes.length;lanes.push(0)}lanes[l]=x.b;x.l=l}
+    const n=Math.max(1,lanes.length);
+    for(const x of ev){const top=(x.a-startH*60)/60*HPX,h=Math.max(26,(x.b-x.a)/60*HPX-3);
+      const cls=x.e.typ==="termin"?x.e.person:x.e.typ;
+      blocks+=`<button class="dblk ${cls}${x.e.wichtig?" imp":""}" data-id="${esc(x.e.id)}" style="top:${top}px;height:${h}px;left:calc(${ci} * var(--cw) + ${x.l} * var(--cw) / ${n} + 2px);width:calc(var(--cw) / ${n} - 4px)"><span class="t">${x.e.von}${x.e.bis?"–"+x.e.bis:""}</span><span class="chip-label">${esc(lab(x.e))}</span></button>`}
+  });
+  let hours="";for(let h=startH;h<endH;h++)hours+=`<div class="dh" style="top:${(h-startH)*HPX}px"><span>${String(h).padStart(2,"0")}:00</span></div>`;
+  let now="";if(day===today){const nm=new Date().getHours()*60+new Date().getMinutes();if(nm>=startH*60&&nm<=endH*60)now=`<div class="dnow" style="top:${(nm-startH*60)/60*HPX}px"><span>${new Date().toTimeString().slice(0,5)}</span></div>`}
+  const busy=new Set(timed.map(e=>e.person));
+  const freeTxt=list.length?`${list.length} ${list.length===1?"Eintrag":"Einträge"}`:"Heute ist alles frei 🌿";
+  document.getElementById("vOther").innerHTML=`<div class="dhead"><b>${WDL[d.getDay()]}, ${d.getDate()}. ${MONL[d.getMonth()]} ${d.getFullYear()}</b>${badges}<span class="hint" style="margin-left:auto">${day===today?"heute · ":""}${freeTxt}</span></div>
+    ${adHTML}
+    <div class="dlegend" style="--n:${cols.length}">${PEOPLE.map(([k,n])=>`<div class="p-${k}">${av(k,"av sm")}${esc(n)}</div>`).join("")}</div>
+    <div class="dgrid" style="--n:${cols.length};height:${(endH-startH)*HPX}px">
+      <div class="dlines">${hours}</div>
+      <div class="dcols">${cols.map((k,ci)=>`<div class="dcol" data-person="${k}" style="left:calc(${ci} * var(--cw))"></div>`).join("")}${blocks}${now}</div>
+    </div>
+    <p class="hint">Tippe auf eine freie Stelle, um dort einen Termin mit dieser Uhrzeit anzulegen.</p>`;
+  const grid=document.querySelector("#vOther .dgrid");
+  grid.onclick=ev=>{
+    const c=ev.target.closest("[data-id]");if(c){if(READONLY)return;const e=entries.find(x=>x.id===c.dataset.id);if(e)openSheet(e);return}
+    const col=ev.target.closest(".dcol");if(!col||READONLY)return;
+    const r=col.getBoundingClientRect();const mins=startH*60+Math.floor(((ev.clientY-r.top)/HPX*60)/30)*30;
+    const hh=String(Math.floor(mins/60)).padStart(2,"0"),mm=String(mins%60).padStart(2,"0");
+    openSheet(null,{day,person:col.dataset.person});draft.von=`${hh}:${mm}`;drawSheet();
+  };
+  const ad=document.querySelector("#vOther .dallday");if(ad)ad.onclick=ev=>{const c=ev.target.closest("[data-id]");if(c&&!READONLY){const e=entries.find(x=>x.id===c.dataset.id);if(e)openSheet(e)}};
+  if(day===today){const n=document.querySelector("#vOther .dnow");if(n)setTimeout(()=>n.scrollIntoView({block:"center"}),50)}
 }
 function renderMonth(){
   const m0=parse(monthCur);const y=m0.getFullYear(),m=m0.getMonth();
@@ -1528,6 +1602,7 @@ async function saveFound(){
 
 /* ---------- Ereignisse ---------- */
 document.getElementById("days").addEventListener("click",ev=>{
+  const dh=ev.target.closest(".day-head");if(dh){const art=dh.closest(".day");if(art&&art.id){dayCur=art.id.slice(2);setView("tag")}return}
   if(READONLY)return;
   const chip=ev.target.closest(".chip");
   if(chip){const e=entries.find(x=>x.id===chip.dataset.id);if(e)openSheet(e);return}
@@ -1535,16 +1610,18 @@ document.getElementById("days").addEventListener("click",ev=>{
 });
 document.getElementById("days").addEventListener("keydown",ev=>{if((ev.key==="Enter"||ev.key===" ")&&ev.target.classList.contains("cell")){ev.preventDefault();openSheet(null,{day:ev.target.dataset.day,person:ev.target.dataset.person})}});
 function step(dir){
-  if(view==="monat"){const d=parse(monthCur);monthCur=iso(new Date(d.getFullYear(),d.getMonth()+dir,1))}
+  if(view==="tag")dayCur=addDays(dayCur,dir);
+  else if(view==="monat"){const d=parse(monthCur);monthCur=iso(new Date(d.getFullYear(),d.getMonth()+dir,1))}
   else if(view==="jahr")yearCur+=dir;else weekStart=addDays(weekStart,7*dir);
   render();
 }
 document.getElementById("prev").onclick=()=>step(-1);
 document.getElementById("next").onclick=()=>step(1);
-document.getElementById("goToday").onclick=()=>{const t=iso(new Date());weekStart=mondayOf(t);monthCur=t.slice(0,7)+"-01";yearCur=+t.slice(0,4);render()};
+document.getElementById("goToday").onclick=()=>{const t=iso(new Date());weekStart=mondayOf(t);monthCur=t.slice(0,7)+"-01";yearCur=+t.slice(0,4);dayCur=t;render()};
 document.querySelectorAll(".tabs [data-view]").forEach(b=>b.onclick=()=>setView(b.dataset.view));
 document.getElementById("vOther").addEventListener("click",ev=>{
-  const g=ev.target.closest("[data-goday]");if(g){weekStart=mondayOf(g.dataset.goday);setView("woche");setTimeout(()=>{const el=document.getElementById("d-"+g.dataset.goday);if(el)el.scrollIntoView({block:"center"})},50);return}
+  const g=ev.target.closest("[data-goday]");if(g&&view==="monat"){dayCur=g.dataset.goday;setView("tag");return}
+  if(g){weekStart=mondayOf(g.dataset.goday);setView("woche");setTimeout(()=>{const el=document.getElementById("d-"+g.dataset.goday);if(el)el.scrollIntoView({block:"center"})},50);return}
   const mo=ev.target.closest("[data-gomonth]");if(mo){monthCur=mo.dataset.gomonth;setView("monat")}
 });
 document.getElementById("fab").onclick=()=>openSheet(null,{day:today>=weekStart&&today<=addDays(weekStart,6)?today:weekStart,person:"gemeinsam"});
@@ -1564,7 +1641,7 @@ if(!navigator.onLine)document.body.classList.add("offline");
 /* ---------- Anleitung (Tutorial) ---------- */
 const TOUR=[
   {t:"Willkommen im Familienkalender! 👋",p:"In einer Minute zeige ich dir, wie alles funktioniert. Du kannst jederzeit überspringen und die Anleitung später über das ?-Symbol oben wieder starten."},
-  {s:".tabs",t:"Ansichten",p:"Hier wechselst du zwischen Woche, Monat und Jahr. Unter „Ferien“ stehen alle Berliner Schulferien und Feiertage, unter „Sterne“ Aufgaben und Belohnungen für die Kinder."},
+  {s:".tabs",t:"Ansichten",p:"Hier wechselst du zwischen Tag (mit Zeitstrahl), Woche, Monat und Jahr. Unter „Ferien“ stehen alle Berliner Schulferien und Feiertage, unter „Sterne“ Aufgaben und Belohnungen für die Kinder."},
   {s:".legend",v:"woche",t:"Eine Spalte pro Person",p:"Jede Person hat ihre eigene Spalte und Farbe. „Gemeinsam“ ist für Familientermine. Die Namen kannst du in den Einstellungen ändern."},
   {s:"#days .cell",v:"woche",t:"Schnell eintragen",p:"Tippe einfach in ein Feld. Dann ist der Eintrag gleich für diese Person und diesen Tag vorbereitet."},
   {s:"#fab",t:"Neuer Eintrag",p:"Wähle Termin, Arbeitszeit, Urlaub oder Geburtstag. Termine kannst du jede Woche oder alle 2 Wochen wiederholen lassen und mit ❗ als wichtig markieren."},
