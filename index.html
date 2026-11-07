@@ -279,6 +279,12 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
 </style>
 </head>
 <body>
+<script>
+/* Darstellung: Standard dunkel, umschaltbar (dunkel / hell / wie Handy) */
+(function(){var t="dark";try{t=localStorage.getItem("fk-theme")||"dark"}catch(e){}
+  if(t!=="auto")document.documentElement.setAttribute("data-theme",t);
+  var m=document.querySelector('meta[name="theme-color"]');if(m&&t==="dark")m.setAttribute("content","#0d1418");})();
+</script>
 
 <div class="wrap">
   <header class="appbar">
@@ -510,6 +516,8 @@ function showSettings(){
     <div class="linkbox" id="appl">${esc(appLink)}</div>
     <button class="btn ghost" id="applCopy">App-Link kopieren</button>
     <p class="hint">Tipp: Im Browser-Menü „Zum Startbildschirm hinzufügen“ wählen, dann hat jeder die App als Symbol auf dem Handy.</p>
+    <h4 class="sub">Darstellung</h4>
+    <div class="seg" style="--n:3">${[["dark","🌙 Dunkel"],["light","☀️ Hell"],["auto","📱 Wie Handy"]].map(([k,n])=>`<button class="typ" data-theme-set="${k}" aria-pressed="${themeNow()===k}">${n}</button>`).join("")}</div>
     <h4 class="sub">Sperrbildschirm</h4>
     <button class="btn ghost" id="setImg">🖼 Bild mit den heutigen Terminen erstellen</button>
     <h4 class="sub">Sicherungen</h4>
@@ -525,6 +533,7 @@ function showSettings(){
     <p class="hint"><a href="datenschutz.html">Datenschutz, Impressum & Nutzungshinweise</a></p>
     <div class="actions"><button class="btn danger" id="disc">Auf diesem Handy trennen</button><button class="btn ghost" id="setClose">Schließen</button></div>`);
   document.getElementById("exp").onclick=exportICS;wireReadLinks();wireBackups();
+  document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{setTheme(b.dataset.themeSet);showSettings()});
   document.getElementById("setImg").onclick=()=>showWidgetImage();wireJoin();
   document.getElementById("wipe").onclick=async()=>{if(!await askConfirm("Den ganzen Kalender mit allen Einträgen, Aufgaben und Sternen für ALLE löschen? Das lässt sich nicht rückgängig machen.","Endgültig löschen"))return;
     if(!await askConfirm("Bist du ganz sicher?","Ja, alles löschen"))return;wipeAll()};
@@ -937,6 +946,10 @@ function askConfirm(text,ok="Löschen",danger=true){
     setTimeout(()=>{const b=host.querySelector('[data-a="0"]');if(b)b.focus()},30);
   });
 }
+function themeNow(){try{return localStorage.getItem("fk-theme")||"dark"}catch(e){return "dark"}}
+function setTheme(t){try{localStorage.setItem("fk-theme",t)}catch(e){}
+  if(t==="auto")document.documentElement.removeAttribute("data-theme");else document.documentElement.setAttribute("data-theme",t);
+  const m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute("content",t==="dark"?"#0d1418":"#15394b")}
 function calNr(){const c=getCfg();return c&&c.code?c.code.slice(0,4).toUpperCase():"–"}
 function joinFromText(t){const m=String(t||"").match(/#join=([^\s&]+)/);const v=m?m[1]:String(t||"").trim().toLowerCase();
   if(!/^[a-z2-9]{18,}$/.test(v)&&!m){toast("Das ist kein gültiger Einladungslink");return}
