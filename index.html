@@ -337,6 +337,38 @@ body.fold .day.empty .day-head{border-bottom:0}
 .wrap.swr #days,.wrap.swr #vOther{animation:swr .22s ease-out}
 /* Hintergrundbild */
 .appbar.hasbg{background-size:cover;background-position:center}
+/* ---------- 3D-Kopfbereich ---------- */
+.appbar{position:relative;overflow:hidden;isolation:isolate;border:1px solid rgba(255,255,255,.10);
+  background:radial-gradient(120% 150% at 0% 0%,rgba(64,160,206,.55) 0%,transparent 52%),radial-gradient(100% 140% at 100% 0%,rgba(134,104,220,.45) 0%,transparent 55%),radial-gradient(80% 90% at 60% 120%,rgba(46,174,140,.30) 0%,transparent 60%),linear-gradient(160deg,#16405a 0%,#0e2a3b 55%,#091c28 100%);
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.22),inset 0 -10px 24px rgba(0,0,0,.35),0 16px 34px rgba(3,15,25,.45),0 4px 10px rgba(3,15,25,.35)}
+.appbar::before{content:"";position:absolute;inset:-60%;z-index:-1;pointer-events:none;
+  background:conic-gradient(from 0deg,transparent 0 12%,rgba(107,183,214,.22) 20%,transparent 32%,rgba(169,155,242,.20) 52%,transparent 64%,rgba(111,209,194,.18) 80%,transparent 92%);
+  filter:blur(28px);animation:aurora 22s linear infinite}
+.appbar::after{content:"";position:absolute;left:0;right:0;top:0;height:46%;z-index:-1;pointer-events:none;border-radius:18px 18px 0 0;
+  background:linear-gradient(180deg,rgba(255,255,255,.16),rgba(255,255,255,0))}
+.appbar.hasbg::before{opacity:.55}
+@keyframes aurora{to{transform:rotate(360deg)}}
+.brand{display:flex;align-items:center;gap:8px;min-width:0;transform:perspective(600px) rotateX(var(--rx,0deg)) rotateY(var(--ry,0deg));transform-style:preserve-3d;transition:transform .25s ease-out;will-change:transform}
+.brandtxt{min-width:0}
+.cal3d{width:36px;height:36px;flex:none;filter:drop-shadow(0 6px 8px rgba(0,0,0,.35));transform:translateZ(24px) rotate(-6deg);animation:calbob 6s ease-in-out infinite}
+@keyframes calbob{0%,100%{transform:translateZ(24px) rotate(-6deg) translateY(0)}50%{transform:translateZ(24px) rotate(-3deg) translateY(-2px)}}
+.appbar h1.t3d{font-size:clamp(.9rem,4.4vw,1.45rem);font-weight:900;letter-spacing:-.1px;line-height:1.15;padding-bottom:2px;transform:translateZ(18px);
+  background:linear-gradient(110deg,#ffffff 0%,#dff4ff 38%,#ffffff 46%,#9fdcf5 54%,#e6f6ff 70%,#bfe6f7 100%);background-size:260% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
+  filter:drop-shadow(0 1px 0 #6db8d6) drop-shadow(0 1px 0 #4e9cbd) drop-shadow(0 1px 0 #357f9f) drop-shadow(0 1px 0 #226482) drop-shadow(0 5px 6px rgba(0,0,0,.5));
+  animation:shine 7s ease-in-out infinite}
+@keyframes shine{0%,100%{background-position:100% 0}50%{background-position:0 0}}
+.greet{max-height:0;opacity:0;overflow:hidden;transform:translateY(-6px);transition:max-height .45s ease,opacity .45s ease,transform .45s ease,margin .45s ease;
+  font-size:.95rem;color:#eef6fa;margin:-6px 0}
+.greet.on{max-height:90px;opacity:1;transform:none;margin:0}
+.greet .gb{display:inline-flex;align-items:center;gap:8px;background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);border-radius:16px;padding:7px 12px;-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);box-shadow:0 4px 12px rgba(0,0,0,.2)}
+.greet .wave{display:inline-block;font-size:1.2rem;transform-origin:70% 70%;animation:wave 1.6s ease-in-out 2}
+@keyframes wave{0%,100%{transform:rotate(0)}20%{transform:rotate(16deg)}40%{transform:rotate(-8deg)}60%{transform:rotate(14deg)}80%{transform:rotate(-4deg)}}
+.greet .gsub{opacity:.85;font-size:.85rem}
+@media (prefers-reduced-motion:reduce){.appbar::before,.cal3d,.appbar h1.t3d,.greet .wave{animation:none}.brand{transform:none}}
+body.compact .cal3d{width:30px;height:30px}
+@media (max-width:440px){.appbar .topbtns{gap:4px}.appbar .topbtns .gear{width:36px;height:36px}.appbar{padding:12px 12px 10px}}
+
 .morning.eve{border-left-color:#8b7bd8;background:color-mix(in srgb,#8b7bd8 10%,var(--surface))}
 .morning .eve-extra{font-size:.85rem;color:var(--muted);font-weight:600}
 .appbar h1{font-size:clamp(1.1rem,5.4vw,1.45rem);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -481,13 +513,32 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
 <div class="wrap">
   <header class="appbar">
   <div class="top">
-    <div>
-      <h1>Familienkalender</h1>
+    <div class="brand" id="brand">
+      <svg class="cal3d" viewBox="0 0 64 64" aria-hidden="true">
+        <defs>
+          <linearGradient id="c3side" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9fb6c3"/><stop offset="1" stop-color="#5d7684"/></linearGradient>
+          <linearGradient id="c3page" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#dfeaf0"/></linearGradient>
+          <linearGradient id="c3head" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#ff7a85"/><stop offset=".55" stop-color="#e5484d"/><stop offset="1" stop-color="#b8323a"/></linearGradient>
+          <linearGradient id="c3ring" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#6d7f8a"/><stop offset=".5" stop-color="#f4f8fa"/><stop offset="1" stop-color="#6d7f8a"/></linearGradient>
+          <radialGradient id="c3gloss" cx=".3" cy="0" r=".9"><stop offset="0" stop-color="#fff" stop-opacity=".55"/><stop offset="1" stop-color="#fff" stop-opacity="0"/></radialGradient>
+        </defs>
+        <ellipse cx="33" cy="60" rx="24" ry="3.2" fill="#000" opacity=".35"/>
+        <rect x="9" y="13" width="48" height="45" rx="9" fill="url(#c3side)"/>
+        <rect x="7" y="10" width="48" height="45" rx="9" fill="url(#c3page)"/>
+        <path d="M7 19a9 9 0 0 1 9-9h30a9 9 0 0 1 9 9v6H7z" fill="url(#c3head)"/>
+        <rect x="7" y="10" width="48" height="45" rx="9" fill="url(#c3gloss)"/>
+        <rect x="17" y="5" width="5" height="12" rx="2.5" fill="url(#c3ring)"/><rect x="40" y="5" width="5" height="12" rx="2.5" fill="url(#c3ring)"/>
+        <text id="cal3dDay" x="31" y="48.5" text-anchor="middle" font-size="22" font-weight="900" fill="#173041" font-family="system-ui,-apple-system,Segoe UI,Roboto,sans-serif">7</text>
+      </svg>
+      <div class="brandtxt">
+      <h1 class="t3d">Familienkalender</h1>
       <div class="status" id="status">Verbinde …</div>
+      </div>
     </div>
     <div class="topbtns"><button class="gear" id="searchBtn" aria-label="Termine suchen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></svg></button><button class="gear" id="helpBtn" aria-label="Hilfe und Anleitung">?</button>
     <button class="gear" id="gear" aria-label="Einstellungen und Familie einladen"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="8" r="3.2"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M17 8v6M14 11h6"/></svg></button></div>
   </div>
+  <div class="greet" id="greet" aria-live="polite"></div>
   <div class="tabs" role="tablist" aria-label="Ansicht">
     <button role="tab" data-view="tag">Tag</button><button role="tab" data-view="woche">Woche</button><button role="tab" data-view="monat">Monat</button><button role="tab" data-view="jahr">Jahr</button><button role="tab" data-view="ferien">Ferien</button><button role="tab" data-view="sterne">Sterne</button>
   </div>
@@ -740,7 +791,7 @@ async function init(){
     if(conf&&conf.data().bilder)setPhotos(conf.data().bilder);
     if(conf)setFarben(conf.data().farben||{});
     watchWishes();
-    PUB=snap.docs.filter(d=>d.id!=="_config").map(d=>({...d.data(),id:d.id}));splitData([...PUB,...PRIV]);
+    PUB=snap.docs.filter(d=>d.id!=="_config").map(d=>({...d.data(),id:d.id}));splitData([...PUB,...PRIV]);DATA_READY=true;
     const nr=calNr()+(ROLE==="lesen"?" · 👁️ nur lesen":"");
     if(snap.metadata.hasPendingWrites)setStatus(`Kalender ${nr} · Änderungen werden übertragen …`);
     else if(!snap.metadata.fromCache){clearTimeout(timer);setStatus(`Kalender ${nr} · alles übertragen ✓`)}
@@ -1260,7 +1311,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v49";
+const APP_VER="v50";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -1519,7 +1570,7 @@ function nameBox(){return `<label class="f">Dein Name (für die Mitgliederliste)
 async function saveMyName(v){
   const c=getCfg();v=String(v||"").trim().slice(0,20);if(!v){toast("Bitte einen Namen eintragen");return false}
   if(!MY_UID||!FS){toast("Gerade keine Verbindung");return false}
-  try{await FS.doc(`familien/${c.code}/mitglieder/${MY_UID}`).set({name:v},{merge:true});if(MY_MEMBER)MY_MEMBER.name=v;toast("Name gespeichert");return true}
+  try{await FS.doc(`familien/${c.code}/mitglieder/${MY_UID}`).set({name:v},{merge:true});if(MY_MEMBER)MY_MEMBER.name=v;lsSet("fk-myname",v);toast("Name gespeichert");return true}
   catch(e){toast("Speichern hat nicht geklappt");return false}
 }
 function wireNameBox(after){const b=document.getElementById("myNameSave");if(b)b.onclick=async()=>{if(await saveMyName(document.getElementById("myName").value)&&after)after()}}
@@ -2925,11 +2976,38 @@ async function showIdeas(){
 })();
 document.getElementById("annX").onclick=()=>{if(ANN&&ANN.id){try{localStorage.setItem("fk-ann-x",ANN.id)}catch(e){}}document.getElementById("annCard").hidden=true};
 setTimeout(watchAnn,2500);
+/* ---------- 3D-Kopf: Neigung & Datum, persönliche Begrüßung ---------- */
+(function(){
+  const d=document.getElementById("cal3dDay");if(d)d.textContent=String(+today.slice(8,10));
+  const b=document.getElementById("brand");if(!b||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  const set=(x,y)=>{b.style.setProperty("--ry",(x*10).toFixed(2)+"deg");b.style.setProperty("--rx",(-y*8).toFixed(2)+"deg")};
+  const bar=document.querySelector(".appbar");
+  bar.addEventListener("pointermove",e=>{const r=bar.getBoundingClientRect();set((e.clientX-r.left)/r.width-.5,(e.clientY-r.top)/r.height-.5)});
+  bar.addEventListener("pointerleave",()=>set(0,0));
+  let last=0;window.addEventListener("deviceorientation",e=>{const n=Date.now();if(n-last<60||e.gamma==null)return;last=n;
+    set(Math.max(-1,Math.min(1,e.gamma/35))*.5,Math.max(-1,Math.min(1,((e.beta||0)-45)/40))*.5)},{passive:true});
+})();
+function myName(){const n=(MY_MEMBER&&MY_MEMBER.name)||lsGet("fk-myname");return String(n||"").trim()}
+let greeted=false,greetTries=0;var DATA_READY=false;
+function greetUser(){
+  if(greeted)return;
+  if(store&&store.mode==="db"&&!DATA_READY&&greetTries++<10){setTimeout(greetUser,700);return}const el=document.getElementById("greet");if(!el)return;greeted=true;
+  const h=new Date().getHours();const g=h<5?"Gute Nacht":h<11?"Guten Morgen":h<17?"Hallo":h<22?"Guten Abend":"Gute Nacht";
+  const reader=annReader();const n=reader?"":myName();
+  const tod=entries.filter(e=>onDay(e,today)&&(e.typ==="termin"||e.typ==="geburtstag")).length;
+  const sub=reader?"Schön, dass du vorbeischaust.":tod?`Heute ${tod===1?"steht 1 Termin":`stehen ${tod} Termine`} an.`:"Heute ist nichts eingetragen. Genieß den Tag!";
+  el.innerHTML=`<span class="gb"><span class="wave">👋</span><span><b>${g}${n?", "+esc(n):""}!</b> <span class="gsub">${esc(sub)}</span></span></span>`;
+  void el.offsetWidth;el.classList.add("on");
+  setTimeout(()=>el.classList.remove("on"),6500);
+}
+setTimeout(greetUser,2600);
+
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN anfügen. v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
   {v:"2026-11-07f",d:"2026-11-07",t:"Termine schützen & Sichtbarkeit",items:[
     "🔒 Termine schützen: Wer einen Termin eingetragen hat, kann ihn so sperren, dass nur er selbst ihn löschen kann (im Termin „Vor dem Löschen durch andere schützen“)",
+    "👋 Persönliche Begrüßung beim Öffnen und neuer 3D-Kopfbereich",
     "✅ Angenommene Wünsche von Nur-Lese-Seiten werden automatisch eingetragen, auf Wunsch in mehreren Spalten",
     "👥 Sichtbarkeit: Beim Eintragen festlegen, welche Familienmitglieder einen Termin sehen dürfen (im Termin „Wer darf diesen Termin sehen?“)"]},
   {v:"2026-11-07e",d:"2026-11-07",t:"Ideen-Wand & Umfragen",items:[
