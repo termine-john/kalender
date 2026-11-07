@@ -315,6 +315,8 @@ body.fold .day.empty .day-head{border-bottom:0}
 .wrap.swr #days,.wrap.swr #vOther{animation:swr .22s ease-out}
 /* Hintergrundbild */
 .appbar.hasbg{background-size:cover;background-position:center}
+.morning.eve{border-left-color:#8b7bd8;background:color-mix(in srgb,#8b7bd8 10%,var(--surface))}
+.morning .eve-extra{font-size:.85rem;color:var(--muted);font-weight:600}
 .sec{font-family:var(--f-display);font-size:1.05rem;margin:6px 0 0}
 .empty-note{font-size:.85rem;color:var(--muted);text-align:center;padding:4px}
 
@@ -388,6 +390,12 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
   <section class="news" id="news" hidden>
     <div class="news-head"><h2 id="newsTitle">Neue Einträge</h2><button class="btn" id="newsAck">Gesehen ✓</button></div>
     <ul id="newsList"></ul>
+  </section>
+
+  <section class="morning eve" id="eve" hidden>
+    <h2 id="eveTitle">🌙 Morgen</h2>
+    <div class="mbtns"><button class="btn" id="eveAck">Gesehen ✓</button></div>
+    <ul id="eveList"></ul>
   </section>
 
   <section class="morning" id="morning" hidden>
@@ -1193,7 +1201,7 @@ function renderInner(){
   document.getElementById("vOther").hidden=view==="woche";
   document.getElementById("navbar").hidden=view==="ferien"||view==="sterne";
   if(view==="tag")renderDay();else if(view==="monat")renderMonth();else if(view==="jahr")renderYear();else if(view==="ferien")renderFerien();else if(view==="sterne")renderStars();else renderWeek();
-  renderMorning();renderNews();
+  renderMorning();renderNews();renderEve();
 }
 /* ---------- Tagesübersicht (Zeitstrahl) ---------- */
 const HPX=52;
@@ -1356,6 +1364,26 @@ function renderNews(){
 }
 document.getElementById("newsAck").onclick=()=>{try{localStorage.setItem("fk-seen",nowISO())}catch(e){}document.getElementById("news").hidden=true;toast("Als gesehen markiert")};
 document.getElementById("newsList").addEventListener("click",ev=>{const b=ev.target.closest("[data-goday]");if(!b)return;weekStart=mondayOf(b.dataset.goday);setView("woche");setTimeout(()=>{const el=document.getElementById("d-"+b.dataset.goday);if(el)el.scrollIntoView({block:"center"})},60)});
+
+/* ---------- Vorabend-Hinweis (ab 17 Uhr) ---------- */
+const EVE_HOUR=17;
+function renderEve(){
+  const box=document.getElementById("eve");if(!box)return;
+  const tm=addDays(today,1);let ack=false;try{ack=localStorage.getItem("fk-eve-"+tm)==="1"}catch(e){}
+  if(new Date().getHours()<EVE_HOUR||ack){box.hidden=true;return}
+  const list=entries.filter(e=>onDay(e,tm)).sort(sortE);const d=parse(tm);
+  document.getElementById("eveTitle").textContent=`🌙 Morgen, ${WDL[d.getDay()]} ${d.getDate()}. ${MON[d.getMonth()]}`;
+  const extra=[papaOf(tm)?"John bei Papa":"",feierOf(tm),ferienOf(tm)].filter(Boolean).join(" · ");
+  document.getElementById("eveList").innerHTML=(extra?`<li class="eve-extra">${esc(extra)}</li>`:"")+(list.length?list.map(e=>{
+    const t=timeTxt(e);const lbl=e.typ==="geburtstag"?bdayLabel(e,tm):e.typ==="arbeit"?`Arbeit ${t}`:e.typ==="urlaub"?"Urlaub":`${t?t+" ":""}${e.titel}`;
+    return `<li${e.wichtig?' class="imp"':""}><span class="who p-${e.person}" style="background:none">${av(e.person,"av sm")}${esc(PNAME[e.person]||"")}</span><span>${e.wichtig?"❗ ":""}${esc(lbl)}</span></li>`}).join("")
+    :`<li>Morgen steht nichts im Kalender. 🌿</li>`);
+  const first=list.find(e=>e.von&&e.typ!=="urlaub"&&e.typ!=="geburtstag");
+  if(first&&toMin(first.von)<9*60){const li=document.createElement("li");li.className="eve-extra";li.textContent=`⏰ Früh los: ${PNAME[first.person]} um ${first.von}`;document.getElementById("eveList").appendChild(li)}
+  box.hidden=false;
+}
+document.getElementById("eveAck").onclick=()=>{try{localStorage.setItem("fk-eve-"+addDays(today,1),"1")}catch(e){}document.getElementById("eve").hidden=true;toast("Gute Nacht 🌙")};
+setInterval(()=>{if(!document.hidden)renderEve()},5*60*1000);
 
 function renderMorning(){
   const box=document.getElementById("morning");
