@@ -1225,13 +1225,14 @@ function showSupport(){
   draw();
 }
 /* Postfach nur für den Betreiber (Freischaltung über admins/{uid} in Firebase) */
-let IS_ADMIN=false,SUP_NEW=0;
+let IS_ADMIN=false,SUP_NEW=0,ADMIN_ERR="";
 async function checkAdmin(){
-  try{if(!FS||!firebase.auth)return;const u=firebase.auth().currentUser;if(!u)return;
-    const a=await FS.doc(`admins/${u.uid}`).get({source:"server"});IS_ADMIN=a.exists;if(!IS_ADMIN)return;
+  ADMIN_ERR="";
+  try{if(!FS||!firebase.auth){ADMIN_ERR="offline";return}const u=firebase.auth().currentUser;if(!u){ADMIN_ERR="offline";return}
+    const a=await FS.doc(`admins/${u.uid}`).get({source:"server"});IS_ADMIN=a.exists;if(!IS_ADMIN){ADMIN_ERR="fehlt";return}
     const sn=await FS.collection("support").where("status","==","neu").get({source:"server"});SUP_NEW=sn.size;markGear();
     if(SUP_NEW)toast(`📬 ${SUP_NEW} neue Support-${SUP_NEW===1?"Nachricht":"Nachrichten"}`);
-  }catch(e){IS_ADMIN=false}
+  }catch(e){IS_ADMIN=false;ADMIN_ERR=e&&e.code==="permission-denied"?"regeln":"offline"}
 }
 function markGear(){const g=document.getElementById("gear");if(!g)return;let b=g.querySelector(".badge");if(!SUP_NEW){if(b)b.remove();return}if(!b){b=document.createElement("span");b.className="badge";g.appendChild(b)}b.textContent=SUP_NEW}
 function adminBoxFill(){
@@ -1245,7 +1246,12 @@ function adminBoxFill(){
     <li><b>+ Sammlung starten</b> → Sammlungs-ID: <b>admins</b></li>
     <li>Dokument-ID: diesen Code einfügen:</li></ol>
     <div class="linkbox" id="myUid">${esc(uid)}</div><button class="btn ghost" id="uidCopy">Code kopieren</button>
-    <ol class="steps" start="4"><li>Feld: <b>name</b>, Wert: <b>Robert</b> → Speichern</li><li>App neu öffnen. Hier erscheint dann das Postfach.</li></ol></details>`;
+    <ol class="steps" start="4"><li>Feld: <b>name</b>, Wert: <b>Robert</b> → Speichern</li><li>App neu öffnen. Hier erscheint dann das Postfach.</li></ol>
+    <p class="hint" id="admSt">Prüfe Freischaltung …</p><button class="btn ghost" id="admRe">🔄 Nochmal prüfen</button></details>`;
+  const st=async()=>{const el=document.getElementById("admSt");if(el)el.textContent="Prüfe Freischaltung …";await checkAdmin();
+    if(IS_ADMIN){adminBoxFill();return}const e2=document.getElementById("admSt");if(!e2)return;
+    e2.innerHTML=ADMIN_ERR==="regeln"?"❌ Noch gesperrt: Die <b>neuen Regeln</b> sind noch nicht veröffentlicht (Firestore → Regeln → Text einfügen → Veröffentlichen).":ADMIN_ERR==="fehlt"?"❌ Regeln sind da, aber der Eintrag in <b>admins</b> mit genau diesem Code wurde nicht gefunden.":"Gerade keine Verbindung."};
+  document.getElementById("admRe").onclick=st;st();
   document.getElementById("uidCopy").onclick=async()=>{try{await navigator.clipboard.writeText(uid);toast("Code kopiert")}catch(e){toast("Bitte den Code markieren und kopieren")}};
 }
 async function showInbox(){
