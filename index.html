@@ -283,6 +283,38 @@ body.offline .appbar{box-shadow:0 0 0 3px #d98a00}
 .dband.imp{border:2px solid var(--imp)}
 .dnow{position:absolute;left:0;right:0;border-top:2px solid var(--imp);z-index:3;pointer-events:none}
 .dnow span{position:absolute;left:-44px;top:-9px;background:var(--imp);color:#fff;font-size:.64rem;font-weight:700;padding:1px 4px;border-radius:4px}
+/* Personenfilter */
+.legend div{cursor:pointer;transition:transform .15s}
+.legend div:active{transform:scale(.96)}
+.legend div.on{outline:2px solid currentColor}
+.dlegend div{cursor:pointer}
+/* Wochenende */
+.day.is-we:not(.is-papa){background:color-mix(in srgb,var(--accent) 9%,var(--surface))}
+.day.is-we:not(.is-papa) .day-head{background:color-mix(in srgb,var(--accent) 14%,var(--surface))}
+.mcell.we:not(.papa):not(.fer){background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.ydays .we:not(.papa):not(.fer){background:color-mix(in srgb,var(--accent) 14%,transparent)}
+/* Kompakt-Modus */
+body.compact .cell{min-height:36px;padding:2px;gap:2px}
+body.compact .chip{font-size:.68rem;padding:2px 4px}
+body.compact .day-head{padding:5px 8px}
+body.compact .day-head b{font-size:.9rem}
+body.compact .days{gap:6px}
+body.compact .mcell{min-height:56px}
+body.compact .appbar{padding:10px 12px 8px;gap:8px}
+body.compact .appbar h1{font-size:1.2rem}
+body.compact .morning,body.compact .news{padding:8px 10px}
+body.compact .plus{display:none}
+/* Leere Tage schmal */
+body.fold .day.empty .cols{display:none}
+body.fold .day.empty .day-head{border-bottom:0}
+/* Pfeile nur auf Wunsch (Wischen ist Standard auf Touch-Geräten) */
+@media (pointer:coarse){body:not(.arrows) .nav .arrow{display:none}}
+@keyframes swl{from{transform:translateX(24px);opacity:.4}to{transform:none;opacity:1}}
+@keyframes swr{from{transform:translateX(-24px);opacity:.4}to{transform:none;opacity:1}}
+.wrap.swl #days,.wrap.swl #vOther{animation:swl .22s ease-out}
+.wrap.swr #days,.wrap.swr #vOther{animation:swr .22s ease-out}
+/* Hintergrundbild */
+.appbar.hasbg{background-size:cover;background-position:center}
 .sec{font-family:var(--f-display);font-size:1.05rem;margin:6px 0 0}
 .empty-note{font-size:.85rem;color:var(--muted);text-align:center;padding:4px}
 
@@ -363,7 +395,7 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
     <div class="mbtns"><button class="btn ghost" id="mImg" aria-label="Bild für den Sperrbildschirm erstellen">🖼</button><button class="btn" id="mAck">Gelesen ✓</button></div>
     <ul id="mList"></ul>
   </section>
-  <div class="nav" id="navbar">
+  <div class="nav" id="navbar" title="Zum Blättern nach links oder rechts wischen">
     <button class="arrow" id="prev" aria-label="Zurück">‹</button>
     <div class="lbl" id="weekLbl"></div>
     <button class="arrow" id="next" aria-label="Weiter">›</button>
@@ -398,9 +430,13 @@ const SLOTS=["christin","john","robert"];
 const DEFAULT_NAMES=["","",""];
 let NAMES=DEFAULT_NAMES.slice();
 let PEOPLE=[],PNAME={};
+var FILTER="";try{FILTER=localStorage.getItem("fk-filter")||""}catch(e){}
 let PHOTOS={};try{PHOTOS=JSON.parse(localStorage.getItem("fk-bilder")||"{}")||{}}catch(e){PHOTOS={}}
 const av=(k,cls="av")=>PHOTOS[k]?`<img class="${cls}" src="${PHOTOS[k]}" alt="">`:"";
-function legendHTML(){return PEOPLE.map(([k,n])=>`<div class="p-${k}">${av(k)}<span>${esc(n)}</span></div>`).join("")}
+function legendHTML(){
+  const f=FILTER;
+  const list=f?PEOPLE.filter(([k])=>k===f):PEOPLE;
+  return list.map(([k,n])=>`<div class="p-${k}${f?" on":""}" data-filter="${k}" role="button" tabindex="0" aria-label="${f?"Filter aufheben":"Nur "+esc(n)+" anzeigen"}">${av(k)}<span>${esc(n)}${f?" · alle zeigen ✕":""}</span></div>`).join("")}
 function setPhotos(obj){PHOTOS={};for(const[k,v] of Object.entries(obj||{}))if(typeof v==="string"&&v.startsWith("data:image/"))PHOTOS[k]=v;
   try{localStorage.setItem("fk-bilder",JSON.stringify(PHOTOS))}catch(e){}
   const lg=document.querySelector(".legend");if(lg&&PEOPLE.length)lg.innerHTML=legendHTML()}
@@ -582,6 +618,16 @@ function showSettings(){
     <p class="hint">Tipp: Im Browser-Menü „Zum Startbildschirm hinzufügen“ wählen, dann hat jeder die App als Symbol auf dem Handy.</p>
     <button class="btn ghost" id="tourAgain">📖 Anleitung ansehen</button>
     <h4 class="sub">Darstellung</h4>
+    <div class="rw">
+      <label class="pick" style="justify-content:space-between"><span>Kompakt-Modus (mehr auf einen Blick)</span><input type="checkbox" id="optCompact" ${prefOn("compact")?"checked":""}></label>
+      <label class="pick" style="justify-content:space-between"><span>Leere Tage in der Woche schmal anzeigen</span><input type="checkbox" id="optFold" ${prefOn("fold")?"checked":""}></label>
+      <label class="pick" style="justify-content:space-between"><span>Pfeile zusätzlich zum Wischen zeigen</span><input type="checkbox" id="optArrows" ${prefOn("arrows")?"checked":""}></label>
+      <p class="hint" style="margin:0">Gilt nur für dieses Handy.</p>
+    </div>
+    <div class="rw"><b>Hintergrundbild oben</b>
+      ${bgImage()?`<img src="${bgImage()}" alt="" style="width:100%;max-height:110px;object-fit:cover;border-radius:10px">`:""}
+      <div class="rw-btns"><button id="bgPick">${bgImage()?"Anderes Bild wählen":"Bild wählen"}</button>${bgImage()?'<button id="bgDel">Entfernen</button>':""}</div>
+      <input type="file" id="bgIn" accept="image/*" hidden><p class="hint" style="margin:0">Zum Beispiel ein Familienfoto. Gilt nur für dieses Handy.</p></div>
     <div class="seg" style="--n:3">${[["dark","🌙 Dunkel"],["light","☀️ Hell"],["auto","📱 Wie Handy"]].map(([k,n])=>`<button class="typ" data-theme-set="${k}" aria-pressed="${themeNow()===k}">${n}</button>`).join("")}</div>
     <h4 class="sub">Sperrbildschirm</h4>
     <button class="btn ghost" id="setImg">🖼 Bild mit den heutigen Terminen erstellen</button>
@@ -600,6 +646,11 @@ function showSettings(){
   document.getElementById("exp").onclick=exportICS;wireReadLinks();wireBackups();
   document.getElementById("tourAgain").onclick=()=>{closeSheet();setTimeout(startTour,250)};
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{setTheme(b.dataset.themeSet);showSettings()});
+  [["optCompact","compact"],["optFold","fold"],["optArrows","arrows"]].forEach(([id,k])=>{const el=document.getElementById(id);if(el)el.onchange=()=>{setPref(k,el.checked);render()}});
+  const bp=document.getElementById("bgPick"),bi=document.getElementById("bgIn"),bd=document.getElementById("bgDel");
+  if(bp)bp.onclick=()=>bi.click();
+  if(bi)bi.onchange=async()=>{const f=bi.files&&bi.files[0];bi.value="";if(!f)return;try{const d=await shrinkBg(f);try{localStorage.setItem("fk-bg",d)}catch(e){toast("Bild ist zu groß");return}applyPrefs();toast("Hintergrundbild gesetzt");showSettings()}catch(e){toast("Das Bild konnte nicht geöffnet werden")}};
+  if(bd)bd.onclick=async()=>{if(!await askConfirm("Hintergrundbild entfernen?","Entfernen"))return;try{localStorage.removeItem("fk-bg")}catch(e){}applyPrefs();showSettings()};
   document.getElementById("setImg").onclick=()=>showWidgetImage();wireJoin();
   document.getElementById("wipe").onclick=async()=>{if(!await askConfirm("Den ganzen Kalender mit allen Einträgen, Aufgaben und Sternen für ALLE löschen? Das lässt sich nicht rückgängig machen.","Endgültig löschen"))return;
     if(!await askConfirm("Bist du ganz sicher?","Ja, alles löschen"))return;wipeAll()};
@@ -1015,6 +1066,35 @@ function askConfirm(text,ok="Löschen",danger=true){
     setTimeout(()=>{const b=host.querySelector('[data-a="0"]');if(b)b.focus()},30);
   });
 }
+function prefOn(k){try{return localStorage.getItem("fk-"+k)==="1"}catch(e){return false}}
+function setPref(k,v){try{localStorage.setItem("fk-"+k,v?"1":"0")}catch(e){}applyPrefs()}
+function bgImage(){try{return localStorage.getItem("fk-bg")||""}catch(e){return ""}}
+function applyPrefs(){
+  document.body.classList.toggle("compact",prefOn("compact"));
+  document.body.classList.toggle("fold",prefOn("fold"));
+  document.body.classList.toggle("arrows",prefOn("arrows"));
+  const bar=document.querySelector(".appbar"),bg=bgImage();
+  if(bar){if(bg){bar.style.backgroundImage=`linear-gradient(180deg,rgba(8,20,28,.55),rgba(8,20,28,.82)),url(${bg})`;bar.classList.add("hasbg")}else{bar.style.backgroundImage="";bar.classList.remove("hasbg")}}
+}
+function shrinkBg(file){
+  return new Promise((ok,no)=>{const url=URL.createObjectURL(file),img=new Image();
+    img.onload=()=>{const W=1080,s=Math.min(1,W/img.width),c=document.createElement("canvas");c.width=Math.round(img.width*s);c.height=Math.round(img.height*s);
+      c.getContext("2d").drawImage(img,0,0,c.width,c.height);URL.revokeObjectURL(url);ok(c.toDataURL("image/jpeg",.72))};
+    img.onerror=()=>{URL.revokeObjectURL(url);no(new Error("bild"))};img.src=url});
+}
+/* Wischen: links/rechts blättert Tag, Woche, Monat oder Jahr */
+(function(){let x0=null,y0=0,t0=0;
+  const area=()=>document.querySelector(".wrap");
+  document.addEventListener("touchstart",ev=>{if(ev.touches.length!==1||document.querySelector(".backdrop,.cbackdrop,.tour-card")){x0=null;return}
+    const t=ev.target;if(t.closest(".tabs,.appbar,input,textarea,select,.dgrid .dblk"))return x0=null;
+    x0=ev.touches[0].clientX;y0=ev.touches[0].clientY;t0=Date.now()},{passive:true});
+  document.addEventListener("touchend",ev=>{if(x0===null)return;const t=ev.changedTouches[0];const dx=t.clientX-x0,dy=t.clientY-y0;x0=null;
+    if(Date.now()-t0>700||Math.abs(dx)<60||Math.abs(dy)>Math.abs(dx)*.6)return;
+    if(!["tag","woche","monat","jahr"].includes(view))return;
+    const w=area();const dir=dx<0?1:-1;
+    if(w&&!matchMedia("(prefers-reduced-motion: reduce)").matches){w.classList.remove("swl","swr");void w.offsetWidth;w.classList.add(dir>0?"swl":"swr")}
+    step(dir)},{passive:true});
+})();
 function themeNow(){try{return localStorage.getItem("fk-theme")||"dark"}catch(e){return "dark"}}
 function setTheme(t){try{localStorage.setItem("fk-theme",t)}catch(e){}
   if(t==="auto")document.documentElement.removeAttribute("data-theme");else document.documentElement.setAttribute("data-theme",t);
@@ -1085,7 +1165,8 @@ function feiertage(y){
   return _feierCache[y]=f;
 }
 // Tage, an denen John bei Papa ist (Eintrag in Johns Spalte mit "Papa" im Titel)
-const papaOf=day=>entries.some(e=>e.person==="john"&&e.typ==="termin"&&/papa|pascal/i.test(e.titel||"")&&onDay(e,day));
+let ALLE=null;
+const papaOf=day=>(ALLE||entries).some(e=>e.person==="john"&&e.typ==="termin"&&/papa|pascal/i.test(e.titel||"")&&onDay(e,day));
 const feierOf=day=>feiertage(+day.slice(0,4))[day]||"";
 const ferienOf=day=>{const f=FERIEN.find(([n,a,b])=>a<=day&&day<=b);return f?f[0]:""};
 
@@ -1094,7 +1175,18 @@ let view="woche";try{view=localStorage.getItem("fk-view")||"woche"}catch(e){}
 let monthCur=iso(new Date()).slice(0,7)+"-01",yearCur=new Date().getFullYear(),dayCur=iso(new Date());
 const MONL=["Januar","Februar","März","April","Mai","Juni","Juli","August","September","Oktober","November","Dezember"];
 function setView(v){if(READONLY&&v==="sterne")v="woche";view=v;try{localStorage.setItem("fk-view",v)}catch(e){}render();window.scrollTo({top:0})}
+function setFilter(k){FILTER=FILTER===k?"":k;try{localStorage.setItem("fk-filter",FILTER)}catch(e){}render();toast(FILTER?`Nur ${PNAME[FILTER]} wird angezeigt`:"Alle werden angezeigt")}
+document.addEventListener("click",ev=>{const f=ev.target.closest("[data-filter]");if(f){ev.stopPropagation();setFilter(f.dataset.filter)}},true);
+document.addEventListener("keydown",ev=>{if((ev.key==="Enter"||ev.key===" ")&&ev.target.dataset&&ev.target.dataset.filter){ev.preventDefault();setFilter(ev.target.dataset.filter)}});
 function render(){
+  const allE=entries,allP=PEOPLE;ALLE=allE;
+  if(FILTER&&!PNAME[FILTER])FILTER="";
+  if(FILTER&&view!=="sterne"&&view!=="ferien"){entries=allE.filter(e=>e.person===FILTER);PEOPLE=allP.filter(([k])=>k===FILTER)}
+  document.documentElement.style.setProperty("--ncol",String(PEOPLE.length));
+  const lg=document.querySelector(".legend");if(lg)lg.innerHTML=legendHTML();
+  try{renderInner()}finally{entries=allE;PEOPLE=allP;ALLE=null}
+}
+function renderInner(){
   today=iso(new Date());
   document.querySelectorAll(".tabs [data-view]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.view===view)));
   document.getElementById("vWoche").hidden=view!=="woche";
@@ -1143,7 +1235,7 @@ function renderDay(){
   const freeTxt=list.length?`${list.length} ${list.length===1?"Eintrag":"Einträge"}`:"Heute ist alles frei 🌿";
   document.getElementById("vOther").innerHTML=`<div class="dhead"><b>${WDL[d.getDay()]}, ${d.getDate()}. ${MONL[d.getMonth()]} ${d.getFullYear()}</b>${badges}<span class="hint" style="margin-left:auto">${day===today?"heute · ":""}${freeTxt}</span></div>
     ${adHTML}
-    <div class="dlegend" style="--n:${cols.length}">${PEOPLE.map(([k,n])=>`<div class="p-${k}">${av(k,"av sm")}${esc(n)}</div>`).join("")}</div>
+    <div class="dlegend" style="--n:${cols.length}">${PEOPLE.map(([k,n])=>`<div class="p-${k}" data-filter="${k}" role="button" tabindex="0">${av(k,"av sm")}${esc(n)}${FILTER?" ✕":""}</div>`).join("")}</div>
     <div class="dgrid" style="--n:${cols.length};height:${(endH-startH)*HPX}px">
       <div class="dlines">${hours}</div>
       <div class="dcols">${cols.map((k,ci)=>`<div class="dcol" data-person="${k}" style="left:calc(${ci} * var(--cw))"></div>`).join("")}${blocks}${now}</div>
@@ -1171,7 +1263,7 @@ function renderMonth(){
     list.sort((a,b)=>(!!b.wichtig)-(!!a.wichtig));
     const bars=list.slice(0,3).map(e=>{const cls=e.typ==="termin"?e.person:e.typ;const t=e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?`${PNAME[e.person][0]} ${e.von||"Arbeit"}`:e.typ==="urlaub"?`${PNAME[e.person]} Urlaub`:`${e.von?e.von+" ":""}${e.titel}`;return `<div class="mbar ${cls}${e.wichtig?" imp":""}">${esc(t)}</div>`}).join("");
     const pp=papaOf(day);
-    h+=`<button class="mcell${d.getMonth()!==m?" out":""}${pp?" papa":fr?" fer":""}${fe?" feier":""}${day===today?" today":""}" data-goday="${day}" aria-label="${fmt(day)}${fe?", "+fe:""}${fr?", "+fr:""}, ${list.length} Einträge"><span class="n">${d.getDate()}</span>${fe?`<span class="fname">${esc(fe)}</span>`:""}${bars}${list.length>3?`<span class="more">+${list.length-3} mehr</span>`:""}</button>`;
+    h+=`<button class="mcell${[0,6].includes(d.getDay())?" we":""}${d.getMonth()!==m?" out":""}${pp?" papa":fr?" fer":""}${fe?" feier":""}${day===today?" today":""}" data-goday="${day}" aria-label="${fmt(day)}${fe?", "+fe:""}${fr?", "+fr:""}, ${list.length} Einträge"><span class="n">${d.getDate()}</span>${fe?`<span class="fname">${esc(fe)}</span>`:""}${bars}${list.length>3?`<span class="more">+${list.length-3} mehr</span>`:""}</button>`;
   }
   h+=`</div><div class="key"><span><i style="background:var(--papa)"></i>John bei Papa</span><span><i style="background:var(--fer)"></i>Schulferien Berlin</span><span style="color:var(--feier);font-weight:600">Feiertag</span><span>Tippe auf einen Tag für die Wochenansicht</span></div>`;
   document.getElementById("vOther").innerHTML=h;
@@ -1185,7 +1277,7 @@ function renderYear(){
   for(let m=0;m<12;m++){
     const first=iso(new Date(y,m,1));const off=(parse(first).getDay()+6)%7;const dim=new Date(y,m+1,0).getDate();
     let cells=["M","D","M","D","F","S","S"].map(x=>`<span class="h">${x}</span>`).join("")+"<span></span>".repeat(off);
-    for(let i=1;i<=dim;i++){const day=iso(new Date(y,m,i));const c=[papaOf(day)?"papa":ferienOf(day)?"fer":"",impDays.has(day)?"imp":"",feierOf(day)?"feier":"",day===today?"today":"",""].filter(Boolean).join(" ");
+    for(let i=1;i<=dim;i++){const day=iso(new Date(y,m,i));const c=[[0,6].includes(new Date(y,m,i).getDay())?"we":"",papaOf(day)?"papa":ferienOf(day)?"fer":"",impDays.has(day)?"imp":"",feierOf(day)?"feier":"",day===today?"today":"",""].filter(Boolean).join(" ");
       const ps=busy[day]?PEOPLE.map(([k])=>k).filter(k=>busy[day].has(k)):[];
       cells+=`<span class="${c}"${feierOf(day)?` title="${esc(feierOf(day))}"`:""}>${i}<span class="pd">${ps.map(k=>`<i class="${k}"></i>`).join("")}</span></span>`}
     h+=`<button class="ymon" data-gomonth="${first}" aria-label="${MONL[m]} ${y} öffnen"><h4>${MONL[m]}</h4><div class="ydays">${cells}</div></button>`;
@@ -1219,7 +1311,7 @@ function renderWeek(){
     const list=entries.filter(e=>onDay(e,day));
     const fe=feierOf(day),fr=ferienOf(day);
     const pp=papaOf(day);
-    html+=`<article class="day${day===today?" is-today":""}${fr?" is-fer":""}${pp?" is-papa":""}" id="d-${day}"><div class="day-head"><b>${WDL[d.getDay()]}, ${d.getDate()}. ${MON[d.getMonth()]}${pp?`<span class="badge papa">bei Papa</span>`:""}${fe?`<span class="badge feier">${esc(fe)}</span>`:""}${fr?`<span class="badge fer">${esc(fr)}</span>`:""}</b><span>${day===today?"heute · ":""}${list.length?list.length+(list.length===1?" Eintrag":" Einträge"):"frei"}</span></div><div class="cols">`;
+    html+=`<article class="day${[0,6].includes(d.getDay())?" is-we":""}${list.length?"":" empty"}${day===today?" is-today":""}${fr?" is-fer":""}${pp?" is-papa":""}" id="d-${day}"><div class="day-head"><b>${WDL[d.getDay()]}, ${d.getDate()}. ${MON[d.getMonth()]}${pp?`<span class="badge papa">bei Papa</span>`:""}${fe?`<span class="badge feier">${esc(fe)}</span>`:""}${fr?`<span class="badge fer">${esc(fr)}</span>`:""}</b><span>${day===today?"heute · ":""}${list.length?list.length+(list.length===1?" Eintrag":" Einträge"):"frei"}</span></div><div class="cols">`;
     for(const[p] of PEOPLE){
       const cell=list.filter(e=>e.person===p).sort(sortE);
       html+=`<div class="cell" role="button" tabindex="0" data-day="${day}" data-person="${p}" aria-label="${PNAME[p]}, ${fmt(day)}: Eintrag hinzufügen">${cell.map(e=>chipHTML(e,day)).join("")}<span class="plus" aria-hidden="true">+</span></div>`;
@@ -1723,6 +1815,7 @@ function maybeAutoTour(){
   setTimeout(()=>{if(!document.querySelector(".backdrop")&&!document.querySelector(".cbackdrop")&&!tourEls)startTour()},1200);
 }
 
+applyPrefs();
 init();
 setTimeout(maybeAutoTour,600);
 if("serviceWorker" in navigator){
