@@ -1321,7 +1321,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v51";
+const APP_VER="v52";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -1994,7 +1994,7 @@ function render(){
   try{renderInner()}finally{entries=allE;PEOPLE=allP;ALLE=null}
 }
 function renderInner(){
-  today=iso(new Date());
+  today=iso(new Date());updBrandDate();
   document.querySelectorAll(".tabs [data-view]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.view===view)));
   document.getElementById("vWoche").hidden=view!=="woche";
   document.getElementById("vOther").hidden=view==="woche";
@@ -2988,8 +2988,9 @@ document.getElementById("annX").onclick=()=>{if(ANN&&ANN.id){try{localStorage.se
 setTimeout(watchAnn,2500);
 /* ---------- 3D-Kopf: Neigung & Datum, persönliche Begrüßung ---------- */
 (function(){
-  const d=document.getElementById("cal3dDay");if(d)d.textContent=String(+today.slice(8,10));
-  const yr=document.getElementById("year3d");if(yr)yr.textContent=today.slice(0,4);
+  updBrandDate();
+  // Datums- und Jahreswechsel auch bei durchgehend geöffneter App (z. B. Silvester um Mitternacht)
+  setInterval(()=>{if(iso(new Date())!==today)render()},30000);
   const b=document.getElementById("brand");if(!b||matchMedia("(prefers-reduced-motion: reduce)").matches)return;
   const set=(x,y)=>{b.style.setProperty("--ry",(x*10).toFixed(2)+"deg");b.style.setProperty("--rx",(-y*8).toFixed(2)+"deg")};
   const bar=document.querySelector(".appbar");
@@ -2998,6 +2999,9 @@ setTimeout(watchAnn,2500);
   let last=0;window.addEventListener("deviceorientation",e=>{const n=Date.now();if(n-last<60||e.gamma==null)return;last=n;
     set(Math.max(-1,Math.min(1,e.gamma/35))*.5,Math.max(-1,Math.min(1,((e.beta||0)-45)/40))*.5)},{passive:true});
 })();
+function updBrandDate(){const t=iso(new Date());
+  const d=document.getElementById("cal3dDay");if(d&&d.textContent!==String(+t.slice(8,10)))d.textContent=String(+t.slice(8,10));
+  const yr=document.getElementById("year3d");if(yr&&yr.textContent!==t.slice(0,4))yr.textContent=t.slice(0,4)}
 function myName(){const n=(MY_MEMBER&&MY_MEMBER.name)||lsGet("fk-myname");return String(n||"").trim()}
 let greeted=false,greetTries=0;var DATA_READY=false;
 function greetUser(){
