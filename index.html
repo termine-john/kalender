@@ -1381,7 +1381,7 @@ function renderStars(){
   if(KID){const b=starBalance(KID),nx=rewards.filter(r=>+r.kosten>b).sort((a,b2)=>(+a.kosten)-(+b2.kosten))[0],np=taskLogs.filter(l=>l.offen).reduce((a,l)=>a+(+l.sterne||0),0);
     kidH=`<div class="kidbar"><b>Hallo ${esc(PNAME[KID]||"")}! 👋</b>${nx?`<div class="pbar"><i style="width:${Math.min(100,Math.round(b/(+nx.kosten)*100))}%"></i></div><span class="meta">Nächstes Ziel: <b>${esc(nx.titel)}</b> · noch ${+nx.kosten-b} ⭐</span>`:rewards.length?`<br><span class="meta">Du kannst dir jede Belohnung leisten! 🎉</span>`:""}${np?`<br><span class="meta">⏳ ${np} ⭐ warten noch auf Bestätigung</span>`:""}</div>`}
   document.getElementById("vOther").innerHTML=`<div class="starcards">${cards}</div>${kidH}
-    ${TTS_OK&&tasks.length?`<button class="btn${KID?"":" ghost"}" id="ttsBtn" style="margin:8px 0">🔊 Aufgaben vorlesen</button>`:""}
+    <div class="actions" style="margin:8px 0">${TTS_OK&&tasks.length?`<button class="btn${KID?"":" ghost"}" id="ttsBtn">🔊 Vorlesen</button>`:""}<button class="btn ghost" id="histBtn">📜 Verlauf</button></div>
     <div class="actions"><button class="btn" id="tAdd">+ Aufgabe</button><button class="btn ghost" id="rAdd">+ Belohnung</button></div>
     ${pendH}
     <h3 class="sec">Aufgaben</h3>
@@ -1391,6 +1391,7 @@ function renderStars(){
     ${last?`<h3 class="sec">Zuletzt eingelöst</h3><ul class="hint" style="margin:0;padding-left:18px">${last}</ul>`:""}
     <button class="btn ghost" id="kpBtn" style="margin-top:12px">🎒 Startpaket: Kinder-Aufgaben & Belohnungen</button>`;
   document.getElementById("kpBtn").onclick=kidPackSheet;
+  document.getElementById("histBtn").onclick=()=>showHistory(KID||"");
   {const tb=document.getElementById("ttsBtn");if(tb)tb.onclick=()=>{if(speechSynthesis.speaking){speechSynthesis.cancel();return}readTasks()}}
   document.getElementById("tAdd").onclick=()=>openTaskSheet(null);
   document.getElementById("rAdd").onclick=()=>openRewardSheet(null);
@@ -1453,6 +1454,27 @@ function readTasks(){
     const wait=taskLogs.filter(l=>l.person===k&&l.offen).length;if(KID&&wait)out.push(`${wait===1?"Eine Aufgabe wartet":wait+" Aufgaben warten"} noch auf Bestätigung.`);
   }
   speak(out.join(" "));
+}
+/* ---------- Verlauf ---------- */
+function showHistory(who){
+  const P=persons().filter(([k])=>taskLogs.some(l=>l.person===k)||redeems.some(r=>r.person===k));
+  if(!KID&&!who&&P.length===1)who=P[0][0];
+  const ev=[...taskLogs.map(l=>({...l,_k:"t"})),...redeems.map(r=>({...r,_k:"r"}))].filter(x=>x.datum&&(!who||x.person===who));
+  ev.sort((a,b)=>(b.datum+(b.erstellt||"")).localeCompare(a.datum+(a.erstellt||"")));
+  const weeks={};for(const x of ev){const m=mondayOf(x.datum);(weeks[m]=weeks[m]||[]).push(x)}
+  const wk=Object.keys(weeks).sort().reverse();
+  const html=wk.map(m=>{const xs=weeks[m];
+    const plus=xs.filter(x=>x._k==="t"&&!x.offen).reduce((a,x)=>a+(+x.sterne||0),0),minus=xs.filter(x=>x._k==="r").reduce((a,x)=>a+(+x.kosten||0),0),cnt=xs.filter(x=>x._k==="t"&&!x.offen).length;
+    const days={};for(const x of xs)(days[x.datum]=days[x.datum]||[]).push(x);
+    return `<details class="rw" ${m===wk[0]?"open":""}><summary style="cursor:pointer"><b>${m===mondayOf(today)?"Diese Woche":m===mondayOf(addDays(today,-7))?"Letzte Woche":"Woche ab "+fmt(m)}</b> · ✅ ${cnt} erledigt · <span style="color:var(--star)">+${plus} ⭐</span>${minus?` · 🎁 −${minus} ⭐`:""}</summary>
+      ${Object.keys(days).sort().reverse().map(d=>`<div style="margin-top:8px"><span class="lbl-s">${d===today?"Heute":d===addDays(today,-1)?"Gestern":fmt(d)}</span>
+        ${days[d].map(x=>`<div class="hint" style="margin:2px 0">${x._k==="t"?(x.offen?"⏳":"✅"):"🎁"} ${!who?`<b>${esc(PNAME[x.person]||"")}</b>: `:""}${esc(x.titel||"")}${x._k==="t"?` <span style="color:var(--star)">+${+x.sterne||1} ⭐</span>${x.offen?" · wartet auf Bestätigung":""}`:` <span>−${+x.kosten} ⭐</span>${x.offen?" · wartet auf Bestätigung":""}`}</div>`).join("")}</div>`).join("")}</details>`}).join("");
+  sheet("📜 Verlauf",`${!KID&&P.length>1?`<div class="nameq"><button data-hw="" ${who?"":'style="outline:2px solid var(--accent)"'}>Alle</button>${P.map(([k,n])=>`<button data-hw="${k}" ${who===k?'style="outline:2px solid var(--accent)"':""}>${esc(n)}</button>`).join("")}</div>`:""}
+    ${who?`<p class="hint">${esc(PNAME[who]||"")} hat insgesamt <b>${taskLogs.filter(l=>l.person===who&&!l.offen).length}</b> Aufgaben erledigt und hat jetzt <b>${starBalance(who)} ⭐</b>.</p>`:""}
+    ${html||'<p class="hint">Noch nichts erledigt.</p>'}
+    <button class="btn ghost" id="hClose">Schließen</button>`);
+  document.querySelectorAll("[data-hw]").forEach(b=>b.onclick=()=>showHistory(b.dataset.hw));
+  document.getElementById("hClose").onclick=closeSheet;
 }
 const KIDPACK_T=[["🛏️ Bett machen",1,"taeglich"],["🪥 Zähne putzen morgens & abends",1,"taeglich"],["🎒 Schulranzen für morgen packen",1,"taeglich"],["📚 Hausaufgaben ohne Erinnerung",2,"taeglich"],["🍽️ Tisch decken oder abräumen",1,"taeglich"],["📖 20 Minuten lesen",2,"taeglich"],["🧹 Zimmer aufräumen",3,"woechentlich"],["🗑️ Müll rausbringen",2,"woechentlich"],["🧺 Eigene Wäsche wegräumen",2,"woechentlich"],["🌱 Pflanzen gießen",1,"woechentlich"],["🤝 Ohne Aufforderung geholfen",3,"woechentlich"],["🏆 Gute Note in einer Arbeit",5,"einmalig"]];
 const KIDPACK_R=[["📱 30 Min. extra Handy oder Konsole",15],["🌙 Am Wochenende 30 Min. länger aufbleiben",20],["🍦 Eis essen gehen",25],["🍕 Lieblingsessen aussuchen",30],["🎬 Filmabend, ich suche den Film aus",40],["🎮 1 Std. extra Zocken am Wochenende",40],["💶 5 € extra Taschengeld",80],["🍿 Kinobesuch",100],["🛝 Ausflug nach Wahl",150],["🎁 Kleines Spielzeug bis 15 €",200],["🦁 Zoo- oder Freizeitpark-Tag",400]];
@@ -1537,7 +1559,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v62";
+const APP_VER="v63";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -3275,6 +3297,9 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-08e",d:"2026-11-08",t:"📜 Aufgaben-Verlauf",items:[
+    "📜 Unter ⭐ → Verlauf siehst du Woche für Woche, wer welche Aufgabe erledigt und welche Belohnung eingelöst hat",
+    "📊 Pro Woche: Anzahl erledigter Aufgaben, verdiente und eingelöste Sterne"]},
   {v:"2026-11-08d",d:"2026-11-08",t:"🔊 Aufgaben vorlesen",items:[
     "🔊 Unter ⭐ liest das Handy die offenen Aufgaben, den Sterne-Stand und das nächste Ziel laut vor",
     "👆 Auf dem Kinder-Handy wird eine Aufgabe vorgelesen, wenn man sie antippt",
