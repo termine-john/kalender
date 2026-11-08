@@ -519,6 +519,62 @@ body.premking .year3d::before{content:"👑 "}
   background:linear-gradient(90deg,#d4931c,#fff3c4 45%,#ffcc4d 60%,#d4931c);background-size:200% 100%;-webkit-background-clip:text;background-clip:text;color:transparent;-webkit-text-fill-color:transparent;
   filter:drop-shadow(0 1px 0 #8a5e0c) drop-shadow(0 2px 3px rgba(0,0,0,.5));animation:shine 6s ease-in-out infinite}
 body.premking .premtag{display:block}
+/* ---------- 📺 Wand-Kalender ---------- */
+body.wallon{overflow:hidden}
+#wall{position:fixed;inset:0;z-index:9000;color:#eef6fa;overflow:auto;
+  background:radial-gradient(90% 70% at 10% 0%,rgba(64,160,206,.35),transparent 60%),radial-gradient(80% 70% at 100% 100%,rgba(134,104,220,.30),transparent 60%),linear-gradient(160deg,#0c2533,#071620 70%);transition:filter 2s}
+#wall.night{filter:brightness(.38)}
+.wall-in{min-height:100%;display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1.2fr);gap:4vmin;padding:5vmin 5vmin 6vmin;box-sizing:border-box}
+@media (orientation:portrait){.wall-in{grid-template-columns:1fr}}
+.wclock{font-size:clamp(64px,17vmin,220px);font-weight:900;line-height:1;letter-spacing:-.02em;text-shadow:0 6px 24px rgba(0,0,0,.4);font-variant-numeric:tabular-nums}
+.wcol{animation:blink 2s steps(1) infinite}@keyframes blink{50%{opacity:.25}}
+.wdate{font-size:clamp(18px,3.6vmin,44px);font-weight:700;opacity:.9;margin-top:1vmin}
+.wgreet{font-size:clamp(16px,3vmin,34px);opacity:.75;margin:1.5vmin 0 3vmin}
+.wwx{display:grid;grid-template-columns:auto auto;grid-template-rows:auto auto;column-gap:2vmin;align-items:center;justify-content:start;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);border-radius:3vmin;padding:2.4vmin 3vmin;margin-bottom:3vmin}
+.wwx .wwi{grid-row:1/3;font-size:clamp(40px,10vmin,110px)}.wwx b{font-size:clamp(28px,7vmin,80px);line-height:1}.wwx span:last-child{font-size:clamp(13px,2.4vmin,26px);opacity:.85}
+.wnext{display:grid;gap:.8vmin;background:linear-gradient(135deg,rgba(255,204,77,.18),rgba(255,204,77,.06));border:1px solid rgba(255,204,77,.35);border-radius:3vmin;padding:2.4vmin 3vmin}
+.wnext .lbl{font-size:clamp(12px,2.2vmin,24px);opacity:.85;font-weight:700}.wnext b{font-size:clamp(20px,4.4vmin,52px)}.wnext span:last-child{font-size:clamp(13px,2.4vmin,26px);opacity:.85}
+.wr h2{font-size:clamp(18px,3.6vmin,42px);margin:0 0 1.6vmin}.wr h2:not(:first-child){margin-top:3.5vmin}.wr h2 small{font-size:.6em;opacity:.8;font-weight:600}
+.wev{display:grid;grid-template-columns:auto auto 1fr auto;gap:2vmin;align-items:center;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.10);border-radius:2.4vmin;padding:1.8vmin 2.4vmin;margin-bottom:1.4vmin;font-size:clamp(14px,2.8vmin,32px)}
+.wdot{width:1.8vmin;height:1.8vmin;min-width:10px;min-height:10px;border-radius:50%;display:inline-block;box-shadow:0 0 12px currentColor}
+.wt{font-variant-numeric:tabular-nums;opacity:.85;white-space:nowrap}.wn{font-weight:700;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.wp{opacity:.7;font-size:.8em}
+.wempty{opacity:.7;font-size:clamp(14px,2.6vmin,30px)}
+.wctl{position:fixed;top:16px;right:16px;opacity:0;transition:opacity .3s}#wall.showctl .wctl,#wall:hover .wctl{opacity:1}
+.wctl button{width:52px;height:52px;border-radius:50%;border:1px solid rgba(255,255,255,.3);background:rgba(0,0,0,.4);color:#fff;font-size:22px}
+/* ---------- 🎬 Rückblick ---------- */
+#wrapped{position:fixed;inset:0;z-index:9100;color:#fff;display:grid;place-items:center;text-align:center;overflow:hidden;user-select:none;background-size:200% 200%;animation:wbg 10s ease infinite}
+@keyframes wbg{0%,100%{background-position:0 0}50%{background-position:100% 100%}}
+#wrapped.w1{background-image:linear-gradient(135deg,#2b1055,#7597de)}#wrapped.w2{background-image:linear-gradient(135deg,#0b486b,#3b8686,#79bd9a)}#wrapped.w3{background-image:linear-gradient(135deg,#41295a,#2f0743)}#wrapped.w4{background-image:linear-gradient(135deg,#f7971e,#ffd200)}
+#wrapped.w5{background-image:linear-gradient(135deg,#00b4db,#0083b0)}#wrapped.w6{background-image:linear-gradient(135deg,#232526,#414345)}#wrapped.w7{background-image:linear-gradient(135deg,#e5484d,#8a1c2b)}#wrapped.w8{background-image:linear-gradient(135deg,#ff512f,#dd2476)}
+#wrapped.w9{background-image:linear-gradient(135deg,#c98a00,#ffcc4d)}#wrapped.w10{background-image:linear-gradient(135deg,#2b1055,#d53369,#fbb03b)}
+.wbars{position:absolute;top:14px;left:12px;right:12px;display:flex;gap:4px}.wbars i{flex:1;height:4px;border-radius:2px;background:rgba(255,255,255,.3);overflow:hidden;position:relative}
+.wbars i.done{background:#fff}.wbars i.run::after{content:"";position:absolute;inset:0;background:#fff;transform-origin:left;animation:wrun 5.5s linear forwards}@keyframes wrun{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+.wx{position:absolute;top:28px;right:14px;width:40px;height:40px;border-radius:50%;border:0;background:rgba(0,0,0,.25);color:#fff;font-size:18px;z-index:2}
+.wslide{padding:0 28px;max-width:560px;animation:wpop .6s cubic-bezier(.2,1.4,.4,1)}@keyframes wpop{from{transform:scale(.85) translateY(20px);opacity:0}to{transform:none;opacity:1}}
+.wslide p{font-size:clamp(18px,5vw,26px);margin:10px 0;text-shadow:0 2px 8px rgba(0,0,0,.25)}.wslide .wsub{font-size:clamp(14px,4vw,18px);opacity:.85}
+.wbig{font-size:clamp(72px,24vw,130px);line-height:1.1;animation:calbob 3s ease-in-out infinite}
+.wttl{font-size:clamp(34px,10vw,58px);font-weight:900;line-height:1.05;text-shadow:0 4px 18px rgba(0,0,0,.3)}.wyr{font-size:1.6em}
+.wnum{font-size:clamp(80px,26vw,150px);font-weight:900;line-height:1;text-shadow:0 6px 24px rgba(0,0,0,.3);font-variant-numeric:tabular-nums}
+.wname{font-size:clamp(44px,14vw,80px);font-weight:900;line-height:1.05;text-shadow:0 0 1px #fff,0 4px 18px rgba(0,0,0,.35);margin:6px 0}
+.wslide .btn{margin-top:18px}
+.wfx span{position:absolute;bottom:-30px;font-size:26px;opacity:.7;animation:wup 6s linear infinite}@keyframes wup{to{transform:translateY(-110vh) rotate(360deg);opacity:0}}
+/* ---------- 🐣 Maskottchen ---------- */
+.petcard{display:grid;grid-template-columns:auto 1fr;gap:12px;align-items:center;width:100%;text-align:left;border:1px solid rgba(255,204,77,.35);border-radius:16px;padding:12px 14px;margin:0 0 12px;color:var(--fg);font:inherit;cursor:pointer;
+  background:linear-gradient(135deg,color-mix(in srgb,#ffcc4d 14%,var(--surface)),var(--surface))}
+.petava{position:relative;width:62px;height:62px;display:grid;place-items:center}
+.petemo{font-size:46px;animation:petbob 2.6s ease-in-out infinite;display:inline-block;filter:drop-shadow(0 4px 6px rgba(0,0,0,.3))}
+.petava.sleep .petemo{animation:petbreath 4s ease-in-out infinite;filter:grayscale(.3) brightness(.85)}
+@keyframes petbob{0%,100%{transform:translateY(0) rotate(-3deg)}50%{transform:translateY(-5px) rotate(3deg)}}
+@keyframes petbreath{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.petmood{position:absolute;right:-4px;top:-4px;font-size:20px;background:var(--surface);border-radius:50%;width:28px;height:28px;display:grid;place-items:center;box-shadow:0 2px 6px rgba(0,0,0,.3)}
+.petbody{min-width:0}.petsay{font-size:.9rem;margin:3px 0 6px;line-height:1.35}
+.petbar{height:7px;border-radius:4px;background:color-mix(in srgb,var(--fg) 15%,transparent);overflow:hidden;margin-bottom:2px}.petbar i{display:block;height:100%;background:linear-gradient(90deg,#ffcc4d,#f2994a);border-radius:4px}
+.petbig{position:relative;text-align:center;font-size:110px;line-height:1.2;height:150px}.petbig span{display:inline-block;animation:petbob 2.6s ease-in-out infinite}
+.petbig i{position:absolute;bottom:40px;font-size:26px;font-style:normal;animation:heart 1.8s ease-out forwards}@keyframes heart{to{transform:translateY(-110px) scale(1.4);opacity:0}}
+.petlist{margin:4px 0;padding-left:20px;line-height:1.6}
+.petgal{display:grid;grid-template-columns:repeat(6,1fr);gap:6px}.petgal div{text-align:center;border:1px solid var(--line);border-radius:12px;padding:6px 2px;opacity:.55}.petgal div.on{opacity:1;border-color:#ffcc4d}.petgal span{font-size:28px;display:block}.petgal small{font-size:10px;opacity:.75}
+@media (prefers-reduced-motion:reduce){.petemo,.petbig span,.wbig,#wrapped{animation:none}}
+
 body.premking .appbar h1.t3d{font-size:clamp(1rem,4.8vw,1.7rem)}
 body.premking .year3d{padding:4px 6px 3px}
 
@@ -594,6 +650,7 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
     <button class="btn" id="installBtn">Installieren</button><button class="ib-x" id="installX" aria-label="Hinweis schließen">✕</button>
   </section>
 
+  <button class="petcard" id="petCard" hidden></button>
   <button class="nextcard" id="nextCard" hidden></button>
 
   <section class="morning wishes" id="wishes" hidden>
@@ -887,6 +944,7 @@ function showSettings(){
   const appLink=location.origin+location.pathname;
   sheet("Teilen & Einstellungen",`<details class="rw"><summary class="hint" style="cursor:pointer">🔑 Kalender-Nummer anzeigen</summary><p class="hint" style="margin:6px 0 0">Dieses Handy ist mit <b>Kalender ${calNr()}</b> verbunden. Bei allen in der Familie muss hier dieselbe Nummer stehen.</p></details>
     <button class="btn premcta" id="premBtn">👑 Premium${PREM.stufe>=10?" · freigeschaltet":` · ${PREM.anzahl} von 10`}</button>
+    ${PREM.stufe>=10?`<div class="actions"><button class="btn ghost" id="sWall">📺 Wand-Kalender</button><button class="btn ghost" id="sWrap">🎬 Rückblick</button></div>`:""}
     <h4 class="sub">👪 Familie einladen</h4><p class="hint">Wähle zuerst, was die eingeladene Person darf. Gib die Links nur an die Familie weiter.</p>
     <div class="seg" style="--n:2"><button class="typ" data-inv="lesen" aria-pressed="true">👁️ Nur lesen</button><button class="typ" data-inv="schreiben" aria-pressed="false">✏️ Darf mitschreiben</button></div>
     <div class="linkbox" id="inv">${esc(link)}</div>
@@ -954,6 +1012,7 @@ function showSettings(){
   document.getElementById("exp").onclick=exportICS;wireReadLinks();wireBackups();
   {const ib=document.getElementById("installSet");if(ib)ib.onclick=()=>{closeSheet();setTimeout(installApp,200)}}
   wireLang();document.getElementById("premBtn").onclick=()=>{closeSheet();setTimeout(showPremium,200)};
+  {const a=document.getElementById("sWall");if(a)a.onclick=showWall;const b=document.getElementById("sWrap");if(b)b.onclick=showWrapped}
   document.getElementById("tourAgain").onclick=()=>{closeSheet();setTimeout(showHelp,200)};
   document.getElementById("clBtn").onclick=()=>{closeSheet();setTimeout(showChangelog,200)};
   document.getElementById("ideaBtn").onclick=()=>{closeSheet();setTimeout(showIdeas,200)};
@@ -1354,7 +1413,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v59";
+const APP_VER="v60";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -2037,7 +2096,7 @@ function renderInner(){
   document.getElementById("vOther").hidden=view==="woche";
   document.getElementById("navbar").hidden=view==="ferien"||view==="sterne";
   if(view==="tag")renderDay();else if(view==="monat")renderMonth();else if(view==="jahr")renderYear();else if(view==="ferien")renderFerien();else if(view==="sterne")renderStars();else renderWeek();
-  renderMorning();renderNews();renderEve();renderNext();renderRemind();renderWishes();
+  renderMorning();renderNews();renderEve();renderNext();renderRemind();renderWishes();renderPet();
 }
 /* ---------- Tagesübersicht (Zeitstrahl) ---------- */
 const HPX=52;
@@ -3083,6 +3142,10 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-08b",d:"2026-11-08",t:"👑 Neue Premium-Funktionen",items:[
+    "📺 Wand-Kalender: großer Bildschirm für Tablet oder Fernseher mit Uhr, Wetter, Tagesplan und Countdown",
+    "🎬 Familien-Rückblick: euer Jahr in Zahlen zum Durchwischen und als Bild zum Teilen",
+    "🐣 Familien-Maskottchen: wächst mit jedem Eintrag und jedem Stern vom Ei bis zum Drachen"]},
   {v:"2026-11-08a",d:"2026-11-08",t:"👑 Premium",items:[
     "👑 Premium: Empfiehl den Kalender weiter und schalte Vorteile für die ganze Familie frei (Einstellungen → Premium)",
     "❄️ Ab 3 Familien: Jahreszeiten-Effekte im Kopfbereich und 🎉 Konfetti an Geburtstagen und bei erledigten Aufgaben",
@@ -3175,7 +3238,7 @@ async function admUpd(body){
 const PREM_STUFEN=[
   {n:3,t:"❄️ Jahreszeiten-Effekte & 🎉 Konfetti",d:"Schnee, Blüten, Blätter oder Feuerwerk im Kopfbereich, Konfetti an Geburtstagen und bei erledigten Aufgaben"},
   {n:5,t:"✨ Gold-Design",d:"Goldener 3D-Kopfbereich mit Krone"},
-  {n:10,t:"👑 Premium komplett",d:"Alle Vorteile für immer, auch alle künftigen Premium-Funktionen, für die ganze Familie"}
+  {n:10,t:"👑 Premium komplett",d:"📺 Wand-Kalender, 🎬 Familien-Rückblick, 🐣 Familien-Maskottchen und alle künftigen Premium-Funktionen, für immer und für die ganze Familie"}
 ];
 // Familien mit Premium von Anfang an (nur Prüfsummen, keine Kalender-Codes)
 const PREM_FAMS=["26cc1858dd999fa7142ec9d725ec90e403974fa0660326e47d6bbcc8b5c30191","c8add84f811296e5c8943d70fa1b37f6cb6989cb254ae35e6f7fb4af03086a78"];
@@ -3216,6 +3279,7 @@ function applyPremium(){
   b.classList.toggle("premgold",premOn(5)&&lsGet("fk-p-gold")!=="0");
   b.classList.toggle("premking",premOn(10));
   if(premOn(3)&&lsGet("fk-p-season")!=="0")startSeason();else stopSeason();
+  if(typeof renderPet==="function")renderPet();
 }
 /* Jahreszeiten-Effekte im Kopfbereich */
 function seasonSet(){const d=new Date(),m=d.getMonth()+1,day=d.getDate();
@@ -3259,6 +3323,7 @@ async function showPremium(){
         <label class="pick" style="justify-content:space-between"><span>❄️ Jahreszeiten-Effekte</span><input type="checkbox" id="pSeason" ${lsGet("fk-p-season")!=="0"?"checked":""}></label>
         ${PREM.stufe>=5?`<label class="pick" style="justify-content:space-between"><span>✨ Gold-Design</span><input type="checkbox" id="pGold" ${lsGet("fk-p-gold")!=="0"?"checked":""}></label>`:""}
         <button class="btn ghost" id="pConf">🎉 Konfetti ausprobieren</button>
+        ${PREM.stufe>=10?`<button class="btn" id="pWall">📺 Wand-Kalender starten</button><button class="btn" id="pWrap">🎬 Familien-Rückblick ansehen</button><button class="btn" id="pPet">🐣 Familien-Maskottchen</button>`:""}
         <p class="hint" style="margin:0">Die Schalter gelten nur für dieses Handy.</p>`:""}
       <h4 class="sub">📣 Weiterempfehlen</h4>
       ${ref?`<p class="hint">Dein persönlicher Link. Er verrät nichts über euren Kalender, die anderen bekommen ihren eigenen.</p>
@@ -3272,6 +3337,7 @@ async function showPremium(){
     const se=document.getElementById("pSeason");if(se)se.onchange=()=>{lsSet("fk-p-season",se.checked?"1":"0");applyPremium()};
     const go=document.getElementById("pGold");if(go)go.onchange=()=>{lsSet("fk-p-gold",go.checked?"1":"0");applyPremium()};
     const cf=document.getElementById("pConf");if(cf)cf.onclick=confetti;
+    [["pWall",showWall],["pWrap",showWrapped],["pPet",()=>{closeSheet();setTimeout(showPet,200)}]].forEach(([id,f])=>{const b=document.getElementById(id);if(b)b.onclick=f});
     if(ref){document.getElementById("pCopy").onclick=async()=>{try{await navigator.clipboard.writeText(refLink(ref));toast("Link kopiert")}catch(e){toast("Bitte den Link markieren und kopieren")}};
       document.getElementById("pShare").onclick=async()=>{if(navigator.share){try{await navigator.share({title:"Familienkalender",text:premText(ref)})}catch(e){}}else toast("Teilen geht hier nicht · bitte Link kopieren")}}
   };
@@ -3299,6 +3365,173 @@ async function admPrem(body){
   body.querySelectorAll("[data-pgdel]").forEach(b=>b.onclick=async()=>{if(!await askConfirm("Premium wieder entziehen?","Entziehen"))return;try{await FS.doc(`premium/${b.dataset.pgdel}`).delete();showAdmin("premium")}catch(e){toast("Hat nicht geklappt")}});
 }
 
+/* ===================== 👑 Premium-Funktionen ===================== */
+function premGate(f){if(premOn(10))return f();sheet("👑 Premium",`<p>Diese Funktion gehört zu <b>Premium</b>. Empfiehl den Kalender an 10 Familien weiter, dann ist sie für euch alle freigeschaltet.</p><div class="actions"><button class="btn premcta" id="pgOpen">👑 Zu Premium</button><button class="btn ghost" id="pgX">Schließen</button></div>`);document.getElementById("pgOpen").onclick=()=>{closeSheet();setTimeout(showPremium,200)};document.getElementById("pgX").onclick=closeSheet}
+const WMO=c=>c===0?["☀️","Sonnig"]:c<=2?["🌤️","Leicht bewölkt"]:c===3?["☁️","Bewölkt"]:c<=48?["🌫️","Nebel"]:c<=57?["🌦️","Nieselregen"]:c<=67?["🌧️","Regen"]:c<=77?["🌨️","Schnee"]:c<=82?["🌧️","Schauer"]:c<=86?["🌨️","Schneeschauer"]:["⛈️","Gewitter"];
+let WX=null,WX_T=0;
+async function loadWeather(){
+  if(WX&&Date.now()-WX_T<20*60e3)return WX;
+  try{const r=await fetch("https://api.open-meteo.com/v1/forecast?latitude=52.52&longitude=13.41&current=temperature_2m,weather_code&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max&timezone=Europe%2FBerlin&forecast_days=2");
+    if(r.ok){WX=await r.json();WX_T=Date.now()}}catch(e){}
+  return WX;
+}
+/* ---------- 📺 Wand-Kalender ---------- */
+let wallTimer=null,wallLock=null;
+function personDot(k){return `<i class="wdot" style="background:${shownColor(k)}"></i>`}
+function wallEvents(day){return ALLE_ENTRIES().filter(e=>onDay(e,day)).sort((a,b)=>(a.typ==="urlaub"?-1:0)-(b.typ==="urlaub"?-1:0)||String(a.von||"00").localeCompare(String(b.von||"00")))}
+function ALLE_ENTRIES(){return entries}
+async function showWall(){
+  if(!premOn(10)){premGate(showWall);return}
+  closeSheet();
+  let w=document.getElementById("wall");if(!w){w=document.createElement("div");w.id="wall";document.body.appendChild(w)}
+  w.hidden=false;document.body.classList.add("wallon");
+  try{if(document.documentElement.requestFullscreen)await document.documentElement.requestFullscreen()}catch(e){}
+  try{if(navigator.wakeLock)wallLock=await navigator.wakeLock.request("screen")}catch(e){}
+  const draw=async()=>{
+    const now=new Date();const h=now.getHours();const t=iso(now);
+    w.classList.toggle("night",h>=22||h<6);
+    const wx=await loadWeather();
+    const cur=wx&&wx.current?WMO(wx.current.weather_code):null;
+    const tm=addDays(t,1);
+    const evT=wallEvents(t),evM=wallEvents(tm);
+    const nx=entries.filter(e=>e.typ!=="urlaub"&&e.von&&e.datum>=t).map(e=>({e,at:new Date(e.datum+"T"+e.von)})).filter(x=>x.at>now).sort((a,b)=>a.at-b.at)[0];
+    const cd=nx?(()=>{const m=Math.round((nx.at-now)/6e4);return m<60?`in ${m} Min`:m<1440?`in ${Math.floor(m/60)} Std ${m%60} Min`:`in ${Math.round(m/1440)} Tagen`})():"";
+    const g=h<5?"Gute Nacht":h<11?"Guten Morgen":h<17?"Hallo":h<22?"Guten Abend":"Gute Nacht";
+    const row=e=>`<div class="wev">${personDot(e.person)}<span class="wt">${esc(e.typ==="urlaub"?"ganztags":timeTxt(e)||"ganztags")}</span><span class="wn">${esc(emoP(e)+(e.typ==="geburtstag"?bdayLabel(e,t):e.typ==="arbeit"?(e.titel||"Arbeit"):e.typ==="urlaub"?(e.titel?"Urlaub · "+e.titel:"Urlaub"):e.titel))}</span><span class="wp">${esc(PNAME[e.person]||"")}</span></div>`;
+    w.innerHTML=`<div class="wall-in">
+      <div class="wl">
+        <div class="wclock">${String(h).padStart(2,"0")}<span class="wcol">:</span>${String(now.getMinutes()).padStart(2,"0")}</div>
+        <div class="wdate">${WDL[now.getDay()]}, ${now.getDate()}. ${MONL[now.getMonth()]} ${now.getFullYear()}</div>
+        <div class="wgreet">${g}! 👋</div>
+        ${cur?`<div class="wwx"><span class="wwi">${cur[0]}</span><b>${Math.round(wx.current.temperature_2m)}°</b><span>${cur[1]} · ${Math.round(wx.daily.temperature_2m_min[0])}° / ${Math.round(wx.daily.temperature_2m_max[0])}°${wx.daily.precipitation_probability_max?` · 💧 ${wx.daily.precipitation_probability_max[0]} %`:""}</span></div>`:""}
+        ${nx?`<div class="wnext"><span class="lbl">⏭ Als Nächstes · ${cd}</span><b>${esc(emoP(nx.e)+(nx.e.titel||TYPN[nx.e.typ]))}</b><span>${nx.e.datum===t?"heute":nx.e.datum===tm?"morgen":WDL[parse(nx.e.datum).getDay()]} ${esc(nx.e.von)} · ${esc(PNAME[nx.e.person]||"")}</span></div>`:""}
+      </div>
+      <div class="wr">
+        <h2>📅 Heute</h2>${evT.length?evT.map(row).join(""):`<p class="wempty">Heute steht nichts an. Genießt den Tag! 🌿</p>`}
+        <h2>🌙 Morgen ${wx&&wx.daily?`<small>${WMO(wx.daily.weather_code[1])[0]} ${Math.round(wx.daily.temperature_2m_max[1])}°</small>`:""}</h2>${evM.length?evM.map(row).join(""):`<p class="wempty">Morgen ist noch frei.</p>`}
+      </div></div>
+      <div class="wctl"><button id="wallX" aria-label="Wand-Kalender beenden">✕</button></div>`;
+    document.getElementById("wallX").onclick=hideWall;
+  };
+  await draw();clearInterval(wallTimer);wallTimer=setInterval(draw,30000);
+  w.onclick=e=>{if(!e.target.closest("#wallX")){w.classList.add("showctl");clearTimeout(w._t);w._t=setTimeout(()=>w.classList.remove("showctl"),4000)}};
+}
+async function hideWall(){clearInterval(wallTimer);const w=document.getElementById("wall");if(w)w.hidden=true;document.body.classList.remove("wallon");
+  try{if(wallLock){await wallLock.release();wallLock=null}}catch(e){}try{if(document.fullscreenElement)await document.exitFullscreen()}catch(e){}}
+document.addEventListener("visibilitychange",async()=>{const w=document.getElementById("wall");if(w&&!w.hidden&&document.visibilityState==="visible"&&navigator.wakeLock){try{wallLock=await navigator.wakeLock.request("screen")}catch(e){}}});
+
+/* ---------- 🎬 Familien-Rückblick ---------- */
+function wrappedStats(y){
+  const Y=String(y),inY=e=>e.datum&&e.datum.slice(0,4)===Y&&e.datum<=today;
+  const ev=entries.filter(e=>inY(e)&&e.typ==="termin");
+  const per={};for(const e of ev)per[e.person]=(per[e.person]||0)+1;
+  const topP=Object.entries(per).filter(([k])=>k!=="gemeinsam").sort((a,b)=>b[1]-a[1])[0];
+  let urlaub=0;const urlP={};for(const e of entries.filter(e=>e.typ==="urlaub"&&e.datum.slice(0,4)===Y)){const end=e.endDatum&&e.endDatum>=e.datum?e.endDatum:e.datum;const n=diffDays(e.datum,end)+1;urlaub+=n;urlP[e.person]=(urlP[e.person]||0)+n}
+  const work={};for(const e of entries.filter(e=>inY(e)&&e.typ==="arbeit")){const w=work[e.person]||(work[e.person]={n:0,h:0});w.n++;if(e.von&&e.bis){let a=+e.von.slice(0,2)*60+ +e.von.slice(3),b=+e.bis.slice(0,2)*60+ +e.bis.slice(3);if(b<=a)b+=1440;w.h+=(b-a)/60}}
+  const topW=Object.entries(work).sort((a,b)=>b[1].h-a[1].h||b[1].n-a[1].n)[0];
+  const papaDays=new Set();for(const e of entries.filter(e=>e.datum.slice(0,4)===Y&&/papa|pascal/i.test(e.titel||""))){const end=e.endDatum&&e.endDatum>=e.datum?e.endDatum:e.datum;for(let d=e.datum;d<=end&&d.slice(0,4)===Y;d=addDays(d,1))papaDays.add(d)}
+  const emos={};for(const e of ev){const x=emo(e);if(x)emos[x]=(emos[x]||0)+1}
+  const topE=Object.entries(emos).sort((a,b)=>b[1]-a[1])[0];
+  const mon={};for(const e of entries.filter(inY))mon[e.datum.slice(5,7)]=(mon[e.datum.slice(5,7)]||0)+1;
+  const topM=Object.entries(mon).sort((a,b)=>b[1]-a[1])[0];
+  const stars=taskLogs.filter(l=>l.datum&&l.datum.slice(0,4)===Y).reduce((s,l)=>s+(+l.sterne||0),0);
+  const bdays=entries.filter(e=>e.typ==="geburtstag").length;
+  return {y,total:ev.length,topP,urlaub,urlP,topW,papa:papaDays.size,topE,topM,stars,bdays,all:entries.filter(inY).length};
+}
+function showWrapped(){
+  if(!premOn(10)){premGate(showWrapped);return}
+  closeSheet();
+  const now=new Date();const y=now.getMonth()===0&&now.getDate()<15?now.getFullYear()-1:now.getFullYear();
+  const s=wrappedStats(y);const P=k=>esc(PNAME[k]||k),C=k=>shownColor(k);
+  const slides=[
+    {bg:"w1",h:`<div class="wbig">🎬</div><div class="wttl">Euer Jahr<br><span class="wyr">${y}</span></div><p>Der Rückblick der Familie ${esc(NAMES.filter(Boolean).join(", "))}</p>`},
+    {bg:"w2",h:`<p>In ${y} standen bei euch</p><div class="wnum" data-n="${s.all}">0</div><p>Einträge im Kalender. 📅</p><p class="wsub">Davon ${s.total} Termine.</p>`},
+    s.topP&&{bg:"w3",h:`<p>Am meisten los hatte</p><div class="wname" style="color:${C(s.topP[0])}">${P(s.topP[0])}</div><p>mit <b>${s.topP[1]}</b> Terminen. 🏃</p>`},
+    s.topE&&{bg:"w4",h:`<p>Euer Lieblings-Emoji</p><div class="wbig">${s.topE[0]}</div><p><b>${s.topE[1]}-mal</b> im Kalender</p>`},
+    s.urlaub&&{bg:"w5",h:`<div class="wbig">🏖️</div><div class="wnum" data-n="${s.urlaub}">0</div><p>Tage Urlaub</p><p class="wsub">${Object.entries(s.urlP).map(([k,n])=>`${P(k)}: ${n}`).join(" · ")}</p>`},
+    s.topW&&{bg:"w6",h:`<p>Fleißigste Person</p><div class="wname" style="color:${C(s.topW[0])}">${P(s.topW[0])}</div><p><b>${s.topW[1].n}</b> Schichten${s.topW[1].h?` · <b>${Math.round(s.topW[1].h)}</b> Stunden`:""} 💼</p>`},
+    s.papa&&{bg:"w7",h:`<div class="wbig">👨‍👦</div><div class="wnum" data-n="${s.papa}">0</div><p>Tage beim Papa</p>`},
+    s.topM&&{bg:"w8",h:`<p>Euer wildester Monat</p><div class="wname">${MONL[+s.topM[0]-1]}</div><p>mit <b>${s.topM[1]}</b> Einträgen 🔥</p>`},
+    s.stars&&{bg:"w9",h:`<div class="wbig">⭐</div><div class="wnum" data-n="${s.stars}">0</div><p>Sterne gesammelt</p>`},
+    {bg:"w10",h:`<div class="wbig">💛</div><div class="wttl">Danke für ${y}!</div><p>Auf ein tolles ${y+1} 🥂</p><button class="btn premcta" id="wrShare">📤 Als Bild teilen</button>`}
+  ].filter(Boolean);
+  let i=0,timer=null;
+  let w=document.getElementById("wrapped");if(!w){w=document.createElement("div");w.id="wrapped";document.body.appendChild(w)}
+  w.hidden=false;
+  const show=()=>{
+    w.className="";void w.offsetWidth;w.className=slides[i].bg;
+    w.innerHTML=`<div class="wbars">${slides.map((_,k)=>`<i class="${k<i?"done":k===i?"run":""}"></i>`).join("")}</div><button class="wx" aria-label="Schließen">✕</button><div class="wslide">${slides[i].h}</div><div class="wfx">${["✨","🎉","⭐","💫"].map((c,k)=>`<span style="left:${10+k*25}%;animation-delay:${k*.6}s">${c}</span>`).join("")}</div>`;
+    w.querySelector(".wx").onclick=e=>{e.stopPropagation();close()};
+    w.querySelectorAll(".wnum").forEach(el=>{const n=+el.dataset.n;const t0=performance.now();(function st(t){const k=Math.min(1,(t-t0)/1200);el.textContent=Math.round(n*(1-Math.pow(1-k,3))).toLocaleString("de-DE");if(k<1)requestAnimationFrame(st)})(t0)});
+    const sh=document.getElementById("wrShare");if(sh)sh.onclick=e=>{e.stopPropagation();shareWrapped(s)};
+    if(i===slides.length-1)confetti();
+    clearTimeout(timer);if(i<slides.length-1)timer=setTimeout(()=>{i++;show()},5500);
+  };
+  const close=()=>{clearTimeout(timer);w.hidden=true;w.innerHTML=""};
+  w.onclick=e=>{if(e.target.closest("button"))return;const x=e.clientX/innerWidth;if(x<.3){if(i>0)i--}else{if(i<slides.length-1)i++;else return}show()};
+  show();
+}
+async function shareWrapped(s){
+  const W=1080,H=1920,cv=document.createElement("canvas");cv.width=W;cv.height=H;const g=cv.getContext("2d");
+  const gr=g.createLinearGradient(0,0,W,H);gr.addColorStop(0,"#2b1055");gr.addColorStop(.55,"#d53369");gr.addColorStop(1,"#fbb03b");g.fillStyle=gr;g.fillRect(0,0,W,H);
+  g.textAlign="center";g.fillStyle="#fff";
+  g.font="900 64px system-ui,sans-serif";g.fillText("🎬 Unser Familienjahr",W/2,190);
+  g.font="900 220px system-ui,sans-serif";g.fillText(String(s.y),W/2,420);
+  const L=[[`📅 ${s.all} Einträge`,""],s.topP?[`🏃 Am meisten los: ${PNAME[s.topP[0]]}`,`${s.topP[1]} Termine`]:null,s.topE?[`${s.topE[0]} Lieblings-Emoji`,`${s.topE[1]}-mal`]:null,s.urlaub?[`🏖️ ${s.urlaub} Tage Urlaub`,""]:null,s.topW?[`💼 ${PNAME[s.topW[0]]}: ${s.topW[1].n} Schichten`,s.topW[1].h?`${Math.round(s.topW[1].h)} Stunden`:""]:null,s.topM?[`🔥 Wildester Monat: ${MONL[+s.topM[0]-1]}`,""]:null,s.stars?[`⭐ ${s.stars} Sterne gesammelt`,""]:null].filter(Boolean);
+  let yy=620;for(const[a,b] of L){g.fillStyle="rgba(255,255,255,.14)";g.beginPath();g.roundRect?g.roundRect(90,yy-80,W-180,b?150:120,36):g.rect(90,yy-80,W-180,b?150:120);g.fill();
+    g.fillStyle="#fff";g.font="800 52px system-ui,sans-serif";g.fillText(a,W/2,yy);if(b){g.font="500 40px system-ui,sans-serif";g.fillStyle="rgba(255,255,255,.85)";g.fillText(b,W/2,yy+54)}yy+=b?190:160}
+  g.font="600 38px system-ui,sans-serif";g.fillStyle="rgba(255,255,255,.9)";g.fillText("📲 familien-kalender.github.io",W/2,H-110);
+  const blob=await new Promise(r=>cv.toBlob(r,"image/png"));const f=new File([blob],`familienjahr-${s.y}.png`,{type:"image/png"});
+  try{if(navigator.canShare&&navigator.canShare({files:[f]})){await navigator.share({files:[f],title:"Unser Familienjahr "+s.y});return}}catch(e){return}
+  const a=document.createElement("a");a.href=URL.createObjectURL(blob);a.download=f.name;a.click();toast("Bild gespeichert");
+}
+
+/* ---------- 🐣 Familien-Maskottchen ---------- */
+const PET_STUFEN=[[0,"🥚","Ei"],[30,"🐣","Schlüpfling"],[100,"🐥","Küken"],[250,"🦎","Echse"],[500,"🐲","Mini-Drache"],[1000,"🐉","Drache"]];
+function petXP(){const st=taskLogs.reduce((s,l)=>s+(+l.sterne||0),0);return entries.length+st*3+Math.min(redeems.length*5,200)}
+function petInfo(){const xp=petXP();let k=0;for(let i=0;i<PET_STUFEN.length;i++)if(xp>=PET_STUFEN[i][0])k=i;const cur=PET_STUFEN[k],nx=PET_STUFEN[k+1];
+  return {xp,k,emo:cur[1],stufe:cur[2],next:nx,pct:nx?Math.round((xp-cur[0])*100/(nx[0]-cur[0])):100,name:(FAMCONF.pet&&FAMCONF.pet.name)||"Flammi"}}
+function petMood(p){const h=new Date().getHours();
+  if(entries.some(e=>e.typ==="geburtstag"&&onDay(e,today)))return ["🥳","Heute ist ein Geburtstag! Ich hab mir schon einen Hut aufgesetzt! 🎂"];
+  if(h>=22||h<6)return ["💤","Pssst … ich schlafe gerade. Bis morgen! 🌙"];
+  const doneToday=taskLogs.filter(l=>l.datum===today).length;
+  if(doneToday>=2)return ["😍",`Lecker! Heute schon ${doneToday} Aufgaben erledigt. Ich wachse! ⭐`];
+  const recent=entries.filter(e=>(e.erstellt||"").slice(0,10)>=addDays(today,-7)).length;
+  if(!recent)return ["🥺","Ich hab Hunger … tragt doch mal wieder etwas in den Kalender ein! 🍽️"];
+  const n=entries.filter(e=>onDay(e,today)&&e.typ==="termin").length;
+  if(n>=3)return ["😮",`Wow, heute ist viel los: ${n} Termine! Ihr schafft das! 💪`];
+  return h<11?["😊","Guten Morgen! Schön, dass ihr da seid. ☀️"]:h<17?["😄","Ich passe auf euren Kalender auf! 🛡️"]:["😌","Feierabend! Zeit für die Familie. 🛋️"];
+}
+function renderPet(){
+  const el=document.getElementById("petCard");if(!el)return;
+  if(!premOn(10)||lsGet("fk-p-pet")==="0"||IS_READER_SITE||annReader()){el.hidden=true;return}
+  const p=petInfo(),m=petMood(p);
+  el.hidden=false;
+  el.innerHTML=`<div class="petava ${m[0]==="💤"?"sleep":""}"><span class="petemo">${p.emo}</span><span class="petmood">${m[0]}</span></div>
+    <div class="petbody"><b>${esc(p.name)}</b> <span class="meta">· ${p.stufe}</span><div class="petsay">${esc(m[1])}</div>
+    <div class="petbar"><i style="width:${p.pct}%"></i></div><span class="meta">${p.next?`${p.xp} / ${p.next[0]} XP bis ${p.next[1]}`:`${p.xp} XP · ausgewachsen!`}</span></div>`;
+}
+function showPet(){
+  if(!premOn(10)){premGate(showPet);return}
+  const p=petInfo();
+  sheet(`${p.emo} ${esc(p.name)}`,`<div class="petbig"><span>${p.emo}</span></div>
+    <p class="hint" style="text-align:center">Euer Familien-Maskottchen wächst mit jedem Eintrag und jedem Stern, den ihr sammelt.</p>
+    <div class="pstufe on"><span class="pn">⚡ ${p.xp} XP</span><div><b>${p.stufe}</b><br><span class="hint" style="margin:0">${p.next?`Noch ${p.next[0]-p.xp} XP bis ${p.next[1]} ${p.next[2]}`:"Ganz ausgewachsen! 🏆"}</span></div></div>
+    <h4 class="sub">🍽️ So wächst ${esc(p.name)}</h4>
+    <ul class="petlist"><li>📅 Jeder Eintrag im Kalender: <b>+1 XP</b></li><li>⭐ Jeder Stern für eine erledigte Aufgabe: <b>+3 XP</b></li><li>🎁 Jede eingelöste Belohnung: <b>+5 XP</b></li></ul>
+    <h4 class="sub">🥚 Entwicklung</h4>
+    <div class="petgal">${PET_STUFEN.map((s,i)=>`<div class="${i<=p.k?"on":""}"><span>${i<=p.k?s[1]:"❔"}</span><small>${s[0]} XP</small></div>`).join("")}</div>
+    ${ROLE!=="lesen"?`<label class="f">Name des Maskottchens<input id="petN" maxlength="20" value="${esc(p.name)}"></label><button class="btn ghost" id="petSave">Namen speichern</button>`:""}
+    <button class="btn" id="petPet">💕 Streicheln</button>
+    <label class="pick" style="justify-content:space-between"><span>Auf der Startseite anzeigen</span><input type="checkbox" id="petShow" ${lsGet("fk-p-pet")!=="0"?"checked":""}></label>
+    <div class="actions"><button class="btn ghost" id="petX">Schließen</button></div>`);
+  document.getElementById("petX").onclick=closeSheet;
+  document.getElementById("petPet").onclick=()=>{const b=document.querySelector(".petbig");if(!b)return;for(let i=0;i<6;i++){const h=document.createElement("i");h.textContent=["💕","💖","💗"][i%3];h.style.left=(20+Math.random()*60)+"%";h.style.animationDelay=(i*.12)+"s";b.appendChild(h);setTimeout(()=>h.remove(),1800)}};
+  document.getElementById("petShow").onchange=e=>{lsSet("fk-p-pet",e.target.checked?"1":"0");renderPet()};
+  const sv=document.getElementById("petSave");if(sv)sv.onclick=async()=>{const n=document.getElementById("petN").value.trim().slice(0,20);if(!n)return;if(!store.conf){toast("Nur im gemeinsamen Online-Kalender möglich");return}try{await store.conf({pet:{name:n}});FAMCONF.pet={name:n};toast(`🐣 ${n} freut sich über den Namen!`);renderPet()}catch(e){toast("Speichern hat nicht geklappt")}};
+}
+
+{const pc=document.getElementById("petCard");if(pc)pc.onclick=()=>showPet()}
 setTimeout(applyPremium,300);
 /* ---------- Sprachen (Übersetzung der Oberfläche) ---------- */
 const LANGS=[["de","Deutsch"],["en","English"],["tr","Türkçe"],["pl","Polski"],["uk","Українська"]];
