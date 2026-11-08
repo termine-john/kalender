@@ -1381,6 +1381,7 @@ function renderStars(){
   if(KID){const b=starBalance(KID),nx=rewards.filter(r=>+r.kosten>b).sort((a,b2)=>(+a.kosten)-(+b2.kosten))[0],np=taskLogs.filter(l=>l.offen).reduce((a,l)=>a+(+l.sterne||0),0);
     kidH=`<div class="kidbar"><b>Hallo ${esc(PNAME[KID]||"")}! 👋</b>${nx?`<div class="pbar"><i style="width:${Math.min(100,Math.round(b/(+nx.kosten)*100))}%"></i></div><span class="meta">Nächstes Ziel: <b>${esc(nx.titel)}</b> · noch ${+nx.kosten-b} ⭐</span>`:rewards.length?`<br><span class="meta">Du kannst dir jede Belohnung leisten! 🎉</span>`:""}${np?`<br><span class="meta">⏳ ${np} ⭐ warten noch auf Bestätigung</span>`:""}</div>`}
   document.getElementById("vOther").innerHTML=`<div class="starcards">${cards}</div>${kidH}
+    ${TTS_OK&&tasks.length?`<button class="btn${KID?"":" ghost"}" id="ttsBtn" style="margin:8px 0">🔊 Aufgaben vorlesen</button>`:""}
     <div class="actions"><button class="btn" id="tAdd">+ Aufgabe</button><button class="btn ghost" id="rAdd">+ Belohnung</button></div>
     ${pendH}
     <h3 class="sec">Aufgaben</h3>
@@ -1390,6 +1391,7 @@ function renderStars(){
     ${last?`<h3 class="sec">Zuletzt eingelöst</h3><ul class="hint" style="margin:0;padding-left:18px">${last}</ul>`:""}
     <button class="btn ghost" id="kpBtn" style="margin-top:12px">🎒 Startpaket: Kinder-Aufgaben & Belohnungen</button>`;
   document.getElementById("kpBtn").onclick=kidPackSheet;
+  {const tb=document.getElementById("ttsBtn");if(tb)tb.onclick=()=>{if(speechSynthesis.speaking){speechSynthesis.cancel();return}readTasks()}}
   document.getElementById("tAdd").onclick=()=>openTaskSheet(null);
   document.getElementById("rAdd").onclick=()=>openRewardSheet(null);
 }
@@ -1399,7 +1401,7 @@ document.getElementById("vOther").addEventListener("click",async ev=>{
   if(dn){const t=tasks.find(x=>x.id===dn.dataset.done);if(!t||!store)return;const l=logFor(t);
     if(l){if(KID&&!l.offen){toast("Schon bestätigt ✓ Super gemacht!");return}
       if(!await askConfirm(l.offen?"Abhaken zurücknehmen?":`Erledigt zurücknehmen? ${PNAME[t.person]} verliert dafür ${+l.sterne||1} ⭐.`,"Zurücknehmen"))return;await store.del(l.id);toast("Zurückgenommen")}
-    else if(KID){await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:+t.sterne||1,datum:today,titel:t.titel});render();confetti();toast(`⏳ Super! +${+t.sterne||1} ⭐, sobald Mama oder Papa bestätigt haben`)}
+    else if(KID){await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:+t.sterne||1,datum:today,titel:t.titel});render();confetti();toast(`⏳ Super! +${+t.sterne||1} ⭐, sobald Mama oder Papa bestätigt haben`);if(ttsAuto())speak(`Super gemacht, ${PNAME[KID]||""}! ${t.titel} ist abgehakt. Du bekommst ${sternTxt(+t.sterne||1)}, sobald Mama oder Papa bestätigt haben.`)}
     else{await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:+t.sterne||1,datum:today,titel:t.titel});popPerson=t.person;render();if(premOn(3))confetti();toast(`⭐ +${+t.sterne||1} für ${PNAME[t.person]}!`)}
     return}
   const okb=ev.target.closest("[data-ok]");
@@ -1407,16 +1409,51 @@ document.getElementById("vOther").addEventListener("click",async ev=>{
     toast(x.typ==="erledigt"?`⭐ +${+x.sterne||1} für ${PNAME[x.person]} bestätigt`:`🎉 „${x.titel}“ für ${PNAME[x.person]} bestätigt`);return}
   const nob=ev.target.closest("[data-no]");
   if(nob){const x=[...taskLogs,...redeems].find(y=>y.id===nob.dataset.no);if(!x)return;if(!await askConfirm(x.typ==="erledigt"?`„${x.titel}“ nicht bestätigen? Die Sterne gibt es dann nicht.`:`„${x.titel}“ ablehnen? Die Sterne bekommt ${PNAME[x.person]} zurück.`,"Ablehnen"))return;await store.del(x.id);toast("Abgelehnt");return}
-  const tk=ev.target.closest("[data-task]");if(tk){if(KID)return;openTaskSheet(tasks.find(x=>x.id===tk.dataset.task));return}
+  const tk=ev.target.closest("[data-task]");if(tk){if(KID){const t=tasks.find(x=>x.id===tk.dataset.task);if(t){const l=logFor(t);speak(`${t.titel}. ${sternTxt(+t.sterne||1)}. ${l?(l.offen?"Schon abgehakt, wartet auf Bestätigung.":"Schon erledigt. Super!"):"Noch zu erledigen."}`)}return}openTaskSheet(tasks.find(x=>x.id===tk.dataset.task));return}
   const re=ev.target.closest("[data-redeem]");
   if(re){const r=rewards.find(x=>x.id===re.dataset.redeem),p=re.dataset.who;if(!r)return;
     if(KID){if(!await askConfirm(`„${r.titel}“ für ${+r.kosten} ⭐ einlösen? Mama oder Papa bekommen Bescheid und bestätigen.`,"Einlösen",false))return;
-      await store.add({typ:"einloesung",person:p,kosten:+r.kosten,titel:r.titel,datum:today});confetti();toast("🎁 Wunsch geschickt! Warte auf die Bestätigung");return}
+      await store.add({typ:"einloesung",person:p,kosten:+r.kosten,titel:r.titel,datum:today});confetti();toast("🎁 Wunsch geschickt! Warte auf die Bestätigung");if(ttsAuto())speak(`Toll! Dein Wunsch ${r.titel} ist verschickt.`);return}
     if(!await askConfirm(`„${r.titel}“ für ${PNAME[p]} einlösen? Dafür werden ${+r.kosten} ⭐ abgezogen.`,"Einlösen",false))return;
     await store.add({typ:"einloesung",person:p,kosten:+r.kosten,titel:r.titel,datum:today});toast(`🎉 ${PNAME[p]} hat „${r.titel}“ eingelöst`);return}
   if(KID&&ev.target.closest("[data-rwedit]"))return;
   const rw=ev.target.closest("[data-rwedit]");if(rw){openRewardSheet(rewards.find(x=>x.id===rw.dataset.rwedit))}
 });
+/* ---------- Vorlesen ---------- */
+const TTS_OK=typeof speechSynthesis!=="undefined"&&typeof SpeechSynthesisUtterance!=="undefined";
+const ttsAuto=()=>{try{return localStorage.getItem("fk-tts-auto")!=="0"}catch(e){return true}};
+const sternTxt=n=>n===1?"ein Stern":`${n} Sterne`;
+const noEmo=t=>String(t||"").replace(/\bMin\./g,"Minuten").replace(/\bStd\./g,"Stunde").replace(/€/g," Euro").replace(/[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\uFE0F\u200D\u20E3]/gu,"").replace(/\s+/g," ").trim();
+let ttsVoice=null;
+function pickVoice(){if(!TTS_OK)return;const v=speechSynthesis.getVoices().filter(x=>/^de/i.test(x.lang));ttsVoice=v.find(x=>/google|natural|neural|anna|petra|helena/i.test(x.name))||v[0]||null}
+if(TTS_OK){pickVoice();try{speechSynthesis.onvoiceschanged=pickVoice}catch(e){}}
+function speak(txt){
+  if(!TTS_OK){toast("Vorlesen geht auf diesem Handy leider nicht");return}
+  speechSynthesis.cancel();
+  const parts=noEmo(txt).split(/(?<=[.!?])\s+/).filter(Boolean);
+  for(const p of parts){const u=new SpeechSynthesisUtterance(p);u.lang="de-DE";if(ttsVoice)u.voice=ttsVoice;u.rate=.95;u.pitch=1.05;speechSynthesis.speak(u)}
+}
+function readTasks(){
+  const who=KID?[[KID,PNAME[KID]]]:persons().filter(([k])=>tasks.some(t=>t.person===k));
+  const out=[];
+  for(const [k,n] of who){
+    const open=tasks.filter(t=>t.person===k&&!logFor(t));
+    const td=open.filter(t=>t.wiederholung==="taeglich"),wk=open.filter(t=>t.wiederholung==="woechentlich"),em=open.filter(t=>t.wiederholung!=="taeglich"&&t.wiederholung!=="woechentlich");
+    out.push(KID?`Hallo ${n}!`:`${n}.`);
+    if(!open.length)out.push(KID?"Du hast heute alle Aufgaben geschafft. Super gemacht!":"Alle Aufgaben sind erledigt.");
+    else{
+      out.push(`${KID?"Du hast":"Noch"} ${open.length===1?"eine Aufgabe":open.length+" Aufgaben"}${KID?" offen":" offen"}.`);
+      if(td.length)out.push("Heute: "+td.map(t=>`${t.titel}, ${sternTxt(+t.sterne||1)}`).join(". ")+".");
+      if(wk.length)out.push("Diese Woche: "+wk.map(t=>`${t.titel}, ${sternTxt(+t.sterne||1)}`).join(". ")+".");
+      if(em.length)out.push("Außerdem: "+em.map(t=>`${t.titel}, ${sternTxt(+t.sterne||1)}`).join(". ")+".");
+    }
+    const b=starBalance(k);out.push(`${KID?"Du hast":n+" hat"} ${b===1?"einen Stern":b+" Sterne"}.`);
+    const nx=rewards.filter(r=>+r.kosten>b).sort((a,c)=>(+a.kosten)-(+c.kosten))[0];
+    if(KID&&nx)out.push(`Bis ${nx.titel} fehlen dir noch ${sternTxt(+nx.kosten-b)}.`);
+    const wait=taskLogs.filter(l=>l.person===k&&l.offen).length;if(KID&&wait)out.push(`${wait===1?"Eine Aufgabe wartet":wait+" Aufgaben warten"} noch auf Bestätigung.`);
+  }
+  speak(out.join(" "));
+}
 const KIDPACK_T=[["🛏️ Bett machen",1,"taeglich"],["🪥 Zähne putzen morgens & abends",1,"taeglich"],["🎒 Schulranzen für morgen packen",1,"taeglich"],["📚 Hausaufgaben ohne Erinnerung",2,"taeglich"],["🍽️ Tisch decken oder abräumen",1,"taeglich"],["📖 20 Minuten lesen",2,"taeglich"],["🧹 Zimmer aufräumen",3,"woechentlich"],["🗑️ Müll rausbringen",2,"woechentlich"],["🧺 Eigene Wäsche wegräumen",2,"woechentlich"],["🌱 Pflanzen gießen",1,"woechentlich"],["🤝 Ohne Aufforderung geholfen",3,"woechentlich"],["🏆 Gute Note in einer Arbeit",5,"einmalig"]];
 const KIDPACK_R=[["📱 30 Min. extra Handy oder Konsole",15],["🌙 Am Wochenende 30 Min. länger aufbleiben",20],["🍦 Eis essen gehen",25],["🍕 Lieblingsessen aussuchen",30],["🎬 Filmabend, ich suche den Film aus",40],["🎮 1 Std. extra Zocken am Wochenende",40],["💶 5 € extra Taschengeld",80],["🍿 Kinobesuch",100],["🛝 Ausflug nach Wahl",150],["🎁 Kleines Spielzeug bis 15 €",200],["🦁 Zoo- oder Freizeitpark-Tag",400]];
 async function addKidPack(p){
@@ -1448,10 +1485,12 @@ function showKidSettings(){
     <h4 class="sub">🎨 Darstellung</h4>
     ${langSelect()}
     <div class="seg" style="--n:3">${[["dark","🌙 Dunkel"],["light","☀️ Hell"],["auto","📱 Wie Handy"]].map(([k,n])=>`<button class="typ" data-theme-set="${k}" aria-pressed="${themeNow()===k}">${n}</button>`).join("")}</div>
+    ${TTS_OK?`<div class="rw"><label class="pick" style="justify-content:space-between"><span>🔊 Beim Abhaken laut loben</span><input type="checkbox" id="optTts" ${ttsAuto()?"checked":""}></label></div>`:""}
     ${pbgBox()}
     <p class="hint">Umstellen können das nur Erwachsene: Einstellungen → Mitglieder & Rechte.</p>
     <button class="btn ghost" id="setClose">Schließen</button>`);
   wireNameBox(null);wirePbg(showSettings);wireLang();
+  {const ot=document.getElementById("optTts");if(ot)ot.onchange=()=>{try{localStorage.setItem("fk-tts-auto",ot.checked?"1":"0")}catch(e){}}}
   {const ib=document.getElementById("installSet");if(ib)ib.onclick=()=>{closeSheet();setTimeout(installApp,200)}}
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{setTheme(b.dataset.themeSet);showSettings()});
   document.getElementById("setClose").onclick=closeSheet;
@@ -1498,7 +1537,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v61";
+const APP_VER="v62";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -3236,6 +3275,10 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-08d",d:"2026-11-08",t:"🔊 Aufgaben vorlesen",items:[
+    "🔊 Unter ⭐ liest das Handy die offenen Aufgaben, den Sterne-Stand und das nächste Ziel laut vor",
+    "👆 Auf dem Kinder-Handy wird eine Aufgabe vorgelesen, wenn man sie antippt",
+    "🎉 Beim Abhaken gibt es ein gesprochenes Lob (auf dem Kinder-Handy in den Einstellungen abschaltbar)"]},
   {v:"2026-11-08c",d:"2026-11-08",t:"🧒 Kinder-Handy & Aufgaben",items:[
     "🧒 Kinder-Handy: Ein Kind sieht auf seinem Handy nur die eigenen Termine, Aufgaben und Belohnungen (Einstellungen → Mitglieder & Rechte oder Einladen → 🧒 Kinder-Handy)",
     "⏳ Was ein Kind abhakt oder einlöst, bestätigen die Eltern unter ⭐ → „Zu bestätigen“. Ein roter Punkt zeigt, wenn etwas wartet",
