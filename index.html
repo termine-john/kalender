@@ -224,6 +224,12 @@ body.ro .cell{cursor:default}
 .mrow .seg{min-width:104px;margin:0}
 .mrow .seg .typ{padding:6px 0;font-size:16px}
 .mdel{border:1px solid var(--line);background:transparent;border-radius:10px;width:36px;height:36px;color:inherit}
+html.kidmode #tAdd,html.kidmode #rAdd,html.kidmode #kpBtn,html.kidmode [data-rwedit],html.kidmode #wishes,html.kidmode #invBox{display:none!important}
+.tabs button.hasbadge{position:relative}.tabs button.hasbadge::after{content:"";position:absolute;top:4px;right:6px;width:9px;height:9px;border-radius:50%;background:#ff4d6d;box-shadow:0 0 0 2px var(--surface)}
+.kidbar{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
+.kidbar .pbar{height:12px;border-radius:99px;background:rgba(127,127,127,.2);overflow:hidden;margin:6px 0 2px}.kidbar .pbar i{display:block;height:100%;background:linear-gradient(90deg,#ffd166,#ff9f1c);border-radius:99px}
+.pend{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center}.pend button{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:10px;padding:6px 10px;font:inherit}
+.kidsel{margin-top:4px;max-width:100%;font:inherit;font-size:12px;padding:3px 4px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:inherit}
 .nameq{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
 .nameq button{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:999px;padding:8px 14px;font:inherit}
 label.pick{display:inline-flex;align-items:center;gap:6px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;font-size:.85rem;font-weight:600}
@@ -746,6 +752,8 @@ function setPersons(keys,names){
 const DEFAULT_NAMES=["","",""];
 let NAMES=DEFAULT_NAMES.slice();
 let PEOPLE=[],PNAME={};
+var KID="",KIDGEM=false,_ALL=[];try{const k=JSON.parse(localStorage.getItem("fk-kind")||"null");if(k&&k.p){KID=String(k.p);KIDGEM=!!k.g}}catch(e){}
+if(KID)document.documentElement.classList.add("kidmode");
 var FILTER="";try{FILTER=localStorage.getItem("fk-filter")||""}catch(e){}
 let PHOTOS={};try{PHOTOS=JSON.parse(localStorage.getItem("fk-bilder")||"{}")||{}}catch(e){PHOTOS={}}
 const av=(k,cls="av")=>PHOTOS[k]?`<img class="${cls}" src="${PHOTOS[k]}" alt="">`:"";
@@ -760,6 +768,7 @@ function applyNames(arr){
   NAMES=SLOTS.map((k,i)=>String((arr&&arr[i])||"").trim().slice(0,20)||`Person ${i+1}`);
   PEOPLE=[...SLOTS.map((k,i)=>[k,NAMES[i]]),["gemeinsam","Gemeinsam"]];
   PNAME=Object.fromEntries(PEOPLE);
+  if(KID&&PNAME[KID]){PEOPLE=PEOPLE.filter(([k])=>k===KID||(KIDGEM&&k==="gemeinsam"));FILTER=""}
   const lg=document.querySelector(".legend");
   if(lg)lg.innerHTML=legendHTML();
 }
@@ -771,13 +780,23 @@ const TYPN={termin:"Termin",arbeit:"Arbeit",urlaub:"Urlaub",geburtstag:"Geburtst
 const CAL_TYPES=["termin","arbeit","urlaub","geburtstag"];
 let tasks=[],taskLogs=[],rewards=[],redeems=[],backups=[];
 function splitData(all){
+  _ALL=all;
+  if(KID){const ok=p=>p===KID||(KIDGEM&&p==="gemeinsam");
+    all=all.filter(e=>{const t=e.typ;if(t==="sicherung")return false;if(t==="belohnung")return true;if(t==="aufgabe"||t==="erledigt"||t==="einloesung")return e.person===KID;return ok(e.person)})}
   entries=all.filter(e=>!e.typ||CAL_TYPES.includes(e.typ));
   tasks=all.filter(e=>e.typ==="aufgabe");
   taskLogs=all.filter(e=>e.typ==="erledigt");
   rewards=all.filter(e=>e.typ==="belohnung");
   redeems=all.filter(e=>e.typ==="einloesung");
   backups=all.filter(e=>e.typ==="sicherung");
+  const tb=document.querySelector('[data-view="sterne"]');if(tb)tb.classList.toggle("hasbadge",!KID&&ROLE!=="lesen"&&pendingCount()>0);
 }
+function pendingCount(){return taskLogs.filter(l=>l.offen).length+redeems.filter(r=>r.offen).length}
+const KIDKEY=/^[a-z0-9_-]{1,20}$/;
+function setKid(p,g){p=p&&KIDKEY.test(p)?p:"";g=!!(g&&p);if(p===KID&&g===KIDGEM)return;KID=p;KIDGEM=g;
+  try{p?localStorage.setItem("fk-kind",JSON.stringify({p,g})):localStorage.removeItem("fk-kind")}catch(e){}
+  document.documentElement.classList.toggle("kidmode",!!p);FILTER="";
+  applyNames(NAMES);try{applyPersonStyles()}catch(e){}splitData(_ALL);if(p)view="sterne";render()}
 
 const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const parse=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
@@ -832,7 +851,8 @@ function checkJoin(){
   const h=location.hash;
   if(h.startsWith("#lesen=")){const v=h.slice(7);if(/^[a-z2-9]{18,}$/.test(v)){const old=getCfg();if(!old||!old.code)setCfg({firebase:DEFAULT_FIREBASE,lesen:v});else sessionStorage.setItem("fk-lesen-own",v)}history.replaceState(null,"",location.pathname);return}
   if(!h.startsWith("#join="))return;
-  const [v,wt]=h.slice(6).split("&w=");try{if(/^[a-z2-9]{18,}$/.test(v)){joinCode(v,wt);toast("Mit dem Familienkalender verbunden")}else{const j=JSON.parse(b64d(v));if(j&&j.c){joinCode(j.c);toast("Mit dem Familienkalender verbunden")}}}catch(e){toast("Der Einladungslink ist unvollständig")}
+  let [v,wt]=h.slice(6).split("&w=");let kd="";if(wt&&wt.includes("&k=")){[wt,kd]=wt.split("&k=")}
+  try{if(/^[a-z2-9]{18,}$/.test(v)){joinCode(v,wt);if(kd&&KIDKEY.test(kd)){const c3=getCfg();if(c3){c3.kind=kd;setCfg(c3)}setKid(kd,false)}toast("Mit dem Familienkalender verbunden")}else{const j=JSON.parse(b64d(v));if(j&&j.c){joinCode(j.c);toast("Mit dem Familienkalender verbunden")}}}catch(e){toast("Der Einladungslink ist unvollständig")}
   history.replaceState(null,"",location.pathname);
 }
 async function init(){
@@ -893,7 +913,7 @@ async function init(){
     else if(!snap.metadata.fromCache){clearTimeout(timer);setStatus(`${nr}alles übertragen ✓`)}
     else setStatus(`${nr}offline, zeigt gespeicherten Stand`);
     render();
-    if(!snap.metadata.fromCache&&!snap.metadata.hasPendingWrites){scheduleMirror();autoBackup()}
+    if(!snap.metadata.fromCache&&!snap.metadata.hasPendingWrites){scheduleMirror();autoBackup();setTimeout(maybeKidPack,4000)}
   },err=>{clearTimeout(timer);setStatus(err&&err.code==="permission-denied"?"Kein Zugriff · Datenbank-Regeln prüfen (Anleitung Schritt 4)":"Fehler beim Laden der Termine");});
 }
 
@@ -939,6 +959,7 @@ function showSetup(){
 function showSettings(){
   const c=getCfg();
   if(!c||c.local){if(c&&c.local){localStorage.removeItem(CFG_KEY)}showSetup();return}
+  if(KID){showKidSettings();return}
   if(ROLE==="lesen"){showReaderSettings();return}
   const link=inviteLink(c);let curLink=link;
   const appLink=location.origin+location.pathname;
@@ -946,7 +967,8 @@ function showSettings(){
     <button class="btn premcta" id="premBtn">👑 Premium${PREM.stufe>=10?" · freigeschaltet":` · ${PREM.anzahl} von 10`}</button>
     ${PREM.stufe>=10?`<div class="actions"><button class="btn ghost" id="sWall">📺 Wand-Kalender</button><button class="btn ghost" id="sWrap">🎬 Rückblick</button></div>`:""}
     <h4 class="sub">👪 Familie einladen</h4><p class="hint">Wähle zuerst, was die eingeladene Person darf. Gib die Links nur an die Familie weiter.</p>
-    <div class="seg" style="--n:2"><button class="typ" data-inv="lesen" aria-pressed="true">👁️ Nur lesen</button><button class="typ" data-inv="schreiben" aria-pressed="false">✏️ Darf mitschreiben</button></div>
+    <div class="seg" style="--n:3"><button class="typ" data-inv="lesen" aria-pressed="true">👁️ Nur lesen</button><button class="typ" data-inv="schreiben" aria-pressed="false">✏️ Mitschreiben</button><button class="typ" data-inv="kind" aria-pressed="false">🧒 Kinder-Handy</button></div>
+    <label class="f" id="invKidW" hidden>Für welches Kind?<select id="invKid">${persons().map(([k,n])=>`<option value="${k}" ${/john/i.test(n)?"selected":""}>${esc(n)}</option>`).join("")}</select></label>
     <div class="linkbox" id="inv">${esc(link)}</div>
     <p class="hint" id="invHint">Wer diesen Link öffnet, sieht alle Einträge, kann aber nichts ändern. Freischalten kannst du die Person jederzeit unten.</p>
     <div class="actions"><button class="btn" id="invCopy">Link kopieren</button><button class="btn ghost" id="invShare">Teilen …</button></div>
@@ -1028,7 +1050,13 @@ function showSettings(){
   document.getElementById("wipe").onclick=async()=>{if(!await askConfirm("Den ganzen Kalender mit allen Einträgen, Aufgaben und Sternen für ALLE löschen? Das lässt sich nicht rückgängig machen.","Endgültig löschen"))return;
     if(!await askConfirm("Bist du ganz sicher?","Ja, alles löschen"))return;wipeAll()};
   loadMembers();wireNameBox(loadMembers);document.getElementById("tokWipe").onclick=wipeWriteTokens;
+  const kidLinkUpd=async()=>{try{curLink=writeLink(c,await getWriteToken())+"&k="+document.getElementById("invKid").value}catch(e){toast(e&&e.code==="permission-denied"?"Bitte erst die neuen Firebase-Regeln veröffentlichen":"Gerade keine Verbindung");return false}
+    document.getElementById("inv").textContent=curLink;document.getElementById("invWa").href="https://wa.me/?text="+encodeURIComponent("Dein Familienkalender: "+curLink);return true};
+  {const ks=document.getElementById("invKid");if(ks)ks.onchange=kidLinkUpd}
   document.querySelectorAll("[data-inv]").forEach(b=>b.onclick=async()=>{
+    if(b.dataset.inv==="kind"){if(!persons().length)return;if(!await kidLinkUpd())return;document.querySelectorAll("[data-inv]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));document.getElementById("invKidW").hidden=false;
+      document.getElementById("invHint").innerHTML="Für das Handy deines Kindes: Es sieht <b>nur die eigene Spalte</b>, seine Aufgaben und Belohnungen. Abgehakte Aufgaben und eingelöste Belohnungen musst du bestätigen.";return}
+    document.getElementById("invKidW").hidden=true;
     const w=b.dataset.inv==="schreiben";
     if(w){try{curLink=writeLink(c,await getWriteToken())}catch(e){console.warn(e);toast(e&&e.code==="permission-denied"?"Bitte erst die neuen Firebase-Regeln veröffentlichen":"Gerade keine Verbindung");return}}else curLink=link;
     document.querySelectorAll("[data-inv]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)));
@@ -1332,8 +1360,8 @@ function logFor(t){
   if(t.wiederholung==="woechentlich")return ls.find(l=>mondayOf(l.datum)===mondayOf(today));
   return ls[0];
 }
-function starBalance(p){return taskLogs.filter(l=>l.person===p).reduce((a,l)=>a+(+l.sterne||0),0)-redeems.filter(r=>r.person===p).reduce((a,r)=>a+(+r.kosten||0),0)}
-function starWeek(p){const m=mondayOf(today);return taskLogs.filter(l=>l.person===p&&mondayOf(l.datum)===m).reduce((a,l)=>a+(+l.sterne||0),0)}
+function starBalance(p){return taskLogs.filter(l=>l.person===p&&!l.offen).reduce((a,l)=>a+(+l.sterne||0),0)-redeems.filter(r=>r.person===p).reduce((a,r)=>a+(+r.kosten||0),0)}
+function starWeek(p){const m=mondayOf(today);return taskLogs.filter(l=>l.person===p&&!l.offen&&mondayOf(l.datum)===m).reduce((a,l)=>a+(+l.sterne||0),0)}
 let popPerson="";
 function renderStars(){
   const P=persons();
@@ -1341,19 +1369,27 @@ function renderStars(){
   popPerson="";
   const vis=tasks.filter(t=>{const l=logFor(t);return !(t.wiederholung==="einmalig"&&l&&l.datum<today)});
   vis.sort((a,b)=>(!!logFor(a))-(!!logFor(b))||String(a.person).localeCompare(b.person));
-  const tl=vis.map(t=>{const l=logFor(t);return `<div class="task${l?" done":""}"><button class="chk" data-done="${esc(t.id)}" aria-label="${l?"Als nicht erledigt markieren":"Erledigt"}: ${esc(t.titel)}">${l?"✓":""}</button>
-    <button class="tt" data-task="${esc(t.id)}">${esc(t.titel)}<br><span class="meta"><span class="p-${t.person}" style="background:none;font-weight:700">${esc(PNAME[t.person]||"")}</span> · ${WIED[t.wiederholung]||"Einmalig"}</span></button>
+  const tl=vis.map(t=>{const l=logFor(t);return `<div class="task${l?" done":""}"><button class="chk" data-done="${esc(t.id)}" aria-label="${l?"Als nicht erledigt markieren":"Erledigt"}: ${esc(t.titel)}">${l?(l.offen?"⏳":"✓"):""}</button>
+    <button class="tt" data-task="${esc(t.id)}">${esc(t.titel)}<br><span class="meta"><span class="p-${t.person}" style="background:none;font-weight:700">${esc(PNAME[t.person]||"")}</span> · ${WIED[t.wiederholung]||"Einmalig"}${l&&l.offen?" · wartet auf Bestätigung":""}</span></button>
     <span class="st">${"⭐".repeat(Math.min(+t.sterne||1,5))}</span></div>`}).join("");
   const rws=rewards.slice().sort((a,b)=>(+a.kosten)-(+b.kosten)).map(r=>`<div class="rw"><div class="rw-head"><b>${esc(r.titel)}</b><span class="st" style="color:var(--star);font-weight:700">${+r.kosten} ⭐</span></div>
-    <div class="rw-btns">${P.map(([k,n])=>`<button data-redeem="${esc(r.id)}" data-who="${k}" ${starBalance(k)>=+r.kosten?"":"disabled"}>Einlösen für ${esc(n)}</button>`).join("")}<button data-rwedit="${esc(r.id)}">Bearbeiten</button></div></div>`).join("");
-  const last=redeems.slice().sort((a,b)=>a.datum<b.datum?1:-1).slice(0,5).map(r=>`<li>${fmt(r.datum)}: ${esc(PNAME[r.person]||"")} hat „${esc(r.titel)}“ eingelöst (−${+r.kosten} ⭐)</li>`).join("");
-  document.getElementById("vOther").innerHTML=`<div class="starcards">${cards}</div>
+    <div class="rw-btns">${P.map(([k,n])=>`<button data-redeem="${esc(r.id)}" data-who="${k}" ${starBalance(k)>=+r.kosten?"":"disabled"}>${KID?(starBalance(k)>=+r.kosten?"🎁 Einlösen":`🔒 noch ${+r.kosten-starBalance(k)} ⭐`):"Einlösen für "+esc(n)}</button>`).join("")}<button data-rwedit="${esc(r.id)}">Bearbeiten</button></div></div>`).join("");
+  const last=redeems.slice().sort((a,b)=>a.datum<b.datum?1:-1).slice(0,5).map(r=>`<li>${fmt(r.datum)}: ${esc(PNAME[r.person]||"")} hat „${esc(r.titel)}“ eingelöst (−${+r.kosten} ⭐)${r.offen?" · ⏳ wartet auf Bestätigung":""}</li>`).join("");
+  const pend=[...taskLogs.filter(l=>l.offen).map(l=>({id:l.id,txt:`${esc(PNAME[l.person]||"")}: „${esc(l.titel)}“ erledigt`,st:`+${+l.sterne||1} ⭐`})),...redeems.filter(r=>r.offen).map(r=>({id:r.id,txt:`${esc(PNAME[r.person]||"")} möchte „${esc(r.titel)}“ einlösen`,st:`−${+r.kosten} ⭐`}))];
+  const pendH=!KID&&!READONLY&&pend.length?`<h3 class="sec">✅ Zu bestätigen</h3><div class="tasklist">${pend.map(x=>`<div class="task pend"><span>${x.txt} <b style="color:var(--star)">${x.st}</b></span><button data-ok="${esc(x.id)}" aria-label="Bestätigen">✅</button><button data-no="${esc(x.id)}" aria-label="Ablehnen">✖</button></div>`).join("")}</div>`:"";
+  let kidH="";
+  if(KID){const b=starBalance(KID),nx=rewards.filter(r=>+r.kosten>b).sort((a,b2)=>(+a.kosten)-(+b2.kosten))[0],np=taskLogs.filter(l=>l.offen).reduce((a,l)=>a+(+l.sterne||0),0);
+    kidH=`<div class="kidbar"><b>Hallo ${esc(PNAME[KID]||"")}! 👋</b>${nx?`<div class="pbar"><i style="width:${Math.min(100,Math.round(b/(+nx.kosten)*100))}%"></i></div><span class="meta">Nächstes Ziel: <b>${esc(nx.titel)}</b> · noch ${+nx.kosten-b} ⭐</span>`:rewards.length?`<br><span class="meta">Du kannst dir jede Belohnung leisten! 🎉</span>`:""}${np?`<br><span class="meta">⏳ ${np} ⭐ warten noch auf Bestätigung</span>`:""}</div>`}
+  document.getElementById("vOther").innerHTML=`<div class="starcards">${cards}</div>${kidH}
     <div class="actions"><button class="btn" id="tAdd">+ Aufgabe</button><button class="btn ghost" id="rAdd">+ Belohnung</button></div>
+    ${pendH}
     <h3 class="sec">Aufgaben</h3>
     <div class="tasklist">${tl||'<p class="hint">Noch keine Aufgaben. Leg zum Beispiel „Zimmer aufräumen“ für John mit 2 Sternen an. Wer eine Aufgabe erledigt, tippt auf den Kreis und bekommt die Sterne.</p>'}</div>
     <h3 class="sec">Belohnungen</h3>
     <div class="tasklist">${rws||'<p class="hint">Noch keine Belohnungen. Zum Beispiel: „30 Minuten länger aufbleiben“ für 10 Sterne oder „Kinobesuch“ für 40 Sterne.</p>'}</div>
-    ${last?`<h3 class="sec">Zuletzt eingelöst</h3><ul class="hint" style="margin:0;padding-left:18px">${last}</ul>`:""}`;
+    ${last?`<h3 class="sec">Zuletzt eingelöst</h3><ul class="hint" style="margin:0;padding-left:18px">${last}</ul>`:""}
+    <button class="btn ghost" id="kpBtn" style="margin-top:12px">🎒 Startpaket: Kinder-Aufgaben & Belohnungen</button>`;
+  document.getElementById("kpBtn").onclick=kidPackSheet;
   document.getElementById("tAdd").onclick=()=>openTaskSheet(null);
   document.getElementById("rAdd").onclick=()=>openRewardSheet(null);
 }
@@ -1361,16 +1397,65 @@ document.getElementById("vOther").addEventListener("click",async ev=>{
   if(view!=="sterne")return;
   const dn=ev.target.closest("[data-done]");
   if(dn){const t=tasks.find(x=>x.id===dn.dataset.done);if(!t||!store)return;const l=logFor(t);
-    if(l){if(!await askConfirm(`Erledigt zurücknehmen? ${PNAME[t.person]} verliert dafür ${+l.sterne||1} ⭐.`,"Zurücknehmen"))return;await store.del(l.id);toast("Zurückgenommen")}
+    if(l){if(KID&&!l.offen){toast("Schon bestätigt ✓ Super gemacht!");return}
+      if(!await askConfirm(l.offen?"Abhaken zurücknehmen?":`Erledigt zurücknehmen? ${PNAME[t.person]} verliert dafür ${+l.sterne||1} ⭐.`,"Zurücknehmen"))return;await store.del(l.id);toast("Zurückgenommen")}
+    else if(KID){await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:+t.sterne||1,datum:today,titel:t.titel});render();confetti();toast(`⏳ Super! +${+t.sterne||1} ⭐, sobald Mama oder Papa bestätigt haben`)}
     else{await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:+t.sterne||1,datum:today,titel:t.titel});popPerson=t.person;render();if(premOn(3))confetti();toast(`⭐ +${+t.sterne||1} für ${PNAME[t.person]}!`)}
     return}
-  const tk=ev.target.closest("[data-task]");if(tk){openTaskSheet(tasks.find(x=>x.id===tk.dataset.task));return}
+  const okb=ev.target.closest("[data-ok]");
+  if(okb){const x=[...taskLogs,...redeems].find(y=>y.id===okb.dataset.ok);if(!x)return;const{id,offen,...o}=x;await store.set(id,o);popPerson=x.person;
+    toast(x.typ==="erledigt"?`⭐ +${+x.sterne||1} für ${PNAME[x.person]} bestätigt`:`🎉 „${x.titel}“ für ${PNAME[x.person]} bestätigt`);return}
+  const nob=ev.target.closest("[data-no]");
+  if(nob){const x=[...taskLogs,...redeems].find(y=>y.id===nob.dataset.no);if(!x)return;if(!await askConfirm(x.typ==="erledigt"?`„${x.titel}“ nicht bestätigen? Die Sterne gibt es dann nicht.`:`„${x.titel}“ ablehnen? Die Sterne bekommt ${PNAME[x.person]} zurück.`,"Ablehnen"))return;await store.del(x.id);toast("Abgelehnt");return}
+  const tk=ev.target.closest("[data-task]");if(tk){if(KID)return;openTaskSheet(tasks.find(x=>x.id===tk.dataset.task));return}
   const re=ev.target.closest("[data-redeem]");
   if(re){const r=rewards.find(x=>x.id===re.dataset.redeem),p=re.dataset.who;if(!r)return;
+    if(KID){if(!await askConfirm(`„${r.titel}“ für ${+r.kosten} ⭐ einlösen? Mama oder Papa bekommen Bescheid und bestätigen.`,"Einlösen",false))return;
+      await store.add({typ:"einloesung",person:p,kosten:+r.kosten,titel:r.titel,datum:today});confetti();toast("🎁 Wunsch geschickt! Warte auf die Bestätigung");return}
     if(!await askConfirm(`„${r.titel}“ für ${PNAME[p]} einlösen? Dafür werden ${+r.kosten} ⭐ abgezogen.`,"Einlösen",false))return;
     await store.add({typ:"einloesung",person:p,kosten:+r.kosten,titel:r.titel,datum:today});toast(`🎉 ${PNAME[p]} hat „${r.titel}“ eingelöst`);return}
+  if(KID&&ev.target.closest("[data-rwedit]"))return;
   const rw=ev.target.closest("[data-rwedit]");if(rw){openRewardSheet(rewards.find(x=>x.id===rw.dataset.rwedit))}
 });
+const KIDPACK_T=[["🛏️ Bett machen",1,"taeglich"],["🪥 Zähne putzen morgens & abends",1,"taeglich"],["🎒 Schulranzen für morgen packen",1,"taeglich"],["📚 Hausaufgaben ohne Erinnerung",2,"taeglich"],["🍽️ Tisch decken oder abräumen",1,"taeglich"],["📖 20 Minuten lesen",2,"taeglich"],["🧹 Zimmer aufräumen",3,"woechentlich"],["🗑️ Müll rausbringen",2,"woechentlich"],["🧺 Eigene Wäsche wegräumen",2,"woechentlich"],["🌱 Pflanzen gießen",1,"woechentlich"],["🤝 Ohne Aufforderung geholfen",3,"woechentlich"],["🏆 Gute Note in einer Arbeit",5,"einmalig"]];
+const KIDPACK_R=[["📱 30 Min. extra Handy oder Konsole",15],["🌙 Am Wochenende 30 Min. länger aufbleiben",20],["🍦 Eis essen gehen",25],["🍕 Lieblingsessen aussuchen",30],["🎬 Filmabend, ich suche den Film aus",40],["🎮 1 Std. extra Zocken am Wochenende",40],["💶 5 € extra Taschengeld",80],["🍿 Kinobesuch",100],["🛝 Ausflug nach Wahl",150],["🎁 Kleines Spielzeug bis 15 €",200],["🦁 Zoo- oder Freizeitpark-Tag",400]];
+async function addKidPack(p){
+  if(!store||KID||ROLE==="lesen")return 0;let n=0;
+  for(const [i,[titel,sterne,w]] of KIDPACK_T.entries()){if(tasks.some(t=>t.person===p&&t.titel===titel))continue;await store.set(`kp-${p}-t${i}`,{typ:"aufgabe",titel,person:p,sterne,wiederholung:w,erstellt:today});n++}
+  for(const [i,[titel,kosten]] of KIDPACK_R.entries()){if(rewards.some(r=>r.titel===titel))continue;await store.set(`kp-r${i}`,{typ:"belohnung",titel,kosten});n++}
+  try{if(store.conf)await store.conf({kidPack:true})}catch(e){}
+  return n;
+}
+let kpTried=false;
+function maybeKidPack(){
+  if(kpTried||KID||ROLE!=="schreiben"||!DATA_READY||!store||store.mode!=="db")return;
+  if(!PREM.gruender||FAMCONF.kidPack)return;
+  const j=persons().find(([k,n])=>k==="john"||/^john$/i.test(n));if(!j)return;
+  kpTried=true;if(tasks.some(t=>t.person===j[0]))return;
+  addKidPack(j[0]).then(n=>{if(n)toast(`🎒 ${n} Aufgaben & Belohnungen für ${j[1]} angelegt`)});
+}
+function kidPackSheet(){
+  sheet("🎒 Startpaket für Kinder",`<p class="hint">Legt ${KIDPACK_T.length} passende Aufgaben (Bett machen, Hausaufgaben, Zimmer aufräumen …) und ${KIDPACK_R.length} Belohnungen von 15 bis 400 ⭐ an, gedacht für Kinder ab etwa 8 Jahren. Vorhandenes bleibt, doppelte werden übersprungen. Alles lässt sich danach ändern oder löschen.</p>
+    <span class="lbl-s">Für wen?</span><div class="nameq">${persons().map(([k,n])=>`<button data-kp="${k}">${esc(n)}</button>`).join("")}</div>
+    <button class="btn ghost" id="kpClose">Abbrechen</button>`);
+  document.querySelectorAll("[data-kp]").forEach(b=>b.onclick=async()=>{closeSheet();const n=await addKidPack(b.dataset.kp);toast(n?`🎒 ${n} Aufgaben & Belohnungen angelegt`:"Ist schon alles da ✓")});
+  document.getElementById("kpClose").onclick=closeSheet;
+}
+function showKidSettings(){
+  sheet("Einstellungen",`<div class="rolebox">🧒 <b>Kinder-Handy für ${esc(PNAME[KID]||"")}</b><br><span class="hint">Du siehst deine eigenen Termine${KIDGEM?" und die gemeinsamen":""}, deine Aufgaben und Belohnungen. Hak ab, was du geschafft hast. Mama oder Papa bestätigen es, dann bekommst du die ⭐.</span></div>
+    ${nameBox()}
+    ${isStandalone()?"":`<button class="btn" id="installSet">📲 Als App installieren</button>`}
+    <h4 class="sub">🎨 Darstellung</h4>
+    ${langSelect()}
+    <div class="seg" style="--n:3">${[["dark","🌙 Dunkel"],["light","☀️ Hell"],["auto","📱 Wie Handy"]].map(([k,n])=>`<button class="typ" data-theme-set="${k}" aria-pressed="${themeNow()===k}">${n}</button>`).join("")}</div>
+    ${pbgBox()}
+    <p class="hint">Umstellen können das nur Erwachsene: Einstellungen → Mitglieder & Rechte.</p>
+    <button class="btn ghost" id="setClose">Schließen</button>`);
+  wireNameBox(null);wirePbg(showSettings);wireLang();
+  {const ib=document.getElementById("installSet");if(ib)ib.onclick=()=>{closeSheet();setTimeout(installApp,200)}}
+  document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{setTheme(b.dataset.themeSet);showSettings()});
+  document.getElementById("setClose").onclick=closeSheet;
+}
 function openTaskSheet(t){
   const d=t?{...t}:{titel:"",person:PEOPLE[2][0],sterne:2,wiederholung:"einmalig"};let sure=false;
   const draw=()=>{sheet(t?"Aufgabe bearbeiten":"Neue Aufgabe",`
@@ -1413,7 +1498,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v60";
+const APP_VER="v61";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -1660,11 +1745,12 @@ async function _ensureMember(cfg){
       const tok=cfg.wtok||"";
       const o={...base,seit:today,name:"",rolle:(tok||intent==="schreiben")?"schreiben":"lesen"};
       if(tok)o.token=tok;
+      if(cfg.kind&&KIDKEY.test(cfg.kind))o.kind=cfg.kind;
       try{await ref.set(o)}catch(e){if(o.rolle!=="schreiben")throw e;o.rolle="lesen";delete o.token;await ref.set(o);toast("Der Mitschreib-Link gilt nicht mehr · du kannst erst mal nur lesen")}
     }
     try{sessionStorage.removeItem("fk-joined")}catch(e){}
-    if(cfg.wtok){const c2=getCfg();if(c2){delete c2.wtok;setCfg(c2)}}
-    if(!RULES_OLD&&!memberSub)memberSub=ref.onSnapshot(s=>{if(!s.exists)return;MY_MEMBER=s.data();applyRole(MY_MEMBER.rolle==="lesen"?"lesen":"schreiben");setTimeout(maybeAskName,3500)},()=>{});
+    if(cfg.wtok||cfg.kind){const c2=getCfg();if(c2){delete c2.wtok;delete c2.kind;setCfg(c2)}}
+    if(!RULES_OLD&&!memberSub)memberSub=ref.onSnapshot(s=>{if(!s.exists)return;MY_MEMBER=s.data();applyRole(MY_MEMBER.rolle==="lesen"?"lesen":"schreiben");setKid(MY_MEMBER.kind||"",MY_MEMBER.kindGem);setTimeout(maybeAskName,3500)},()=>{});
     memberOK=true;if(ROLE!=="lesen")scheduleMirror();setTimeout(checkAdmin,2000);if(!RULES_OLD)startPriv();setTimeout(()=>{sendPendingRef();refreshPremium()},3000);return true;
   }catch(e){memberOK=false;memberErr=e&&e.code||"";console.warn("Mitglied",e);return false}
 }
@@ -1708,10 +1794,17 @@ async function loadMembers(){
   list.sort((a,b)=>((a.rolle==="lesen")-(b.rolle==="lesen"))||(a.id===MY_UID?-1:b.id===MY_UID?1:0)||String(a.name||"~").localeCompare(String(b.name||"~")));
   box.innerHTML=list.map(m=>{const me=m.id===MY_UID,w=m.rolle!=="lesen";
     return `<div class="task mrow" data-uid="${esc(m.id)}"><div class="mname"><b>${esc(m.name||"Gerät ohne Namen")}</b>${me?" · <i>dieses Handy</i>":""}
-      <div class="mmeta">${w?"✏️ darf schreiben":"👁️ nur lesen"}${m.seit?" · seit "+dmy(m.seit):""}${m.zuletzt&&m.zuletzt!==m.seit?" · zuletzt "+dmy(m.zuletzt):""}</div></div>
+      <div class="mmeta">${m.kind?"🧒 Kinder-Handy · ":""}${w?"✏️ darf schreiben":"👁️ nur lesen"}${m.seit?" · seit "+dmy(m.seit):""}${m.zuletzt&&m.zuletzt!==m.seit?" · zuletzt "+dmy(m.zuletzt):""}</div>
+      ${me?"":`<select class="kidsel" data-kind aria-label="Art des Handys"><option value="">👤 Erwachsenen-Handy (sieht alles)</option>${persons().map(([k,n])=>`<option value="${k}" ${m.kind===k&&!m.kindGem?"selected":""}>🧒 Kinder-Handy: nur ${esc(n)}</option><option value="${k}+g" ${m.kind===k&&m.kindGem?"selected":""}>🧒 Kinder-Handy: ${esc(n)} + Gemeinsam</option>`).join("")}</select>`}</div>
       <div class="seg" style="--n:2"><button class="typ" data-role="schreiben" aria-pressed="${w}" aria-label="Darf schreiben">✏️</button><button class="typ" data-role="lesen" aria-pressed="${!w}" aria-label="Nur lesen">👁️</button></div>
       ${me?"<span></span>":`<button class="mdel" data-mdel aria-label="Aus der Liste entfernen">🗑</button>`}</div>`}).join("")||`<p class="hint">Noch keine Mitglieder.</p>`;
+  box.onchange=async ev=>{const sel=ev.target.closest("[data-kind]");if(!sel)return;const row=sel.closest("[data-uid]");const uid=row.dataset.uid,m=list.find(x=>x.id===uid);if(!m)return;
+    const [p,g]=sel.value.split("+");const nm=m.name||"dieses Gerät";
+    try{await FS.doc(`familien/${c.code}/mitglieder/${uid}`).set(p?{kind:p,kindGem:g==="g",rolle:"schreiben"}:{kind:"",kindGem:false},{merge:true});
+      toast(p?`🧒 ${nm} ist jetzt ein Kinder-Handy für ${PNAME[p]||p}`:`${nm} sieht wieder alles`)}catch(e){toast(e&&e.code==="permission-denied"?"Keine Berechtigung · Regeln aktualisieren":"Ändern hat nicht geklappt")}
+    loadMembers()};
   box.onclick=async ev=>{
+    if(ev.target.closest("[data-kind]"))return;
     const row=ev.target.closest("[data-uid]");if(!row)return;const uid=row.dataset.uid,m=list.find(x=>x.id===uid);if(!m)return;
     const nm=m.name||"dieses Gerät";
     const rb=ev.target.closest("[data-role]");
@@ -1775,7 +1868,7 @@ function mirrorData(l){
 }
 function scheduleMirror(){clearTimeout(mirrorTimer);mirrorTimer=setTimeout(syncMirrors,2500)}
 async function syncMirrors(){
-  if(ROLE==="lesen"||!memberOK||!FS||!LESE.length)return;
+  if(KID||ROLE==="lesen"||!memberOK||!FS||!LESE.length)return;
   for(const l of LESE){
     const body={farben:Object.fromEntries(Object.entries(FARBEN).filter(([k])=>(l.spalten||[]).includes(k))),personen:SLOTS,namen:SLOTS.map((k,i)=>(l.spalten||[]).includes(k)?NAMES[i]:""),bilder:Object.fromEntries(Object.entries(PHOTOS).filter(([k])=>(l.spalten||[]).includes(k))),spalten:l.spalten,name:l.name||"",eintraege:mirrorData(l)};
     const key=JSON.stringify(body);let last="";try{last=localStorage.getItem("fk-mirror-"+l.rc)||""}catch(e){}
@@ -1890,7 +1983,7 @@ async function saveCloudBackup(force){
   return true;
 }
 let bkDone=false;
-async function autoBackup(){if(bkDone)return;bkDone=true;try{saveLocalBackup(false);await saveCloudBackup(false)}catch(e){console.warn("Sicherung",e)}}
+async function autoBackup(){if(bkDone||KID)return;bkDone=true;try{saveLocalBackup(false);await saveCloudBackup(false)}catch(e){console.warn("Sicherung",e)}}
 async function restoreBackup(data,label){
   const list=(data&&data.eintraege)||[];
   const have=new Set([...entries,...tasks,...taskLogs,...rewards,...redeems].map(e=>e.id));
@@ -2232,7 +2325,8 @@ function isAck(){try{return localStorage.getItem(ackKey())==="1"}catch(e){return
 /* ---------- Neue & geänderte Einträge ---------- */
 let DEVICE_ID="";try{DEVICE_ID=localStorage.getItem("fk-dev")||"";if(!DEVICE_ID){DEVICE_ID="d"+Math.random().toString(36).slice(2,10);localStorage.setItem("fk-dev",DEVICE_ID)}}catch(e){DEVICE_ID="d"+Math.random().toString(36).slice(2,10)}
 const nowISO=()=>new Date().toISOString();
-function stampNew(o){const r={...o,erstellt:nowISO(),geraet:DEVICE_ID};delete r._privat;if(isPrivObj(r))r.ersteller=MY_UID;if(MY_UID&&!r.ersteller)r.ersteller=MY_UID;const nm=MY_MEMBER&&MY_MEMBER.name;if(nm&&!r.vonName)r.vonName=nm;if(r.geschuetzt&&r.ersteller!==MY_UID)delete r.geschuetzt;return r}
+function stampNew(o){const r={...o,erstellt:nowISO(),geraet:DEVICE_ID};
+  if(KID){if(r.typ==="erledigt"||r.typ==="einloesung"){r.offen=true;r.person=KID}else if(!r.typ||CAL_TYPES.includes(r.typ)){if(!(KIDGEM&&r.person==="gemeinsam"))r.person=KID}}delete r._privat;if(isPrivObj(r))r.ersteller=MY_UID;if(MY_UID&&!r.ersteller)r.ersteller=MY_UID;const nm=MY_MEMBER&&MY_MEMBER.name;if(nm&&!r.vonName)r.vonName=nm;if(r.geschuetzt&&r.ersteller!==MY_UID)delete r.geschuetzt;return r}
 function stampEdit(id,o){const prev=[...entries,...tasks,...rewards].find(x=>x.id===id);const r={...o,erstellt:(prev&&prev.erstellt)||o.erstellt||nowISO(),geaendert:nowISO(),geraet:DEVICE_ID};
   if(prev&&prev.ersteller&&!r.ersteller)r.ersteller=prev.ersteller;if(prev&&prev.vonName&&!r.vonName)r.vonName=prev.vonName;
   if(prev&&prev.geschuetzt&&prev.ersteller!==MY_UID)r.geschuetzt=true; // nur der Ersteller kann den Schutz aufheben
@@ -3142,6 +3236,11 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-08c",d:"2026-11-08",t:"🧒 Kinder-Handy & Aufgaben",items:[
+    "🧒 Kinder-Handy: Ein Kind sieht auf seinem Handy nur die eigenen Termine, Aufgaben und Belohnungen (Einstellungen → Mitglieder & Rechte oder Einladen → 🧒 Kinder-Handy)",
+    "⏳ Was ein Kind abhakt oder einlöst, bestätigen die Eltern unter ⭐ → „Zu bestätigen“. Ein roter Punkt zeigt, wenn etwas wartet",
+    "🎒 Startpaket: 12 Aufgaben und 11 Belohnungen für Kinder mit einem Tipp anlegen",
+    "🎯 Fortschrittsbalken bis zur nächsten Belohnung auf dem Kinder-Handy"]},
   {v:"2026-11-08b",d:"2026-11-08",t:"👑 Neue Premium-Funktionen",items:[
     "📺 Wand-Kalender: großer Bildschirm für Tablet oder Fernseher mit Uhr, Wetter, Tagesplan und Countdown",
     "🎬 Familien-Rückblick: euer Jahr in Zahlen zum Durchwischen und als Bild zum Teilen",
