@@ -886,6 +886,7 @@ async function init(){
     async conf(o){if(roBlock())return;await col.doc("_config").set({typ:"config",...o},{merge:true})},
     async wipe(){if(roBlock())throw new Error("ro");for(const e of PRIV){if(e.ersteller===MY_UID){try{await PRIVCOL.doc(e.id).delete()}catch(x){}}}const snap=await col.get();let b=col.firestore.batch(),n=0;for(const d of snap.docs){const x=d.data();if(x.geschuetzt&&x.ersteller&&x.ersteller!==MY_UID)continue;b.delete(d.ref);if(++n%400===0){await b.commit();b=col.firestore.batch()}}await b.commit()}};
   {let r=null;try{r=localStorage.getItem("fk-rolle-"+cfg.code)}catch(e){}if(r)applyRole(r)}
+  setTimeout(()=>{try{refreshPremium()}catch(e){}},1500);
   await Promise.race([ensureMember(cfg),new Promise(r=>setTimeout(r,5000))]);
   try{const nn=sessionStorage.getItem("fk-namen-neu");if(nn){sessionStorage.removeItem("fk-namen-neu");await store.names(JSON.parse(nn))}}catch(e){}
   // Beim Wechsel in einen anderen Kalender: Einträge aus dem bisherigen Kalender mitnehmen
@@ -1559,7 +1560,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v63";
+const APP_VER="v64";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -1844,14 +1845,17 @@ async function getWriteToken(){
   t=newCode();await FS.doc(`familien/${c.code}/einladungen/${t}`).set({erstellt:nowISO(),von:MY_UID});
   try{localStorage.setItem(k,t)}catch(e){}return t;
 }
-function rulesHint(){return `<p class="hint">⚠️ Damit die Rechte wirklich geschützt sind, müssen einmal die <b>neuen Firebase-Regeln</b> veröffentlicht werden.</p><button class="btn ghost" id="rulesHelp">So geht's</button>`}
+function rulesHint(code){const k=code||memberErr||(RULES_OLD?"regeln-alt":"unbekannt");
+  const why=/auth|operation-not-allowed|admin-restricted/.test(k)?"Die <b>anonyme Anmeldung</b> ist in Firebase nicht eingeschaltet.":/permission|regeln/.test(k)?"Die <b>neuen Firebase-Regeln</b> sind noch nicht veröffentlicht.":/unavailable|network|offline|deadline/.test(k)?"Gerade <b>keine Verbindung</b> zur Datenbank.":"Die Mitgliederliste konnte nicht geladen werden.";
+  return `<p class="hint">⚠️ ${why}<br><span style="opacity:.7">Fehlercode: ${esc(k)}</span></p><div class="actions"><button class="btn ghost" id="memRetry">🔄 Nochmal versuchen</button><button class="btn ghost" id="rulesHelp">So geht's</button></div>`}
+function wireRulesHint(){const b=document.getElementById("rulesHelp");if(b)b.onclick=showAuthHelp;const r=document.getElementById("memRetry");if(r)r.onclick=()=>{memberOK=null;memberErr="";const box=document.getElementById("memList");if(box)box.innerHTML='<p class="hint">Lade Mitglieder …</p>';loadMembers()}}
 async function loadMembers(){
   const box=document.getElementById("memList");if(!box)return;
   const c=getCfg();
-  if(!await ensureMember(c)||RULES_OLD){box.innerHTML=rulesHint();const b=document.getElementById("rulesHelp");if(b)b.onclick=showAuthHelp;return}
+  if(!await ensureMember(c)||RULES_OLD){box.innerHTML=rulesHint();wireRulesHint();return}
   let list=[];
   try{const sn=await FS.collection(`familien/${c.code}/mitglieder`).get({source:"server"});list=sn.docs.map(d=>({...d.data(),id:d.id}))}
-  catch(e){box.innerHTML=e&&e.code==="permission-denied"?rulesHint():`<p class="hint">Mitgliederliste gerade nicht erreichbar (offline?).</p>`;const b=document.getElementById("rulesHelp");if(b)b.onclick=showAuthHelp;return}
+  catch(e){memberErr="liste-"+(e&&e.code||"fehler");box.innerHTML=rulesHint();wireRulesHint();return}
   list.sort((a,b)=>((a.rolle==="lesen")-(b.rolle==="lesen"))||(a.id===MY_UID?-1:b.id===MY_UID?1:0)||String(a.name||"~").localeCompare(String(b.name||"~")));
   box.innerHTML=list.map(m=>{const me=m.id===MY_UID,w=m.rolle!=="lesen";
     return `<div class="task mrow" data-uid="${esc(m.id)}"><div class="mname"><b>${esc(m.name||"Gerät ohne Namen")}</b>${me?" · <i>dieses Handy</i>":""}
