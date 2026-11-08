@@ -496,6 +496,26 @@ body.haspbg::after{background:var(--bg);opacity:var(--pdim,.55)}
 .pbgrid button span{background:rgba(0,0,0,.45);color:#fff;border-radius:6px;padding:1px 5px}
 .pbrange{width:100%}
 body.lang-x #micBtn,body.lang-x #voiceIn{display:none!important}
+/* ---------- Premium ---------- */
+.appbar>.top,.appbar>.greet,.appbar>.tabs{position:relative;z-index:1}
+.season{position:absolute;inset:0;z-index:0;pointer-events:none;overflow:hidden}
+.season span{position:absolute;top:-24px;opacity:.85;animation:sfall 10s linear infinite;filter:drop-shadow(0 2px 2px rgba(0,0,0,.25))}
+@keyframes sfall{0%{transform:translate(0,-10px) rotate(0)}50%{transform:translate(var(--sw,10px),120px) rotate(180deg)}100%{transform:translate(0,260px) rotate(360deg);opacity:0}}
+canvas.confetti{position:fixed;inset:0;width:100vw;height:100vh;pointer-events:none;z-index:9999}
+.premcta{background:linear-gradient(180deg,#ffe9a8,#ffcc4d 50%,#e0a21f);color:#3a2600;border:0;font-weight:800;box-shadow:inset 0 1px 0 rgba(255,255,255,.7),0 2px 0 #a8730f,0 6px 14px rgba(0,0,0,.25)}
+.premhero{text-align:center;border-radius:16px;padding:16px 14px;background:linear-gradient(160deg,#3a2a10,#1d1408);color:#fff3cf;border:1px solid rgba(255,204,77,.35);display:grid;gap:6px;justify-items:center}
+.premhero .crown{font-size:42px;filter:drop-shadow(0 4px 8px rgba(0,0,0,.5));animation:calbob 4s ease-in-out infinite}
+.premhero b{font-size:1.15rem}.premhero span{opacity:.9;font-size:.9rem}
+.pbar{width:100%;height:12px;border-radius:6px;background:rgba(255,255,255,.15);overflow:hidden}
+.pbar i{display:block;height:100%;border-radius:6px;background:linear-gradient(90deg,#ffcc4d,#ffe9a8)}
+.pstufe{display:grid;grid-template-columns:auto 1fr;gap:10px;align-items:center;border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:6px 0;background:var(--surface);opacity:.75}
+.pstufe.on{opacity:1;border-color:#ffcc4d}
+.pstufe .pn{font-weight:900;white-space:nowrap}
+body.premgold .appbar{border-color:rgba(255,204,77,.35);background:radial-gradient(120% 150% at 0% 0%,rgba(255,210,120,.42) 0%,transparent 52%),radial-gradient(100% 140% at 100% 0%,rgba(255,160,60,.30) 0%,transparent 55%),linear-gradient(160deg,#3d2c10 0%,#241a0b 55%,#150f06 100%)}
+body.premgold .appbar h1.t3d{background:linear-gradient(110deg,#fff6d8 0%,#ffd970 38%,#fff3c4 46%,#e0a21f 54%,#ffe7a0 70%,#d4931c 100%);background-size:260% 100%;-webkit-background-clip:text;background-clip:text;
+  filter:drop-shadow(0 1px 0 #c58a14) drop-shadow(0 1px 0 #a8730f) drop-shadow(0 1px 0 #8a5e0c) drop-shadow(0 1px 0 #6d4a09) drop-shadow(0 5px 6px rgba(0,0,0,.55))}
+body.premking .year3d::before{content:"👑 "}
+
 .pcol{width:26px;height:26px;border-radius:50%;border:2px solid var(--line);padding:0;cursor:pointer;flex:none}
 .palette{display:flex;flex-wrap:wrap;gap:8px;padding:8px 2px 4px;grid-column:1/-1}
 .palette button{width:30px;height:30px;border-radius:50%;border:2px solid transparent;padding:0}
@@ -740,7 +760,7 @@ function parseFirebaseConfig(txt){
   while((m=re.exec(txt)))o[m[1]]=m[2];
   return o.apiKey&&o.projectId&&o.appId?o:null;
 }
-function joinCode(c,wt){const old=getCfg();if(old&&old.code&&old.code!==c){try{sessionStorage.setItem("fk-oldcode",old.code)}catch(e){}}
+function joinCode(c,wt){try{localStorage.removeItem("fk-ref-pending")}catch(e){}const old=getCfg();if(old&&old.code&&old.code!==c){try{sessionStorage.setItem("fk-oldcode",old.code)}catch(e){}}
   const ok=wt&&/^[a-z2-9]{18,}$/.test(wt);const same=old&&old.code===c;
   setCfg({firebase:DEFAULT_FIREBASE,code:c,...(ok?{wtok:wt}:{})});
   if(!same||ok){try{sessionStorage.setItem("fk-joined",ok?"schreiben":"lesen")}catch(e){}}}
@@ -800,6 +820,7 @@ async function init(){
     if(conf){const n=conf.data().namen,ks=conf.data().personen;if(Array.isArray(n)){setPersons(Array.isArray(ks)&&ks.length===n.length?ks:BASE_SLOTS.slice(0,n.length),n);try{localStorage.setItem("fk-namen",JSON.stringify(n))}catch(e){}}}
     LESE=conf?(conf.data().lesen||[]):[];
     if(conf&&conf.data().bilder)setPhotos(conf.data().bilder);
+    FAMCONF=conf?conf.data():{};
     if(conf)setFarben(conf.data().farben||{});
     watchWishes();
     PUB=snap.docs.filter(d=>d.id!=="_config").map(d=>({...d.data(),id:d.id}));splitData([...PUB,...PRIV]);DATA_READY=true;
@@ -845,7 +866,7 @@ function showSetup(){
     <div class="actions"><button class="btn ghost" id="cfgLocal">Erst mal nur auf diesem Handy</button><button class="btn ghost" id="cfgLater">Schließen</button></div>`);
   document.getElementById("cfgNew").onclick=()=>{
     const n=readNames();if(!n.some(Boolean)){toast("Bitte mindestens einen Namen eintragen");return}
-    try{sessionStorage.setItem("fk-joined","schreiben");sessionStorage.setItem("fk-namen-neu",JSON.stringify(n));localStorage.setItem("fk-namen",JSON.stringify(n));sessionStorage.setItem("fk-invite","1")}catch(e){}
+    try{const rp=localStorage.getItem("fk-ref-pending");if(rp)localStorage.setItem("fk-ref-todo",rp);sessionStorage.setItem("fk-joined","schreiben");sessionStorage.setItem("fk-namen-neu",JSON.stringify(n));localStorage.setItem("fk-namen",JSON.stringify(n));sessionStorage.setItem("fk-invite","1")}catch(e){}
     setCfg({firebase:DEFAULT_FIREBASE,code:newCode()});location.reload();
   };
   document.getElementById("cfgLocal").onclick=()=>{const n=readNames();if(n.some(Boolean)){try{localStorage.setItem("fk-namen",JSON.stringify(n))}catch(e){}}setCfg({local:true});closeSheet();location.reload()};
@@ -858,6 +879,7 @@ function showSettings(){
   const link=inviteLink(c);let curLink=link;
   const appLink=location.origin+location.pathname;
   sheet("Teilen & Einstellungen",`<details class="rw"><summary class="hint" style="cursor:pointer">🔑 Kalender-Nummer anzeigen</summary><p class="hint" style="margin:6px 0 0">Dieses Handy ist mit <b>Kalender ${calNr()}</b> verbunden. Bei allen in der Familie muss hier dieselbe Nummer stehen.</p></details>
+    <button class="btn premcta" id="premBtn">👑 Premium${PREM.stufe>=10?" · freigeschaltet":` · ${PREM.anzahl} von 10`}</button>
     <h4 class="sub">👪 Familie einladen</h4><p class="hint">Wähle zuerst, was die eingeladene Person darf. Gib die Links nur an die Familie weiter.</p>
     <div class="seg" style="--n:2"><button class="typ" data-inv="lesen" aria-pressed="true">👁️ Nur lesen</button><button class="typ" data-inv="schreiben" aria-pressed="false">✏️ Darf mitschreiben</button></div>
     <div class="linkbox" id="inv">${esc(link)}</div>
@@ -924,7 +946,7 @@ function showSettings(){
     <div class="actions"><button class="btn danger" id="disc">Auf diesem Handy trennen</button><button class="btn ghost" id="setClose">Schließen</button></div>`);
   document.getElementById("exp").onclick=exportICS;wireReadLinks();wireBackups();
   {const ib=document.getElementById("installSet");if(ib)ib.onclick=()=>{closeSheet();setTimeout(installApp,200)}}
-  wireLang();
+  wireLang();document.getElementById("premBtn").onclick=()=>{closeSheet();setTimeout(showPremium,200)};
   document.getElementById("tourAgain").onclick=()=>{closeSheet();setTimeout(showHelp,200)};
   document.getElementById("clBtn").onclick=()=>{closeSheet();setTimeout(showChangelog,200)};
   document.getElementById("ideaBtn").onclick=()=>{closeSheet();setTimeout(showIdeas,200)};
@@ -1274,7 +1296,7 @@ document.getElementById("vOther").addEventListener("click",async ev=>{
   const dn=ev.target.closest("[data-done]");
   if(dn){const t=tasks.find(x=>x.id===dn.dataset.done);if(!t||!store)return;const l=logFor(t);
     if(l){if(!await askConfirm(`Erledigt zurücknehmen? ${PNAME[t.person]} verliert dafür ${+l.sterne||1} ⭐.`,"Zurücknehmen"))return;await store.del(l.id);toast("Zurückgenommen")}
-    else{await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:+t.sterne||1,datum:today,titel:t.titel});popPerson=t.person;render();toast(`⭐ +${+t.sterne||1} für ${PNAME[t.person]}!`)}
+    else{await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:+t.sterne||1,datum:today,titel:t.titel});popPerson=t.person;render();if(premOn(3))confetti();toast(`⭐ +${+t.sterne||1} für ${PNAME[t.person]}!`)}
     return}
   const tk=ev.target.closest("[data-task]");if(tk){openTaskSheet(tasks.find(x=>x.id===tk.dataset.task));return}
   const re=ev.target.closest("[data-redeem]");
@@ -1325,7 +1347,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v57";
+const APP_VER="v58";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -1404,7 +1426,7 @@ function adminBoxFill(){
   document.getElementById("uidCopy").onclick=async()=>{try{await navigator.clipboard.writeText(uid);toast("Code kopiert")}catch(e){toast("Bitte den Code markieren und kopieren")}};
 }
 async function showInbox(){showAdmin("post")}
-const ATABS=[["post","📬 Postfach"],["fehler","🐞 Fehler"],["alle","📢 An alle"],["familie","👪 An Familie"],["umfrage","📊 Umfrage"],["ideen","💡 Ideen"],["steuer","⚙️ Steuerung"],["updates","✨ Updates"],["sperren","🚫 Sperren"]];
+const ATABS=[["post","📬 Postfach"],["fehler","🐞 Fehler"],["alle","📢 An alle"],["familie","👪 An Familie"],["umfrage","📊 Umfrage"],["ideen","💡 Ideen"],["steuer","⚙️ Steuerung"],["updates","✨ Updates"],["premium","👑 Premium"],["sperren","🚫 Sperren"]];
 function showAdmin(tab){
   tab=tab||"post";
   sheet("🛠 Admin-Bereich",`<div class="atabs">${ATABS.map(([k,n])=>`<button data-at="${k}" aria-pressed="${k===tab}">${n}</button>`).join("")}</div><div id="aBody"><p class="hint">Lade …</p></div>
@@ -1412,7 +1434,7 @@ function showAdmin(tab){
   document.getElementById("aClose").onclick=closeSheet;
   document.querySelectorAll("[data-at]").forEach(b=>b.onclick=()=>showAdmin(b.dataset.at));
   const body=document.getElementById("aBody");
-  const fn={post:admPost,fehler:admErr,alle:admAll,familie:admFam,umfrage:admPoll,ideen:admIdeas,steuer:admCtl,updates:admUpd,sperren:admBlock}[tab];
+  const fn={post:admPost,fehler:admErr,alle:admAll,familie:admFam,umfrage:admPoll,ideen:admIdeas,steuer:admCtl,updates:admUpd,premium:admPrem,sperren:admBlock}[tab];
   fn(body).catch(e=>{console.warn(e);body.innerHTML=`<p class="hint">Konnte nicht geladen werden${e&&e.code==="permission-denied"?" · bitte die neuen Regeln veröffentlichen":""}.</p>`});
 }
 const $v=id=>{const el=document.getElementById(id);return el?el.value.trim():""};
@@ -1577,7 +1599,7 @@ async function _ensureMember(cfg){
     try{sessionStorage.removeItem("fk-joined")}catch(e){}
     if(cfg.wtok){const c2=getCfg();if(c2){delete c2.wtok;setCfg(c2)}}
     if(!RULES_OLD&&!memberSub)memberSub=ref.onSnapshot(s=>{if(!s.exists)return;MY_MEMBER=s.data();applyRole(MY_MEMBER.rolle==="lesen"?"lesen":"schreiben");setTimeout(maybeAskName,3500)},()=>{});
-    memberOK=true;if(ROLE!=="lesen")scheduleMirror();setTimeout(checkAdmin,2000);if(!RULES_OLD)startPriv();return true;
+    memberOK=true;if(ROLE!=="lesen")scheduleMirror();setTimeout(checkAdmin,2000);if(!RULES_OLD)startPriv();setTimeout(()=>{sendPendingRef();refreshPremium()},3000);return true;
   }catch(e){memberOK=false;memberErr=e&&e.code||"";console.warn("Mitglied",e);return false}
 }
 const dmy=x=>x?x.slice(8,10)+"."+x.slice(5,7)+"."+x.slice(0,4):"";
@@ -1651,6 +1673,7 @@ function showReaderSettings(){
   sheet("Einstellungen",`<div class="rolebox">👁️ <b>Du kannst Kalender ${calNr()} nur ansehen.</b><br><span class="hint">Eintragen und Ändern geht erst, wenn dir jemand mit Schreibrechten das freischaltet (Einstellungen → Mitglieder & Rechte).</span></div>
     ${nameBox()}
     ${isStandalone()?"":`<button class="btn" id="installSet">📲 Als App installieren</button>`}
+    <button class="btn premcta" id="rPrem">👑 Premium</button>
     <button class="btn ghost" id="rHelp">❓ Hilfe & Anleitung</button>
     <button class="btn ghost" id="rSup">💬 Support · Nachricht an den Entwickler</button>
     <button class="btn ghost" id="rIdea">💡 Ideen-Wand</button>
@@ -1669,7 +1692,7 @@ function showReaderSettings(){
     ${joinBox()}
     <p class="hint"><a href="datenschutz.html">Datenschutz, Impressum & Nutzungshinweise</a></p>
     <div class="actions"><button class="btn danger" id="disc">Auf diesem Handy trennen</button><button class="btn ghost" id="setClose">Schließen</button></div>`);
-  wireNameBox(null);wireJoin();wirePbg(showSettings);wireLang();document.getElementById("rHelp").onclick=()=>{closeSheet();setTimeout(showHelp,200)};document.getElementById("rSup").onclick=()=>{closeSheet();setTimeout(showSupport,200)};document.getElementById("rIdea").onclick=()=>{closeSheet();setTimeout(showIdeas,200)};
+  wireNameBox(null);wireJoin();wirePbg(showSettings);wireLang();document.getElementById("rHelp").onclick=()=>{closeSheet();setTimeout(showHelp,200)};document.getElementById("rPrem").onclick=()=>{closeSheet();setTimeout(showPremium,200)};document.getElementById("rSup").onclick=()=>{closeSheet();setTimeout(showSupport,200)};document.getElementById("rIdea").onclick=()=>{closeSheet();setTimeout(showIdeas,200)};
   {const ib=document.getElementById("installSet");if(ib)ib.onclick=()=>{closeSheet();setTimeout(installApp,200)}}
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{setTheme(b.dataset.themeSet);showSettings()});
   [["optCompact","compact"],["optFold","fold"],["optArrows","arrows"]].forEach(([id,k])=>{const el=document.getElementById(id);if(el)el.onchange=()=>{setPref(k,el.checked);render()}});
@@ -3046,12 +3069,17 @@ function greetUser(){
   el.innerHTML=`<span class="gb"><span class="wave">👋</span><span><b>${g}${n?", "+esc(n):""}!</b> <span class="gsub">${esc(sub)}</span></span></span>`;
   void el.offsetWidth;el.classList.add("on");
   setTimeout(()=>el.classList.remove("on"),6500);
+  birthdayConfetti();
 }
 setTimeout(greetUser,2600);
 
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-08a",d:"2026-11-08",t:"👑 Premium",items:[
+    "👑 Premium: Empfiehl den Kalender weiter und schalte Vorteile für die ganze Familie frei (Einstellungen → Premium)",
+    "❄️ Ab 3 Familien: Jahreszeiten-Effekte im Kopfbereich und 🎉 Konfetti an Geburtstagen und bei erledigten Aufgaben",
+    "✨ Ab 5 Familien: goldenes 3D-Design · 👑 ab 10: alle Premium-Vorteile für immer"]},
   {v:"2026-11-07h",d:"2026-11-07",t:"Mehr Emojis",items:[
     "😀 Termine bekommen automatisch ein passendes Emoji, z. B. 🦷 Zahnarzt, ⚽ Fußball, 🏊 Schwimmen, 🏫 Schule, 🛒 Einkaufen",
     "🌅 Arbeitszeiten zeigen Früh-, 🌆 Spät- oder 🌙 Nachtdienst",
@@ -3136,6 +3164,133 @@ async function admUpd(body){
 
 
 
+/* ---------- 👑 Premium (freigeschaltet durch Weiterempfehlen) ---------- */
+const PREM_STUFEN=[
+  {n:3,t:"❄️ Jahreszeiten-Effekte & 🎉 Konfetti",d:"Schnee, Blüten, Blätter oder Feuerwerk im Kopfbereich, Konfetti an Geburtstagen und bei erledigten Aufgaben"},
+  {n:5,t:"✨ Gold-Design",d:"Goldener 3D-Kopfbereich mit Krone"},
+  {n:10,t:"👑 Premium komplett",d:"Alle Vorteile für immer, auch alle künftigen Premium-Funktionen, für die ganze Familie"}
+];
+// Familien mit Premium von Anfang an (nur Prüfsummen, keine Kalender-Codes)
+const PREM_FAMS=["26cc1858dd999fa7142ec9d725ec90e403974fa0660326e47d6bbcc8b5c30191","c8add84f811296e5c8943d70fa1b37f6cb6989cb254ae35e6f7fb4af03086a78"];
+var PREM={stufe:0,anzahl:0,gruender:false,geschenkt:0};var FAMCONF={};
+try{const c=getCfg();const x=c&&c.code&&JSON.parse(localStorage.getItem("fk-prem-"+c.code)||"null");if(x)PREM=x}catch(e){}
+const premOn=n=>PREM.stufe>=n;
+async function sha(t){try{const b=await crypto.subtle.digest("SHA-256",new TextEncoder().encode(t));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")}catch(e){return ""}}
+// Empfehlungs-Link merken (nur für neue Nutzer)
+try{const r=new URLSearchParams(location.search).get("ref");if(r&&/^[a-z2-9]{8}$/.test(r)&&!getCfg())localStorage.setItem("fk-ref-pending",r)}catch(e){}
+async function refreshPremium(){
+  const c=getCfg();if(!c||!c.code||!FS)return;
+  let gr=false,gs=0,anz=0;
+  gr=PREM_FAMS.includes(await sha(c.code));
+  try{const d=await FS.doc(`premium/${c.code}`).get();if(d.exists)gs=+d.data().stufe||0}catch(e){}
+  if(FAMCONF.ref){try{const sn=await FS.collection(`refs/${FAMCONF.ref}/neu`).get();const grenze=Date.now()-2*864e5;anz=sn.docs.filter(d=>{const z=d.data().zeit;return z&&z.toMillis&&z.toMillis()<=grenze}).length}catch(e){}}
+  const ausAnz=PREM_STUFEN.filter(s=>anz>=s.n).reduce((m,s)=>Math.max(m,s.n),0);
+  const alt=PREM.stufe;
+  PREM={stufe:Math.max(gr?10:0,gs,ausAnz),anzahl:anz,gruender:gr,geschenkt:gs};
+  lsSet("fk-prem-"+c.code,JSON.stringify(PREM));
+  applyPremium();
+  if(PREM.stufe>alt&&alt>=0&&lsGet("fk-prem-seen-"+c.code)!==String(PREM.stufe)){lsSet("fk-prem-seen-"+c.code,String(PREM.stufe));setTimeout(()=>{confetti();toast(PREM.stufe>=10?"👑 Premium ist freigeschaltet!":"🎉 Neue Premium-Stufe freigeschaltet!")},800)}
+}
+async function ensureRef(){
+  if(FAMCONF.ref||ROLE==="lesen"||!FS)return FAMCONF.ref||"";
+  const c=getCfg();const al="abcdefghjkmnpqrstuvwxyz23456789";let r="";const a=new Uint32Array(8);crypto.getRandomValues(a);for(const x of a)r+=al[x%al.length];
+  try{await FS.doc(`refs/${r}`).set({fam:c.code,zeit:nowISO()});await store.conf({ref:r});FAMCONF.ref=r;return r}catch(e){console.warn("ref",e);return ""}
+}
+async function sendPendingRef(){
+  const r=lsGet("fk-ref-todo");if(!r||!FS||!MY_UID)return;
+  try{await FS.doc(`refs/${r}/neu/${MY_UID}`).set({zeit:firebase.firestore.FieldValue.serverTimestamp()})}catch(e){console.warn("ref neu",e)}
+  try{localStorage.removeItem("fk-ref-todo");localStorage.removeItem("fk-ref-pending")}catch(e){}
+}
+const refLink=r=>"https://familien-kalender.github.io/?ref="+r;
+function applyPremium(){
+  const b=document.body;
+  b.classList.toggle("premgold",premOn(5)&&lsGet("fk-p-gold")!=="0");
+  b.classList.toggle("premking",premOn(10));
+  if(premOn(3)&&lsGet("fk-p-season")!=="0")startSeason();else stopSeason();
+}
+/* Jahreszeiten-Effekte im Kopfbereich */
+function seasonSet(){const d=new Date(),m=d.getMonth()+1,day=d.getDate();
+  if((m===12&&day===31)||(m===1&&day===1))return ["🎆","✨","🎇"];
+  if(m===12&&day>=20&&day<=26)return ["❄️","🎄","⭐","❄️"];
+  if(m===10&&day>=25)return ["🎃","🍂","🦇"];
+  if(m===12||m<=2)return ["❄️","❅","❆"];if(m<=5)return ["🌸","🌼","🌷"];if(m<=8)return ["🦋","🌻","✨"];return ["🍂","🍁","🍂"]}
+function startSeason(){
+  const bar=document.querySelector(".appbar");if(!bar||bar.querySelector(".season"))return;
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  const set=seasonSet();const box=document.createElement("div");box.className="season";box.setAttribute("aria-hidden","true");
+  let h="";for(let i=0;i<14;i++){const x=Math.random()*100,del=-Math.random()*12,dur=7+Math.random()*7,sz=10+Math.random()*10,sw=(Math.random()*40-20).toFixed(0);
+    h+=`<span style="left:${x.toFixed(1)}%;animation-delay:${del.toFixed(1)}s;animation-duration:${dur.toFixed(1)}s;font-size:${sz.toFixed(0)}px;--sw:${sw}px">${set[i%set.length]}</span>`}
+  box.innerHTML=h;bar.prepend(box);
+}
+function stopSeason(){document.querySelectorAll(".appbar .season").forEach(x=>x.remove())}
+/* Konfetti */
+function confetti(){
+  if(matchMedia("(prefers-reduced-motion: reduce)").matches)return;
+  const cv=document.createElement("canvas");cv.className="confetti";document.body.appendChild(cv);
+  const dpr=Math.min(2,devicePixelRatio||1);cv.width=innerWidth*dpr;cv.height=innerHeight*dpr;const g=cv.getContext("2d");g.scale(dpr,dpr);
+  const cols=["#ffcc4d","#e5484d","#3d8fe0","#2fae74","#c06be0","#f2994a","#ffffff"];
+  const P=Array.from({length:140},()=>({x:innerWidth/2+(Math.random()-.5)*80,y:innerHeight*.35,vx:(Math.random()-.5)*14,vy:-Math.random()*14-4,r:Math.random()*Math.PI,vr:(Math.random()-.5)*.3,w:6+Math.random()*6,h:4+Math.random()*4,c:cols[Math.floor(Math.random()*cols.length)]}));
+  const t0=performance.now();
+  (function step(t){const k=(t-t0)/1000;g.clearRect(0,0,innerWidth,innerHeight);
+    for(const p of P){p.vy+=.35;p.vx*=.99;p.x+=p.vx;p.y+=p.vy;p.r+=p.vr;g.save();g.translate(p.x,p.y);g.rotate(p.r);g.globalAlpha=Math.max(0,1-k/3);g.fillStyle=p.c;g.fillRect(-p.w/2,-p.h/2,p.w,p.h);g.restore()}
+    if(k<3.2)requestAnimationFrame(step);else cv.remove()})(t0);
+}
+function birthdayConfetti(){if(!premOn(3)||lsGet("fk-conf-"+today))return;if(entries.some(e=>e.typ==="geburtstag"&&onDay(e,today))){lsSet("fk-conf-"+today,"1");setTimeout(confetti,600)}}
+/* Premium-Seite */
+async function showPremium(){
+  const draw=(ref)=>{
+    const next=PREM_STUFEN.find(s=>PREM.stufe<s.n);const ziel=10;const pct=Math.min(100,Math.round(Math.min(PREM.anzahl,ziel)*100/ziel));
+    sheet("👑 Premium",`<div class="premhero"><div class="crown">👑</div>
+      <b>${PREM.stufe>=10?"Premium ist freigeschaltet!":`Stufe ${PREM.stufe||0} von 10`}</b>
+      <span>${PREM.gruender?"Gründer-Familie · alle Vorteile für immer":PREM.geschenkt?"Premium geschenkt vom Entwickler":PREM.stufe>=10?"Danke fürs Weiterempfehlen! 💛":`Empfiehl den Kalender weiter: Für jede Familie, die damit startet, kommt ihr eurem Premium näher.`}</span>
+      ${PREM.gruender||PREM.geschenkt?"":`<div class="pbar"><i style="width:${pct}%"></i></div><span class="meta">🎯 ${PREM.anzahl} von 10 Familien${next?` · nächste Stufe bei ${next.n}`:""}</span>`}</div>
+      <h4 class="sub">🪜 Stufen</h4>
+      ${PREM_STUFEN.map(s=>`<div class="pstufe ${PREM.stufe>=s.n?"on":""}"><span class="pn">${PREM.stufe>=s.n?"✅":"🔒"} ${s.n}</span><div><b>${esc(s.t)}</b><br><span class="hint" style="margin:0">${esc(s.d)}</span></div></div>`).join("")}
+      ${PREM.stufe>=3?`<h4 class="sub">🎛 Deine Vorteile</h4>
+        <label class="pick" style="justify-content:space-between"><span>❄️ Jahreszeiten-Effekte</span><input type="checkbox" id="pSeason" ${lsGet("fk-p-season")!=="0"?"checked":""}></label>
+        ${PREM.stufe>=5?`<label class="pick" style="justify-content:space-between"><span>✨ Gold-Design</span><input type="checkbox" id="pGold" ${lsGet("fk-p-gold")!=="0"?"checked":""}></label>`:""}
+        <button class="btn ghost" id="pConf">🎉 Konfetti ausprobieren</button>
+        <p class="hint" style="margin:0">Die Schalter gelten nur für dieses Handy.</p>`:""}
+      <h4 class="sub">📣 Weiterempfehlen</h4>
+      ${ref?`<p class="hint">Dein persönlicher Link. Er verrät nichts über euren Kalender, die anderen bekommen ihren eigenen.</p>
+        <div class="linkbox">${esc(refLink(ref))}</div>
+        <div class="actions"><button class="btn" id="pCopy">Link kopieren</button><button class="btn ghost" id="pShare">Teilen …</button></div>
+        <a class="btn ghost" id="pWa" style="text-align:center;text-decoration:none" target="_blank" rel="noopener" href="https://wa.me/?text=${encodeURIComponent(premText(ref))}">Per WhatsApp schicken</a>
+        <p class="hint">Gezählt wird, wenn jemand über den Link einen <b>eigenen Kalender auf einem anderen Handy</b> anlegt und der nach 2 Tagen noch da ist. Die Vorteile gelten für alle Handys in eurem Kalender.</p>`
+        :`<p class="hint">${ROLE==="lesen"?"Den Empfehlungs-Link kann jemand mit Schreibrechten erstellen.":"Gerade keine Verbindung."}</p>`}
+      <div class="actions"><button class="btn ghost" id="pClose">Schließen</button></div>`);
+    document.getElementById("pClose").onclick=closeSheet;
+    const se=document.getElementById("pSeason");if(se)se.onchange=()=>{lsSet("fk-p-season",se.checked?"1":"0");applyPremium()};
+    const go=document.getElementById("pGold");if(go)go.onchange=()=>{lsSet("fk-p-gold",go.checked?"1":"0");applyPremium()};
+    const cf=document.getElementById("pConf");if(cf)cf.onclick=confetti;
+    if(ref){document.getElementById("pCopy").onclick=async()=>{try{await navigator.clipboard.writeText(refLink(ref));toast("Link kopiert")}catch(e){toast("Bitte den Link markieren und kopieren")}};
+      document.getElementById("pShare").onclick=async()=>{if(navigator.share){try{await navigator.share({title:"Familienkalender",text:premText(ref)})}catch(e){}}else toast("Teilen geht hier nicht · bitte Link kopieren")}}
+  };
+  draw(FAMCONF.ref||"");
+  const r=await ensureRef();await refreshPremium();
+  if(document.querySelector(".sheet h3")&&/Premium/.test(document.querySelector(".sheet h3").textContent))draw(r);
+}
+function premText(ref){return "📅 Kennst du schon den Familienkalender? Kostenlos, ohne Werbung, ohne Anmeldung: Jeder hat seine eigene Spalte, Termine per Sprache oder Foto eintragen, die ganze Familie sieht alles sofort. Einfach öffnen und „Neuen Kalender starten“ tippen 👉 "+refLink(ref)}
+/* Admin: Premium */
+async function admPrem(body){
+  const [rs,ps]=await Promise.all([FS.collection("refs").get({source:"server"}),FS.collection("premium").get({source:"server"})]);
+  const rows=[];for(const d of rs.docs){let n=0;try{n=(await FS.collection(`refs/${d.id}/neu`).get({source:"server"})).size}catch(e){}rows.push({ref:d.id,n,nr:String(d.data().fam||"").slice(0,4).toUpperCase()})}
+  rows.sort((a,b)=>b.n-a.n);
+  body.innerHTML=`<p class="hint">Empfehlungen pro Kalender (gezählt werden alle, die Freischaltung zählt erst nach 2 Tagen).</p>
+    ${rows.length?rows.map(r=>`<div class="supmsg"><div class="sm-h"><span><b>Kalender ${esc(r.nr)}</b> · Code ${esc(r.ref)}</span><span><b>${r.n}</b> 👪</span></div></div>`).join(""):`<p class="hint">Noch keine Empfehlungen.</p>`}
+    <h4 class="sub">🎁 Premium verschenken</h4>
+    <label class="f">Einladungslink oder Code der Familie<input id="pgC" placeholder="https://…#join=…"></label>
+    <div class="seg" style="--n:3">${[3,5,10].map(n=>`<button class="typ" data-pgs="${n}" aria-pressed="${n===10}">Stufe ${n}</button>`).join("")}</div>
+    <button class="btn" id="pgGo">🎁 Verschenken</button>
+    <h4 class="sub">Verschenktes Premium</h4>
+    ${ps.docs.length?ps.docs.map(d=>`<div class="supmsg"><div class="sm-h"><span><b>${esc(d.id.slice(0,4).toUpperCase())}</b> · Stufe ${esc(d.data().stufe)}</span><span>${fmtZ(d.data().zeit)}</span></div><div class="rw-btns"><button data-pgdel="${esc(d.id)}">Entziehen</button></div></div>`).join(""):`<p class="hint">Keins.</p>`}`;
+  let st=10;body.querySelectorAll("[data-pgs]").forEach(b=>b.onclick=()=>{st=+b.dataset.pgs;body.querySelectorAll("[data-pgs]").forEach(x=>x.setAttribute("aria-pressed",String(x===b)))});
+  document.getElementById("pgGo").onclick=async()=>{const c=codeFrom($v("pgC"));if(!c){toast("Kein gültiger Link oder Code");return}
+    try{await FS.doc(`premium/${c}`).set({stufe:st,zeit:nowISO()});toast(`🎁 Stufe ${st} verschenkt`);showAdmin("premium")}catch(e){toast("Hat nicht geklappt")}};
+  body.querySelectorAll("[data-pgdel]").forEach(b=>b.onclick=async()=>{if(!await askConfirm("Premium wieder entziehen?","Entziehen"))return;try{await FS.doc(`premium/${b.dataset.pgdel}`).delete();showAdmin("premium")}catch(e){toast("Hat nicht geklappt")}});
+}
+
+setTimeout(applyPremium,300);
 /* ---------- Sprachen (Übersetzung der Oberfläche) ---------- */
 const LANGS=[["de","Deutsch"],["en","English"],["tr","Türkçe"],["pl","Polski"],["uk","Українська"]];
 var LANG="de";try{LANG=localStorage.getItem("fk-lang")||"";if(!LANG){const n=(navigator.language||"de").slice(0,2).toLowerCase();LANG=LANGS.some(l=>l[0]===n)?n:"de"}}catch(e){LANG="de"}
