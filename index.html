@@ -851,6 +851,7 @@ function checkJoin(){
   const h=location.hash;
   if(h.startsWith("#lesen=")){const v=h.slice(7);if(/^[a-z2-9]{18,}$/.test(v)){const old=getCfg();if(!old||!old.code)setCfg({firebase:DEFAULT_FIREBASE,lesen:v});else sessionStorage.setItem("fk-lesen-own",v)}history.replaceState(null,"",location.pathname);return}
   if(!h.startsWith("#join="))return;
+  if(!isStandalone()){try{localStorage.setItem("fk-joinlink",location.origin+location.pathname+h)}catch(e){}}
   let [v,wt]=h.slice(6).split("&w=");let kd="";if(wt&&wt.includes("&k=")){[wt,kd]=wt.split("&k=")}
   try{if(/^[a-z2-9]{18,}$/.test(v)){joinCode(v,wt);if(kd&&KIDKEY.test(kd)){const c3=getCfg();if(c3){c3.kind=kd;setCfg(c3)}setKid(kd,false)}toast("Mit dem Familienkalender verbunden")}else{const j=JSON.parse(b64d(v));if(j&&j.c){joinCode(j.c);toast("Mit dem Familienkalender verbunden")}}}catch(e){toast("Der Einladungslink ist unvollständig")}
   history.replaceState(null,"",location.pathname);
@@ -942,7 +943,7 @@ function wirePersons(){
 function nameFields(vals){return `<div class="row3n">${SLOTS.map((k,i)=>`<label class="f">Person ${i+1}<input id="nm${i}" maxlength="20" value="${esc(vals[i]||"")}" placeholder="Name"></label>`).join("")}</div>`}
 const readNames=()=>SLOTS.map((k,i)=>(document.getElementById("nm"+i).value||"").trim());
 function showSetup(){
-  sheet("Willkommen",`${langSelect()}<p>Hier legst du einen eigenen Kalender für deine Familie an. Trag dafür die Namen ein, die als Spalten erscheinen sollen. Die Spalte „Gemeinsam“ gibt es immer dazu.</p>
+  sheet("Willkommen",`${isStandalone()?`<div class="rw" style="border-color:var(--accent)"><b>📲 Gerade installiert?</b><p class="hint" style="margin:4px 0 8px">Wenn du die App über einen Einladungslink installiert hast: einfach hier tippen, dann verbindet sie sich sofort.</p><button class="btn" id="cfgClip">📋 Mit kopiertem Einladungslink verbinden</button></div>`:""}${langSelect()}<p>Hier legst du einen eigenen Kalender für deine Familie an. Trag dafür die Namen ein, die als Spalten erscheinen sollen. Die Spalte „Gemeinsam“ gibt es immer dazu.</p>
     ${nameFields(["","",""])}
     <div class="actions"><button class="btn" id="cfgNew">Neuen Kalender starten</button></div>
     <h4 class="sub">✉️ Du hast einen Einladungslink bekommen?</h4>
@@ -956,6 +957,7 @@ function showSetup(){
   };
   document.getElementById("cfgLocal").onclick=()=>{const n=readNames();if(n.some(Boolean)){try{localStorage.setItem("fk-namen",JSON.stringify(n))}catch(e){}}setCfg({local:true});closeSheet();location.reload()};
   document.getElementById("cfgLater").onclick=closeSheet;wireJoin();wireLang();
+  {const cb=document.getElementById("cfgClip");if(cb)cb.onclick=joinFromClipboard}
 }
 function showSettings(){
   const c=getCfg();
@@ -1560,7 +1562,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v64";
+const APP_VER="v65";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -2176,9 +2178,14 @@ function wirePhotos(){
 }
 
 function calNr(){const c=getCfg();return c&&c.code?c.code.slice(0,4).toUpperCase():"–"}
-function joinFromText(t){const m=String(t||"").match(/#join=([^\s&]+)(?:&w=([a-z2-9]+))?/);const v=m?m[1]:String(t||"").trim().toLowerCase();const wt=m&&m[2]?m[2]:"";
+function joinFromText(t){const m=String(t||"").match(/#join=([^\s&]+)(?:&w=([a-z2-9]+))?(?:&k=([a-z0-9_-]+))?/);const v=m?m[1]:String(t||"").trim().toLowerCase();const wt=m&&m[2]?m[2]:"",kd=m&&m[3]?m[3]:"";
   if(!/^[a-z2-9]{18,}$/.test(v)&&!m){toast("Das ist kein gültiger Einladungslink");return}
-  location.hash="join="+v+(wt?"&w="+wt:"");location.reload()}
+  location.hash="join="+v+(wt?"&w="+wt+(kd?"&k="+kd:""):"");location.reload()}
+async function joinFromClipboard(){
+  let t="";try{t=await navigator.clipboard.readText()}catch(e){}
+  if(!/#join=/.test(t)){let o="";try{o=localStorage.getItem("fk-joinlink")||""}catch(e){}if(o)t=o}
+  if(!/#join=/.test(t)){toast("Kein Einladungslink gefunden · bitte unten einfügen");const i=document.getElementById("joinIn");if(i)i.focus();return}
+  joinFromText(t)}
 function joinBox(){return `<label class="f">Einladungslink einfügen<input id="joinIn" placeholder="https://…/familienkalender/#join=…"></label><button class="btn ghost" id="joinGo">Mit diesem Kalender verbinden</button>`}
 function wireJoin(){const b=document.getElementById("joinGo");if(b)b.onclick=()=>joinFromText(document.getElementById("joinIn").value)}
 function setStatus(t){document.getElementById("status").textContent=t}
@@ -3158,10 +3165,39 @@ function showInstallBar(){
 }
 window.addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;showInstallBar()});
 window.addEventListener("appinstalled",()=>{installEvt=null;document.getElementById("installBar").hidden=true;toast("Installiert 🎉 Du findest die App jetzt auf deinem Startbildschirm.")});
+async function iosInstall(){
+  const ua=navigator.userAgent,chrome=/CriOS/.test(ua),other=/FxiOS|EdgiOS|OPiOS/.test(ua);
+  let link="";try{link=localStorage.getItem("fk-joinlink")||""}catch(e){}
+  const c=getCfg();if(!link&&c&&c.code)link=inviteLink(c);
+  let copied=false;if(link){try{await navigator.clipboard.writeText(link);copied=true}catch(e){}}
+  const share='<span style="display:inline-block;border:1.5px solid currentColor;border-radius:4px;padding:0 4px;font-size:.85em">⬆︎</span>';
+  sheet("📲 Auf dem iPhone installieren",`
+    ${copied?`<div class="rolebox">✅ <b>Einladungslink ist kopiert.</b><br><span class="hint">Den brauchst du gleich, damit sich die installierte App sofort verbindet.</span></div>`:""}
+    ${other?`<p class="hint">⚠️ In diesem Browser geht das Installieren nicht. Bitte den Link in <b>Safari</b> oder <b>Chrome</b> öffnen.</p>`:""}
+    <ol class="steps">
+      ${chrome?`<li>Oben rechts in der Adresszeile auf ${share} <b>Teilen</b> tippen.</li>`
+        :`<li>Unten auf ${share} <b>Teilen</b> tippen. Bei neuem iOS erst auf <b>···</b> und dann auf <b>Teilen</b>.</li>`}
+      <li>Etwas nach unten wischen und <b>„Zum Home-Bildschirm“</b> wählen.</li>
+      <li><b>„Als Web-App öffnen“</b> anlassen und oben rechts auf <b>„Hinzufügen“</b> tippen.</li>
+      <li>Die neue App auf dem Home-Bildschirm öffnen. Steht dort „Willkommen“: auf <b>📋 Mit kopiertem Einladungslink verbinden</b> tippen. Fertig!</li>
+    </ol>
+    ${link&&!copied?`<button class="btn ghost" id="iosCopy">📋 Einladungslink kopieren</button>`:""}
+    <p class="hint">Die App kommt nicht aus dem App Store, sondern direkt von der Kalender-Seite. Sie braucht kein Konto und kostet nichts.</p>
+    <div class="actions"><button class="btn" id="instOk">Alles klar</button></div>`);
+  const cp=document.getElementById("iosCopy");if(cp)cp.onclick=async()=>{try{await navigator.clipboard.writeText(link);toast("Link kopiert ✓")}catch(e){toast("Kopieren ging nicht")}};
+  document.getElementById("instOk").onclick=()=>{closeSheet();iosArrow(chrome)};
+}
+function iosArrow(top){
+  const a=document.createElement("div");a.textContent=top?"⬆️":"⬇️";
+  a.style.cssText=`position:fixed;z-index:9999;font-size:44px;pointer-events:none;${top?"top:4px;right:18px":"bottom:6px;left:50%;margin-left:-22px"};animation:iosb .7s ease-in-out infinite alternate`;
+  if(!document.getElementById("iosbK")){const st=document.createElement("style");st.id="iosbK";st.textContent="@keyframes iosb{from{transform:translateY(0)}to{transform:translateY("+(top?"-":"")+"10px)}}";document.head.appendChild(st)}
+  document.body.appendChild(a);setTimeout(()=>a.remove(),9000);
+}
 async function installApp(){
   if(isStandalone()){toast("Die App ist schon installiert ✓");return}
   if(installEvt){installEvt.prompt();try{const r=await installEvt.userChoice;if(r&&r.outcome==="accepted")document.getElementById("installBar").hidden=true}catch(e){}installEvt=null;return}
   const ios=isIOS();
+  if(ios){iosInstall();return}
   sheet("Als App installieren",ios
     ?`<ol class="steps"><li>Unten in Safari auf <b>Teilen</b> tippen (Quadrat mit Pfeil nach oben).</li><li><b>„Zum Home-Bildschirm“</b> wählen.</li><li>Oben rechts auf <b>„Hinzufügen“</b> tippen.</li></ol>`
     :`<ol class="steps"><li>Oben rechts im Browser auf <b>⋮</b> (drei Punkte) tippen.</li><li><b>„App installieren“</b> oder <b>„Zum Startbildschirm hinzufügen“</b> wählen.</li><li>Mit <b>„Installieren“</b> bestätigen.</li></ol><p class="hint">Im Samsung-Browser: unten auf ☰ tippen → „Seite hinzufügen zu“ → „Startbildschirm“.</p>`
@@ -3301,6 +3337,9 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-08f",d:"2026-11-08",t:"📲 iPhone-Installation",items:[
+    "📲 Neue Schritt-für-Schritt-Hilfe zum Installieren auf dem iPhone (Safari und Chrome), mit Pfeil zum richtigen Knopf",
+    "📋 Der Einladungslink wird dabei automatisch kopiert: Die installierte App verbindet sich mit einem Tipp"]},
   {v:"2026-11-08e",d:"2026-11-08",t:"📜 Aufgaben-Verlauf",items:[
     "📜 Unter ⭐ → Verlauf siehst du Woche für Woche, wer welche Aufgabe erledigt und welche Belohnung eingelöst hat",
     "📊 Pro Woche: Anzahl erledigter Aufgaben, verdiente und eingelöste Sterne"]},
