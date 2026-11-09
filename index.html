@@ -1567,7 +1567,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v69";
+const APP_VER="v70";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -2775,7 +2775,7 @@ function drawSheet(){
     </div>
     ${isEdit&&canDel(d)?(confirmDel?`<div class="confirm"><b>Wirklich löschen?</b><div class="actions">
         <button class="btn danger" id="delOne">Nur diesen Eintrag</button>
-        ${d.serie?`<button class="btn danger" id="delSeries">Ganze Serie (${series})</button>`:""}
+        ${d.serie?`<button class="btn danger" id="delFrom">✂️ Ab hier bis Serienende (${entries.filter(x=>x.serie===d.serie&&x.datum>=d.datum).length})</button><button class="btn danger" id="delSeries">Ganze Serie (${series})</button>`:""}
         <button class="btn ghost" id="delNo">Nein</button></div></div>`
       :`<button class="btn danger" id="del">Löschen</button>`):""}
   </div></div>`;
@@ -2820,6 +2820,10 @@ function drawSheet(){
     if(await askConfirm(`„${d.typ==="geburtstag"?"Geburtstag "+d.titel:d.titel||TYPN[d.typ]}“ wirklich löschen?`)){const id=editId,old=entries.find(x=>x.id===id);await store.del(id);closeSheet();if(old)undoToast("Gelöscht",()=>store.set(id,strip(old)));else toast("Gelöscht")}};
   if($("delNo"))$("delNo").onclick=()=>{confirmDel=false;drawSheet()};
   if($("delOne"))$("delOne").onclick=async()=>{if(!await askConfirm("Nur diesen einen Eintrag löschen?"))return;const id=editId,old=entries.find(x=>x.id===id);await store.del(id);closeSheet();if(old)undoToast("Gelöscht",()=>store.set(id,strip(old)));else toast("Gelöscht")};
+  if($("delFrom"))$("delFrom").onclick=async()=>{const from=d.datum,all=entries.filter(x=>x.serie===d.serie&&x.datum>=from);const ids=all.filter(canDel).map(x=>x.id);if(all.length>ids.length)toast(`${all.length-ids.length} geschützte Einträge bleiben stehen`);
+    const last=entries.filter(x=>x.serie===d.serie&&x.datum<from).map(x=>x.datum).sort().pop();
+    if(!await askConfirm(`Serie ab ${fmt(from)} beenden? Das löscht ${ids.length} Einträge.${last?` Der letzte bleibt am ${fmt(last)}.`:""}`,"Ab hier beenden"))return;
+    const olds=entries.filter(x=>ids.includes(x.id)).map(x=>[x.id,strip(x)]);closeSheet();for(const id of ids)await store.del(id);undoToast(`✂️ Serie endet${last?" am "+fmt(last):""}`,async()=>{for(const [id,o] of olds)await store.set(id,o)})};
   if($("delSeries"))$("delSeries").onclick=async()=>{const skip=entries.filter(x=>x.serie===d.serie&&!canDel(x)).length;if(skip)toast(`${skip} geschützte Einträge bleiben stehen`);const ids=entries.filter(x=>x.serie===d.serie&&canDel(x)).map(x=>x.id);if(!await askConfirm(`Wirklich die ganze Serie mit ${ids.length} Einträgen löschen?`,"Serie löschen"))return;const olds=entries.filter(x=>ids.includes(x.id)).map(x=>[x.id,strip(x)]);closeSheet();for(const id of ids)await store.del(id);undoToast(`${ids.length} Einträge gelöscht`,async()=>{for(const[id,o] of olds)await store.set(id,o)})};
 }
 function clean(d){
@@ -3365,6 +3369,8 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-09b",d:"2026-11-09",t:"✂️ Serien beenden",items:[
+    "✂️ Wiederkehrende Termine ab einem bestimmten Tag beenden: Eintrag öffnen → Löschen → „Ab hier bis Serienende“. Alles davor bleibt stehen"]},
   {v:"2026-11-09a",d:"2026-11-09",t:"🎒 Ferien",items:[
     "🎒 Neue Art „Ferien“ neben Termin, Arbeit, Urlaub und Geburtstag, mit erstem und letztem Tag, ganztägig und in eigener Farbe",
     "🎤 Per Sprache oder Text erkannt: z. B. „Ferien John 20.12. bis 3.1.“"]},
