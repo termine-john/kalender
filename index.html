@@ -1562,7 +1562,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v67";
+const APP_VER="v68";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -1884,7 +1884,7 @@ async function loadMembers(){
   list.sort((a,b)=>((a.rolle==="lesen")-(b.rolle==="lesen"))||(a.id===MY_UID?-1:b.id===MY_UID?1:0)||String(a.name||"~").localeCompare(String(b.name||"~")));
   box.innerHTML=list.map(m=>{const me=m.id===MY_UID,w=m.rolle!=="lesen";
     return `<div class="task mrow" data-uid="${esc(m.id)}"><div class="mname"><b>${esc(m.name||"Gerät ohne Namen")}</b>${me?" · <i>dieses Handy</i>":""}
-      <div class="mmeta">${m.kind?"🧒 Kinder-Handy · ":""}${w?"✏️ darf schreiben":"👁️ nur lesen"}${m.seit?" · seit "+dmy(m.seit):""}${m.zuletzt&&m.zuletzt!==m.seit?" · zuletzt "+dmy(m.zuletzt):""}</div>
+      <div class="mmeta">${m.kind?"🧒 Kinder-Handy · ":""}${w?"✏️ darf schreiben":"👁️ nur lesen"}${m.seit?" · seit "+dmy(m.seit):""}${m.zuletzt&&m.zuletzt!==m.seit?" · zuletzt "+dmy(m.zuletzt):""} · Gerät ${esc(String(m.id).slice(0,6))}</div>
       ${me?"":`<select class="kidsel" data-kind aria-label="Art des Handys"><option value="">👤 Erwachsenen-Handy (sieht alles)</option>${persons().map(([k,n])=>`<option value="${k}" ${m.kind===k&&!m.kindGem?"selected":""}>🧒 Kinder-Handy: nur ${esc(n)}</option><option value="${k}+g" ${m.kind===k&&m.kindGem?"selected":""}>🧒 Kinder-Handy: ${esc(n)} + Gemeinsam</option>`).join("")}</select>`}</div>
       <div class="seg" style="--n:2"><button class="typ" data-role="schreiben" aria-pressed="${w}" aria-label="Darf schreiben">✏️</button><button class="typ" data-role="lesen" aria-pressed="${!w}" aria-label="Nur lesen">👁️</button></div>
       ${me?"<span></span>":`<button class="mdel" data-mdel aria-label="Aus der Liste entfernen">🗑</button>`}</div>`}).join("")||`<p class="hint">Noch keine Mitglieder.</p>`;
