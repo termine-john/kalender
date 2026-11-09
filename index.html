@@ -229,6 +229,12 @@ body.ro .cell{cursor:default}
 .mdel{border:1px solid var(--line);background:transparent;border-radius:10px;width:36px;height:36px;color:inherit}
 html.kidmode #tAdd,html.kidmode #rAdd,html.kidmode #kpBtn,html.kidmode [data-rwedit],html.kidmode #wishes,html.kidmode #invBox{display:none!important}
 .tabs button.hasbadge{position:relative}.tabs button.hasbadge::after{content:"";position:absolute;top:4px;right:6px;width:9px;height:9px;border-radius:50%;background:#ff4d6d;box-shadow:0 0 0 2px var(--surface)}
+.spiel .sphead{display:flex;justify-content:space-between;font-size:13px;opacity:.8}.spiel .pbar{height:10px;border-radius:99px;background:rgba(127,127,127,.2);overflow:hidden;margin:8px 0 14px}.spiel .pbar i{display:block;height:100%;border-radius:99px;transition:width .1s linear}
+.spq{font-size:clamp(1.6rem,8vw,2.4rem);font-weight:800;text-align:center;margin:6px 0 10px;line-height:1.2}
+.spin{font-size:2rem;font-weight:800;text-align:center;border:2px solid var(--line);border-radius:14px;padding:6px;margin:0 auto 10px;max-width:180px;min-height:1.5em;background:var(--surface)}
+.keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:320px;margin:0 auto}.keypad button,.spopts button{font:inherit;font-size:1.5rem;font-weight:700;padding:12px 0;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:inherit}.keypad .kok{background:#5fd38d;color:#06301a;border-color:transparent}
+.spopts{display:grid;gap:10px}.spopts button{font-size:1.3rem;padding:14px 8px}.spfb{text-align:center;min-height:3em;margin-top:10px}
+#spLim{font:inherit;padding:2px 6px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:inherit}
 .kidbar{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
 .kidbar .pbar{height:12px;border-radius:99px;background:rgba(127,127,127,.2);overflow:hidden;margin:6px 0 2px}.kidbar .pbar i{display:block;height:100%;background:linear-gradient(90deg,#ffd166,#ff9f1c);border-radius:99px}
 .pend{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center}.pend button{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:10px;padding:6px 10px;font:inherit}
@@ -1390,6 +1396,7 @@ function renderStars(){
     kidH=`<div class="kidbar"><b>Hallo ${esc(PNAME[KID]||"")}! 👋</b>${nx?`<div class="pbar"><i style="width:${Math.min(100,Math.round(b/(+nx.kosten)*100))}%"></i></div><span class="meta">Nächstes Ziel: <b>${esc(nx.titel)}</b> · noch ${+nx.kosten-b} ⭐</span>`:rewards.length?`<br><span class="meta">Du kannst dir jede Belohnung leisten! 🎉</span>`:""}${np?`<br><span class="meta">⏳ ${np} ⭐ warten noch auf Bestätigung</span>`:""}</div>`}
   document.getElementById("vOther").innerHTML=`<div class="starcards">${cards}</div>${kidH}
     <div class="actions" style="margin:8px 0">${TTS_OK&&tasks.length?`<button class="btn${KID?"":" ghost"}" id="ttsBtn">🔊 Vorlesen</button>`:""}<button class="btn ghost" id="histBtn">📜 Verlauf</button></div>
+    ${spieleHTML()}
     <div class="actions"><button class="btn" id="tAdd">+ Aufgabe</button><button class="btn ghost" id="rAdd">+ Belohnung</button></div>
     ${pendH}
     <h3 class="sec">Aufgaben</h3>
@@ -1399,7 +1406,7 @@ function renderStars(){
     ${last?`<h3 class="sec">Zuletzt eingelöst</h3><ul class="hint" style="margin:0;padding-left:18px">${last}</ul>`:""}
     <button class="btn ghost" id="kpBtn" style="margin-top:12px">🎒 Startpaket: Kinder-Aufgaben & Belohnungen</button>`;
   document.getElementById("kpBtn").onclick=kidPackSheet;
-  document.getElementById("histBtn").onclick=()=>showHistory(KID||"");
+  document.getElementById("histBtn").onclick=()=>showHistory(KID||"");wireSpiele();
   {const tb=document.getElementById("ttsBtn");if(tb)tb.onclick=()=>{if(speechSynthesis.speaking){speechSynthesis.cancel();return}readTasks()}}
   document.getElementById("tAdd").onclick=()=>openTaskSheet(null);
   document.getElementById("rAdd").onclick=()=>openRewardSheet(null);
@@ -1484,6 +1491,100 @@ function showHistory(who){
   document.querySelectorAll("[data-hw]").forEach(b=>b.onclick=()=>showHistory(b.dataset.hw));
   document.getElementById("hClose").onclick=closeSheet;
 }
+/* ---------- Lernspiele (2.–3. Klasse) ---------- */
+const SPIELE={mathe:{n:"🧮 Mathe-Blitz",kurz:"Mathe-Blitz"},deutsch:{n:"✏️ Deutsch-Detektiv",kurz:"Deutsch-Detektiv"}};
+const spielLimit=()=>{const v=FAMCONF&&FAMCONF.spielLimit;return v===0||v?+v:3};
+const spielHeute=p=>taskLogs.filter(l=>l.person===p&&l.datum===today&&String(l.aufgabe||"").startsWith("spiel-")).reduce((a,l)=>a+(+l.sterne||0),0);
+const rnd=(a,b)=>a+Math.floor(Math.random()*(b-a+1));
+const mischen=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+function spielLvl(p,sp){try{return Math.min(3,Math.max(1,+localStorage.getItem(`fk-lvl-${sp}-${p}`)||1))}catch(e){return 1}}
+function setSpielLvl(p,sp,l){try{localStorage.setItem(`fk-lvl-${sp}-${p}`,String(Math.min(3,Math.max(1,l))))}catch(e){}}
+function matheAufgabe(lvl){
+  const arten=lvl===1?["plus20","minus20","mal","mal"]:lvl===2?["plus100","minus100","mal","geteilt"]:["plus100","minus100","mal","geteilt","luecke","verdoppeln"];
+  const art=arten[rnd(0,arten.length-1)];let q,a;
+  if(art==="plus20"){const x=rnd(2,15),y=rnd(2,20-x);q=`${x} + ${y}`;a=x+y}
+  else if(art==="minus20"){const x=rnd(8,20),y=rnd(2,x-1);q=`${x} − ${y}`;a=x-y}
+  else if(art==="plus100"){const x=rnd(11,85),y=rnd(3,99-x);q=`${x} + ${y}`;a=x+y}
+  else if(art==="minus100"){const x=rnd(25,100),y=rnd(3,x-5);q=`${x} − ${y}`;a=x-y}
+  else if(art==="mal"){const r=lvl===1?[2,5,10][rnd(0,2)]:rnd(2,10),x=rnd(1,10);[q,a]=Math.random()<.5?[`${x} · ${r}`,x*r]:[`${r} · ${x}`,x*r]}
+  else if(art==="geteilt"){const r=rnd(2,10),x=rnd(1,10);q=`${x*r} : ${r}`;a=x}
+  else if(art==="luecke"){const x=rnd(5,60),y=rnd(3,99-x);q=`${x} + ? = ${x+y}`;a=y}
+  else {const x=rnd(6,50);if(Math.random()<.5){q=`Das Doppelte von ${x}`;a=2*x}else{const z=rnd(3,50)*2;q=`Die Hälfte von ${z}`;a=z/2}}
+  return {q,a:String(a),typ:"zahl"};
+}
+const DE_WORT=[["Biene","Bine"],["Fahrrad","Farrad"],["Hund","Hunt"],["Wald","Walt"],["Zucker","Zuker"],["Katze","Kaze"],["Sonne","Sone"],["Mutter","Muter"],["Schule","Schuhle"],["fliegen","fligen"],["spielen","spilen"],["Vogel","Fogel"],["Vater","Fater"],["Straße","Strase"],["Fuß","Fus"],["Blume","Bluhme"],["Zahn","Zan"],["Uhr","Ur"],["Stuhl","Stul"],["Tisch","Tisch"],["Brief","Brif"],["Kiste","Kieste"],["Igel","Iegel"],["Tiger","Tieger"],["Wiese","Wise"],["Mann","Man"],["Ball","Bal"],["Teller","Teler"],["Hütte","Hüte"],["Wolke","Wolcke"],["Glück","Glük"],["Brücke","Brüke"],["Jacke","Jake"],["Platz","Plaz"],["Mütze","Müze"],["Pferd","Pfert"],["Kind","Kint"],["Berg","Berk"],["Freund","Freunt"],["Bäume","Beume"],["Häuser","Heuser"],["Äpfel","Epfel"],["Fenster","Venster"],["Fisch","Fich"],["Schwester","Schwesster"],["Dino","Dieno"],["Zwerg","Zwerk"],["Nase","Nahse"],["lesen","läsen"],["schwimmen","schwimen"],["rennen","renen"],["essen","esen"],["Wasser","Waser"],["Kuss","Kus"],["Schloss","Schlos"],["Fluss","Flus"],["heiß","heis"],["Eis","Eiß"],["Reise","Reiße"]].filter(([r,f])=>r!==f);
+const DE_ART={Nomen:["Hund","Schule","Baum","Lehrer","Ball","Tasche","Freund","Auto","Blume","Fenster","Pizza","Wolke","Brot","Katze","Stift"],Verb:["laufen","spielen","lesen","schreiben","essen","schlafen","springen","malen","singen","lachen","bauen","rufen","trinken","werfen","tanzen"],Adjektiv:["groß","klein","schnell","laut","leise","bunt","rot","lustig","müde","warm","kalt","schön","stark","nett","weich"]};
+function deutschAufgabe(lvl){
+  if(Math.random()<(lvl===1?.75:.6)){const [r,f]=DE_WORT[rnd(0,DE_WORT.length-1)];return {q:"Welches Wort ist richtig geschrieben?",opts:mischen([r,f]),a:r,typ:"wahl"}}
+  const k=Object.keys(DE_ART)[rnd(0,2)],w=DE_ART[k][rnd(0,DE_ART[k].length-1)];
+  return {q:`Welche Wortart ist „${w}“?`,opts:["Nomen","Verb","Adjektiv"],a:k,typ:"wahl",hint:k==="Nomen"?"Nomen schreibt man groß.":""};
+}
+function spielStart(sp){
+  if(KID)return spielRunde(sp,KID);
+  const P=persons();
+  sheet(SPIELE[sp].n,`<p class="hint">Wer spielt? Sterne gibt es für 8 von 10 richtigen Aufgaben (bei 10 von 10 sogar 2 ⭐), höchstens ${spielLimit()} ⭐ am Tag.</p>
+    <div class="nameq">${P.map(([k,n])=>`<button data-sp="${k}">${esc(n)}</button>`).join("")}<button data-sp="">Nur ausprobieren</button></div>
+    <button class="btn ghost" id="spX">Abbrechen</button>`);
+  document.querySelectorAll("[data-sp]").forEach(b=>b.onclick=()=>spielRunde(sp,b.dataset.sp));
+  document.getElementById("spX").onclick=closeSheet;
+}
+function spielRunde(sp,p){
+  const lvl=p?spielLvl(p,sp):1,N=10,G={i:0,ok:0,zeit:sp==="mathe"?(lvl===1?15:13):14,eing:"",auf:null,t0:0,tim:null,fertig:false};
+  const neu=()=>{G.auf=sp==="mathe"?matheAufgabe(lvl):deutschAufgabe(lvl);G.eing="";G.t0=Date.now();draw();
+    clearInterval(G.tim);G.tim=setInterval(()=>{const bar=document.getElementById("spBar");if(!bar){clearInterval(G.tim);return}
+      const rest=Math.max(0,G.zeit-(Date.now()-G.t0)/1000);bar.style.width=(rest/G.zeit*100)+"%";bar.style.background=rest<4?"#ff6b6b":rest<8?"#ffd166":"#5fd38d";
+      if(rest<=0)antwort(null)},100)};
+  const draw=()=>{const A=G.auf;
+    sheet(SPIELE[sp].n,`<div class="spiel"><div class="sphead"><span>Aufgabe ${G.i+1} von ${N}</span><span>✅ ${G.ok}</span><span>Stufe ${lvl}</span></div>
+      <div class="pbar"><i id="spBar" style="width:100%"></i></div>
+      <div class="spq">${esc(A.q)}</div>
+      ${A.typ==="zahl"?`<div class="spin" id="spIn">${esc(G.eing)||"&nbsp;"}</div>
+        <div class="keypad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join("")}<button data-k="del" aria-label="Löschen">⌫</button><button data-k="0">0</button><button data-k="ok" class="kok" aria-label="Fertig">✓</button></div>`
+      :`<div class="spopts">${A.opts.map(o=>`<button data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div>`}
+      <div class="spfb" id="spFb"></div></div>
+      <button class="btn ghost" id="spStop">Aufhören</button>`);
+    document.getElementById("bd").onclick=null;
+    document.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{const k=b.dataset.k;if(k==="ok"){if(G.eing)antwort(G.eing);return}
+      if(k==="del")G.eing=G.eing.slice(0,-1);else if(G.eing.length<4)G.eing+=k;document.getElementById("spIn").innerHTML=esc(G.eing)||"&nbsp;"});
+    document.querySelectorAll("[data-o]").forEach(b=>b.onclick=()=>antwort(b.dataset.o));
+    document.getElementById("spStop").onclick=()=>{clearInterval(G.tim);closeSheet()};
+  };
+  let busy=false;
+  const antwort=v=>{if(busy)return;busy=true;clearInterval(G.tim);const A=G.auf,ok=v!==null&&String(v)===A.a;
+    if(ok){G.ok++;const t=(Date.now()-G.t0)/1000;if(t<G.zeit*.5)G.zeit=Math.max(sp==="mathe"?7:8,G.zeit-1)}else G.zeit=Math.min(20,G.zeit+2);
+    const fb=document.getElementById("spFb");if(fb)fb.innerHTML=ok?`<b style="color:#5fd38d">✓ Richtig!</b>`:`<b style="color:#ff6b6b">${v===null?"⏰ Zeit ist um!":"✗ Leider falsch."}</b> Richtig ist: <b>${esc(A.a)}</b>${A.hint?`<br><span class="hint">${esc(A.hint)}</span>`:""}`;
+    document.querySelectorAll(".spiel button").forEach(b=>b.disabled=true);
+    setTimeout(()=>{busy=false;if(!document.getElementById("spFb"))return;G.i++;if(G.i<N)neu();else ende()},ok?700:1800)};
+  const ende=()=>{
+    let st=G.ok>=10?2:G.ok>=8?1:0,info="";
+    if(p){if(G.ok>=9)setSpielLvl(p,sp,lvl+1);else if(G.ok<=5)setSpielLvl(p,sp,lvl-1);
+      const frei=Math.max(0,spielLimit()-spielHeute(p));if(st>frei){info=frei?`Heute gibt es nur noch ${frei} ⭐ aus Spielen.`:"Das Tageslimit für Spiele-Sterne ist erreicht. Morgen geht es weiter!";st=frei}}
+    else st=0;
+    const msg=G.ok>=10?"🏆 Perfekt! Alles richtig!":G.ok>=8?"🎉 Super gemacht!":G.ok>=5?"👍 Gut! Für einen Stern brauchst du 8 richtige.":"💪 Übung macht den Meister. Versuch es nochmal!";
+    if(p&&st>0&&store){store.add({typ:"erledigt",aufgabe:"spiel-"+sp,person:p,sterne:st,datum:today,titel:`${SPIELE[sp].n} · ${G.ok}/${N} richtig`});if(premOn(3)||KID)confetti()}
+    if(p)try{lsSet("fk-spiel-last",String(Date.now()))}catch(e){}
+    sheet(SPIELE[sp].n,`<div class="spiel" style="text-align:center"><div style="font-size:52px">${G.ok>=8?"🌟":"🙂"}</div>
+      <h3 style="margin:4px 0">${G.ok} von ${N} richtig</h3><p>${msg}</p>
+      ${st?`<p><b style="color:var(--star)">+${st} ⭐</b>${KID?" · sobald Mama oder Papa bestätigt haben":""}</p>`:""}${info?`<p class="hint">${info}</p>`:""}
+      ${p&&G.ok>=9&&lvl<3?`<p class="hint">⬆️ Nächstes Mal geht es eine Stufe schwerer.</p>`:""}</div>
+      <div class="actions"><button class="btn" id="spAgain">🔁 Nochmal</button><button class="btn ghost" id="spEnd">Fertig</button></div>`);
+    if(KID&&ttsAuto())speak(`${G.ok} von ${N} richtig. ${msg}`);
+    document.getElementById("spAgain").onclick=()=>spielRunde(sp,p);
+    document.getElementById("spEnd").onclick=closeSheet;
+  };
+  neu();
+}
+function spieleHTML(){
+  if(!persons().length)return "";
+  const p=KID,frei=p?Math.max(0,spielLimit()-spielHeute(p)):0;
+  return `<h3 class="sec">🎮 Lernspiele</h3>
+    <div class="actions"><button class="btn${KID?"":" ghost"}" data-spiel="mathe">🧮 Mathe-Blitz</button><button class="btn${KID?"":" ghost"}" data-spiel="deutsch">✏️ Deutsch-Detektiv</button></div>
+    <p class="hint">${KID?(spielLimit()?(frei?`Heute kannst du noch <b>${frei} ⭐</b> erspielen. 8 von 10 richtig = 1 ⭐, alle richtig = 2 ⭐.`:"Für heute hast du alle Spiele-Sterne. Üben geht trotzdem!"):"Spielen zum Üben, Sterne gibt es dafür gerade nicht."):`Für die 2.–3. Klasse, mit Zeitlimit und Stufen, die sich anpassen. Sterne pro Tag aus Spielen: <select id="spLim" aria-label="Tageslimit">${[0,1,2,3,4,5].map(n=>`<option value="${n}" ${spielLimit()===n?"selected":""}>${n}</option>`).join("")}</select>`}</p>`;
+}
+function wireSpiele(){
+  document.querySelectorAll("[data-spiel]").forEach(b=>b.onclick=()=>spielStart(b.dataset.spiel));
+  const s=document.getElementById("spLim");if(s)s.onchange=async()=>{try{await store.conf({spielLimit:+s.value});FAMCONF.spielLimit=+s.value;toast(`Tageslimit: ${s.value} ⭐`)}catch(e){toast("Speichern ging nicht")}};
+}
 const KIDPACK_T=[["🛏️ Bett machen",1,"taeglich"],["🪥 Zähne putzen morgens & abends",1,"taeglich"],["🎒 Schulranzen für morgen packen",1,"taeglich"],["📚 Hausaufgaben ohne Erinnerung",2,"taeglich"],["🍽️ Tisch decken oder abräumen",1,"taeglich"],["📖 20 Minuten lesen",2,"taeglich"],["🧹 Zimmer aufräumen",3,"woechentlich"],["🗑️ Müll rausbringen",2,"woechentlich"],["🧺 Eigene Wäsche wegräumen",2,"woechentlich"],["🌱 Pflanzen gießen",1,"woechentlich"],["🤝 Ohne Aufforderung geholfen",3,"woechentlich"],["🏆 Gute Note in einer Arbeit",5,"einmalig"]];
 const KIDPACK_R=[["📱 30 Min. extra Handy oder Konsole",15],["🌙 Am Wochenende 30 Min. länger aufbleiben",20],["🍦 Eis essen gehen",25],["🍕 Lieblingsessen aussuchen",30],["🎬 Filmabend, ich suche den Film aus",40],["🎮 1 Std. extra Zocken am Wochenende",40],["💶 5 € extra Taschengeld",80],["🍿 Kinobesuch",100],["🛝 Ausflug nach Wahl",150],["🎁 Kleines Spielzeug bis 15 €",200],["🦁 Zoo- oder Freizeitpark-Tag",400]];
 async function addKidPack(p){
@@ -1567,7 +1668,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v70";
+const APP_VER="v71";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -3369,6 +3470,11 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-09c",d:"2026-11-09",t:"🎮 Lernspiele",items:[
+    "🧮 Mathe-Blitz: Plus, Minus, Einmaleins, Teilen und Lückenaufgaben für die 2.–3. Klasse, mit Zeitlimit",
+    "✏️ Deutsch-Detektiv: richtige Schreibweise finden und Wortarten erkennen (Nomen, Verb, Adjektiv)",
+    "⭐ 8 von 10 richtig = 1 Stern, alles richtig = 2 Sterne. Eltern legen fest, wie viele Spiele-Sterne es pro Tag gibt",
+    "📈 Die Schwierigkeit passt sich an: Wer gut ist, bekommt schwerere Aufgaben und weniger Zeit"]},
   {v:"2026-11-09b",d:"2026-11-09",t:"✂️ Serien beenden",items:[
     "✂️ Wiederkehrende Termine ab einem bestimmten Tag beenden: Eintrag öffnen → Löschen → „Ab hier bis Serienende“. Alles davor bleibt stehen"]},
   {v:"2026-11-09a",d:"2026-11-09",t:"🎒 Ferien",items:[
