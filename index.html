@@ -1562,7 +1562,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v66";
+const APP_VER="v67";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -1829,13 +1829,26 @@ async function _ensureMember(cfg){
   }catch(e){memberOK=false;memberErr=e&&e.code||"";console.warn("Mitglied",e);return false}
 }
 const dmy=x=>x?x.slice(8,10)+"."+x.slice(5,7)+"."+x.slice(0,4):"";
-function nameBox(){return `<label class="f">Dein Name (für die Mitgliederliste)<input id="myName" maxlength="20" value="${esc(MY_MEMBER&&MY_MEMBER.name||"")}" placeholder="z. B. Mama"></label>
-  <button class="btn ghost" id="myNameSave">Namen speichern</button>`}
+function nameBox(){return `<label class="f">Dein Name (für die Mitgliederliste)<input id="myName" maxlength="20" value="${esc(MY_MEMBER&&MY_MEMBER.name||lsGet("fk-myname")||"")}" placeholder="z. B. Mama"></label>
+  <button class="btn ghost" id="myNameSave">Namen speichern</button>
+  <p class="hint" style="font-size:12px;opacity:.7">${APP_VER} · ${memberOK?(ROLE==="lesen"?"verbunden · nur lesen":"verbunden"):"nicht verbunden"+(memberErr?" ("+esc(memberErr)+")":"")}${MY_UID?" · "+MY_UID.slice(0,6):""}</p>`}
 async function saveMyName(v){
   const c=getCfg();v=String(v||"").trim().slice(0,20);if(!v){toast("Bitte einen Namen eintragen");return false}
   if(!MY_UID||!FS){toast("Gerade keine Verbindung");return false}
-  try{await FS.doc(`familien/${c.code}/mitglieder/${MY_UID}`).set({name:v},{merge:true});if(MY_MEMBER)MY_MEMBER.name=v;lsSet("fk-myname",v);toast("Name gespeichert");return true}
-  catch(e){console.warn("Name",e);if(e&&e.code==="permission-denied"){memberOK=false;ensureMember(c);toast("Dieses Handy war nicht mehr verbunden · wird neu verbunden, bitte gleich nochmal speichern")}else toast("Speichern hat nicht geklappt");return false}
+  lsSet("fk-myname",v);
+  const put=()=>FS.doc(`familien/${c.code}/mitglieder/${MY_UID}`).set({name:v},{merge:true});
+  try{await put();if(MY_MEMBER)MY_MEMBER.name=v;toast("Name gespeichert");return true}
+  catch(e){console.warn("Name",e);
+    if(e&&e.code==="permission-denied"){toast("Verbindung wird repariert …");const ok=await repairMember();
+      if(ok){try{await put();if(MY_MEMBER)MY_MEMBER.name=v;toast(ROLE==="lesen"?"Name gespeichert ✓ Jetzt bei Mama/Papa unter Mitglieder & Rechte auf ✏️ stellen":"Name gespeichert");return true}catch(e2){toast("Speichern hat nicht geklappt ("+(e2&&e2.code||"?")+" · "+APP_VER+")");return false}}
+      toast("Verbindung klappt nicht ("+(memberErr||"?")+" · "+APP_VER+")");return false}
+    toast("Speichern hat nicht geklappt ("+(e&&e.code||"?")+" · "+APP_VER+")");return false}
+}
+async function repairMember(){
+  try{const a=firebase.auth();try{if(memberSub)memberSub()}catch(e){}memberSub=null;memberOK=false;MY_MEMBER=null;
+    try{await a.signOut()}catch(e){}MY_UID="";
+    const ok=await ensureMember(getCfg());if(ok)try{startPriv()}catch(e){}return ok}
+  catch(e){memberErr=e&&e.code||String(e);return false}
 }
 function wireNameBox(after){const b=document.getElementById("myNameSave");if(b)b.onclick=async()=>{if(await saveMyName(document.getElementById("myName").value)&&after)after()}}
 function maybeAskName(){
