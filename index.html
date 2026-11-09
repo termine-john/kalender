@@ -875,7 +875,7 @@ async function init(){
     col=fs.collection(`familien/${cfg.code}/eintraege`);PRIVCOL=fs.collection(`familien/${cfg.code}/privat`);
     FS=fs;
   }catch(e){store=localStore();setStatus("Verbindung fehlerhaft · Einstellungen prüfen");render();return}
-  const failed=e=>{console.error(e);toast("Nicht gespeichert: "+(e&&e.code==="permission-denied"?"kein Zugriff auf diesen Kalender":"Verbindungsproblem")+". Bitte App neu laden.")};
+  const failed=e=>{console.error(e);if(e&&e.code==="permission-denied"&&memberOK){memberOK=false;ensureMember(cfg)}toast("Nicht gespeichert: "+(e&&e.code==="permission-denied"?"kein Zugriff auf diesen Kalender":"Verbindungsproblem")+". Bitte App neu laden.")};
   const roBlock=()=>{if(ROLE==="lesen"){toast("Du hast in diesem Kalender nur Leserechte");return true}return false};
   store={mode:"db",
     add(o){if(roBlock())return;const x=stampNew(o);if(isPrivObj(x)){if(!MY_UID){toast("Gerade keine Verbindung");return}PRIVCOL.add(x).catch(failed)}else col.add(x).catch(failed)},
@@ -1562,7 +1562,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v65";
+const APP_VER="v66";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -1800,6 +1800,16 @@ async function _ensureMember(cfg){
     let snap=null;RULES_OLD=false;
     try{snap=await ref.get({source:"server"})}catch(e){if(e&&e.code==="permission-denied")RULES_OLD=true;else throw e}
     const base={zuletzt:today,geraet:DEVICE_ID};
+    if(RULES_OLD){ // Eigener Eintrag fehlt (z. B. entfernt oder Handy hat seine Anmeldung verloren): neu anlegen
+      const tok=cfg.wtok||"",kd=(cfg.kind&&KIDKEY.test(cfg.kind))?cfg.kind:(KID||"");
+      const o={...base,seit:today,name:lsGet("fk-myname")||"",rolle:tok?"schreiben":(intent==="schreiben"?"schreiben":"lesen")};
+      if(tok)o.token=tok;if(kd)o.kind=kd;
+      let made=false,ro=false;
+      try{await ref.set(o,{merge:true});made=true}catch(e){
+        if(o.rolle!=="lesen"){try{o.rolle="lesen";delete o.token;await ref.set(o,{merge:true});made=true;ro=true}catch(e2){}}}
+      if(made){try{snap=await ref.get({source:"server"});RULES_OLD=false}catch(e){}}
+      if(!RULES_OLD&&(ro||o.rolle==="lesen")&&!intent)setTimeout(()=>toast(kd?"Dieses Handy wurde neu verbunden. Bitte Mama oder Papa: Einstellungen → Mitglieder & Rechte → bei diesem Handy ✏️ antippen.":"Dieses Handy wurde neu verbunden und kann erst mal nur lesen. Freischalten unter Mitglieder & Rechte."),2500);
+    }
     if(RULES_OLD){ // Regeln noch alt: Liste nicht lesbar, Rolle nur auf dem Gerät
       await ref.set(intent?{...base,seit:today,rolle:intent}:{...base,seit:today},{merge:true});
       if(intent)applyRole(intent);else if(!ROLE)applyRole("schreiben");
@@ -1814,7 +1824,7 @@ async function _ensureMember(cfg){
     }
     try{sessionStorage.removeItem("fk-joined")}catch(e){}
     if(cfg.wtok||cfg.kind){const c2=getCfg();if(c2){delete c2.wtok;delete c2.kind;setCfg(c2)}}
-    if(!RULES_OLD&&!memberSub)memberSub=ref.onSnapshot(s=>{if(!s.exists)return;MY_MEMBER=s.data();applyRole(MY_MEMBER.rolle==="lesen"?"lesen":"schreiben");setKid(MY_MEMBER.kind||"",MY_MEMBER.kindGem);setTimeout(maybeAskName,3500)},()=>{});
+    if(!RULES_OLD&&!memberSub)memberSub=ref.onSnapshot(s=>{if(!s.exists){if(s.metadata.fromCache)return;memberOK=false;try{memberSub()}catch(e){}memberSub=null;setTimeout(()=>ensureMember(getCfg()),1500);return}MY_MEMBER=s.data();applyRole(MY_MEMBER.rolle==="lesen"?"lesen":"schreiben");setKid(MY_MEMBER.kind||"",MY_MEMBER.kindGem);setTimeout(maybeAskName,3500)},()=>{});
     memberOK=true;if(ROLE!=="lesen")scheduleMirror();setTimeout(checkAdmin,2000);if(!RULES_OLD)startPriv();setTimeout(()=>{sendPendingRef();refreshPremium()},3000);return true;
   }catch(e){memberOK=false;memberErr=e&&e.code||"";console.warn("Mitglied",e);return false}
 }
@@ -1825,7 +1835,7 @@ async function saveMyName(v){
   const c=getCfg();v=String(v||"").trim().slice(0,20);if(!v){toast("Bitte einen Namen eintragen");return false}
   if(!MY_UID||!FS){toast("Gerade keine Verbindung");return false}
   try{await FS.doc(`familien/${c.code}/mitglieder/${MY_UID}`).set({name:v},{merge:true});if(MY_MEMBER)MY_MEMBER.name=v;lsSet("fk-myname",v);toast("Name gespeichert");return true}
-  catch(e){toast("Speichern hat nicht geklappt");return false}
+  catch(e){console.warn("Name",e);if(e&&e.code==="permission-denied"){memberOK=false;ensureMember(c);toast("Dieses Handy war nicht mehr verbunden · wird neu verbunden, bitte gleich nochmal speichern")}else toast("Speichern hat nicht geklappt");return false}
 }
 function wireNameBox(after){const b=document.getElementById("myNameSave");if(b)b.onclick=async()=>{if(await saveMyName(document.getElementById("myName").value)&&after)after()}}
 function maybeAskName(){
