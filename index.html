@@ -102,6 +102,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .chip.geburtstag{color:var(--bday);background:var(--bday-bg)}
 .mbar.geburtstag{background:var(--bday-bg);color:var(--bday)}
 .chip.urlaub{color:var(--vac);background:var(--vac-bg)}
+.chip.ferien{color:#2f8fd8;background:rgba(124,196,245,.2)}
+.typseg .typ{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:11.5px;padding:6px 1px;line-height:1.15;min-width:0;overflow:hidden;text-overflow:ellipsis}
 .chip .rep{font-size:.68rem;opacity:.75}
 .chip-label{color:var(--fg);font-weight:500}
 .plus{color:var(--muted);font-size:.9rem;opacity:.35;align-self:center;margin-top:auto}
@@ -135,6 +137,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .mbar.gemeinsam{background:var(--c-gem-bg);color:var(--c-gem)}
 .mbar.arbeit{background:var(--work-bg);color:var(--work)}
 .mbar.urlaub{background:var(--vac-bg);color:var(--vac)}
+.mbar.ferien{background:rgba(124,196,245,.2);color:#2f8fd8}
 .more{font-size:.6rem;color:var(--muted)}
 .ygrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
 @media (min-width:640px){.ygrid{grid-template-columns:repeat(3,minmax(0,1fr))}}
@@ -308,6 +311,7 @@ body.offline .appbar{box-shadow:0 0 0 3px #d98a00}
 .dband .dband-sub{display:none}
 .dband.christin{color:var(--c-christin);background:color-mix(in srgb,var(--c-christin-bg) 70%,transparent)}.dband.john{color:var(--c-john);background:color-mix(in srgb,var(--c-john-bg) 70%,transparent)}.dband.robert{color:var(--c-robert);background:color-mix(in srgb,var(--c-robert-bg) 70%,transparent)}.dband.gemeinsam{color:var(--c-gem);background:color-mix(in srgb,var(--c-gem-bg) 70%,transparent)}
 .dband.urlaub{color:var(--vac);background:color-mix(in srgb,var(--vac-bg) 70%,transparent)}
+.dband.ferien{color:#2f8fd8;background:rgba(124,196,245,.18)}
 .dband.imp{border:2px solid var(--imp)}
 .dnow{position:absolute;left:0;right:0;border-top:2px solid var(--imp);z-index:3;pointer-events:none}
 .dnow span{position:absolute;left:-44px;top:-9px;background:var(--imp);color:#fff;font-size:.64rem;font-weight:700;padding:1px 4px;border-radius:4px}
@@ -776,8 +780,9 @@ function applyNames(arr){
 const WD=["So","Mo","Di","Mi","Do","Fr","Sa"];
 const WDL=["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
 const MON=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","Dez"];
-const TYPN={termin:"Termin",arbeit:"Arbeit",urlaub:"Urlaub",geburtstag:"Geburtstag"};
-const CAL_TYPES=["termin","arbeit","urlaub","geburtstag"];
+const TYPN={termin:"Termin",arbeit:"Arbeit",urlaub:"Urlaub",ferien:"Ferien",geburtstag:"Geburtstag"};
+const CAL_TYPES=["termin","arbeit","urlaub","ferien","geburtstag"];
+const isGanz=t=>t==="urlaub"||t==="ferien";
 let tasks=[],taskLogs=[],rewards=[],redeems=[],backups=[];
 function splitData(all){
   _ALL=all;
@@ -1111,9 +1116,9 @@ const HELP=[
 <p><b>Blättern:</b> nach links oder rechts wischen oder ‹ › tippen. <b>„Heute“</b> springt zurück zum aktuellen Tag.</p>
 <p><b>Nur eine Person anzeigen:</b> oben auf ihren Namen tippen. Nochmal tippen zeigt wieder alle.</p>`],
 ["eintrag","➕","Eintrag anlegen",`<ol><li>Unten auf <b>„+ Eintrag“</b> tippen, oder direkt in ein leeres Feld bei Person und Tag.</li>
-<li>Art wählen: <b>Termin</b>, <b>Arbeit</b>, <b>Urlaub</b> oder <b>Geburtstag</b>.</li>
+<li>Art wählen: <b>Termin</b>, <b>Arbeit</b>, <b>Urlaub</b>, <b>Ferien</b> oder <b>Geburtstag</b>.</li>
 <li>Person, Datum und ggf. Uhrzeit wählen. Ohne Uhrzeit gilt der Eintrag den ganzen Tag.</li>
-<li>Für mehrere Tage am Stück ein <b>„Bis Datum“</b> eintragen (bei Urlaub „Letzter Tag“).</li>
+<li>Für mehrere Tage am Stück ein <b>„Bis Datum“</b> eintragen (bei Urlaub und Ferien „Letzter Tag“).</li>
 <li><b>Speichern</b> tippen.</li></ol>
 <ul><li><b>😀 Emojis:</b> Termine bekommen automatisch ein passendes Emoji, z. B. 🦷 bei „Zahnarzt“, ⚽ bei „Fußball“ oder 🏫 bei „Schule“. Arbeitszeiten zeigen 🌅 Früh-, 🌆 Spät- oder 🌙 Nachtdienst. Beginnt dein Titel schon mit einem eigenen Emoji, bleibt deins stehen.</li>
 <li><b>❗ Wichtig:</b> Der Eintrag wird hervorgehoben und erscheint in der Tagesübersicht schon Tage vorher.</li>
@@ -1224,9 +1229,9 @@ function exportICS(){
     const end=e.endDatum&&e.endDatum>e.datum?e.endDatum:e.datum;
     if(e.typ==="geburtstag"){const st=e.geburtsjahr?`${e.geburtsjahr}${e.datum.slice(5).replace("-","")}`:d8(e.datum);
       L.push("BEGIN:VEVENT",`UID:${e.id}@familienkalender`,`DTSTAMP:${stamp}`,`SUMMARY:${icsEsc("Geburtstag "+e.titel)}`,`DTSTART;VALUE=DATE:${st}`,"RRULE:FREQ=YEARLY","END:VEVENT");continue}
-    const what=e.typ==="arbeit"?`Arbeit${e.titel?" ("+e.titel+")":""}`:e.typ==="urlaub"?`Urlaub${e.titel?" – "+e.titel:""}`:e.titel;
+    const what=e.typ==="arbeit"?`Arbeit${e.titel?" ("+e.titel+")":""}`:isGanz(e.typ)?`${TYPN[e.typ]}${e.titel?" – "+e.titel:""}`:e.titel;
     L.push("BEGIN:VEVENT",`UID:${e.id}@familienkalender`,`DTSTAMP:${stamp}`,`SUMMARY:${icsEsc((PNAME[e.person]||"")+": "+what)}`);
-    if(e.von&&e.typ!=="urlaub"){
+    if(e.von&&!isGanz(e.typ)){
       const t=x=>x.replace(":","")+"00";
       let endDay=end,bis=e.bis||e.von;if(e.bis&&e.bis<e.von&&end===e.datum)endDay=addDays(e.datum,1);
       if(!e.bis){const[h,m]=e.von.split(":").map(Number);const x=new Date(2000,0,1,h+1,m);bis=pad(x.getHours())+":"+pad(x.getMinutes());if(h===23)endDay=addDays(endDay,1)}
@@ -1265,7 +1270,7 @@ const WDN={sonntag:0,montag:1,dienstag:2,mittwoch:3,donnerstag:4,freitag:5,samst
 function parseVoice(text){
   let t=" "+text.replace(/\s+/g," ")+" ";const low=t.toLowerCase();
   const wichtig=/\b(wichtig|dringend)\b/.test(low);if(wichtig)t=t.replace(/\b(wichtig|dringend)\b/ig," ");
-  const typ=/geburtstag/.test(low)?"geburtstag":/urlaub/.test(low)?"urlaub":/(arbeit|arbeite|dienst|schicht)/.test(low)?"arbeit":"termin";
+  const typ=/geburtstag/.test(low)?"geburtstag":/ferien/.test(low)?"ferien":/urlaub/.test(low)?"urlaub":/(arbeit|arbeite|dienst|schicht)/.test(low)?"arbeit":"termin";
   let person=typ==="termin"||typ==="geburtstag"?"gemeinsam":"";
   for(const[k,n] of persons()){const re=new RegExp(`(^|[^a-zäöüß])${n.toLowerCase().replace(/[.*+?^${}()|[\]\\]/g,"\\$&")}([^a-zäöüß]|$)`);if(n.length>1&&re.test(low)&&typ!=="geburtstag"){person=k;t=t.replace(new RegExp(n,"i")," ");break}}
   if(!person)person=PEOPLE[0][0];
@@ -1290,10 +1295,10 @@ function parseVoice(text){
     else{const ft=findTimes(t);if(ft.times.length){von=ft.times[0];bis=ft.times[1]||"";t=ft.rest}}}
   const okT=x=>/^([01]\d|2[0-3]):[0-5]\d$/.test(x)?x:"";von=okT(von);bis=okT(bis);
   let titel=t.replace(/\b(termin|eintragen|bitte|ist|hat|habe|haben|am|um|im|für|fuer|von|bis|uhr|vom|zum|zur|beim|ein|einen|eine|der|die|das|und|neuer|neue|wir|alle|familie|gemeinsam)\b/gi," ")
-    .replace(/\b(geburtstag|urlaub|arbeit|arbeite|dienst|schicht)\b/gi,m=>typ==="arbeit"&&/dienst|schicht/i.test(m)?m:" ")
+    .replace(/\b(geburtstag|urlaub|ferien|arbeit|arbeite|dienst|schicht)\b/gi,m=>typ==="arbeit"&&/dienst|schicht/i.test(m)?m:" ")
     .replace(/[.,;:!?]+/g," ").replace(/\s{2,}/g," ").trim();
   titel=titel?titel[0].toUpperCase()+titel.slice(1):"";
-  const o={wichtig,typ,person,titel,datum,endDatum:typ==="urlaub"?(endDatum||datum):endDatum,von:typ==="urlaub"||typ==="geburtstag"?"":von,bis:typ==="urlaub"||typ==="geburtstag"?"":bis};
+  const o={wichtig,typ,person,titel,datum,endDatum:isGanz(typ)?(endDatum||datum):endDatum,von:isGanz(typ)||typ==="geburtstag"?"":von,bis:isGanz(typ)||typ==="geburtstag"?"":bis};
   return o;
 }
 function applyVoice(text){
@@ -1304,10 +1309,10 @@ function applyVoice(text){
 }
 
 /* ---------- Bild für den Sperrbildschirm ---------- */
-var WCOL={christin:"#f08aaa",john:"#6fd1c2",robert:"#f0b26b",gemeinsam:"#a99bf2",arbeit:"#c9d4da",urlaub:"#8bd08e",geburtstag:"#ffd27a"};
+var WCOL={christin:"#f08aaa",john:"#6fd1c2",robert:"#f0b26b",gemeinsam:"#a99bf2",arbeit:"#c9d4da",urlaub:"#8bd08e",ferien:"#7cc4f5",geburtstag:"#ffd27a"};
 function rr(g,x,y,w,h,r){g.beginPath();g.moveTo(x+r,y);g.arcTo(x+w,y,x+w,y+h,r);g.arcTo(x+w,y+h,x,y+h,r);g.arcTo(x,y+h,x,y,r);g.arcTo(x,y,x+w,y,r);g.closePath()}
 function fitText(g,txt,max){if(g.measureText(txt).width<=max)return txt;while(txt.length>1&&g.measureText(txt+"…").width>max)txt=txt.slice(0,-1);return txt+"…"}
-function entryLine(e,day){const t=timeTxt(e);return e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?`Arbeit ${t}`:e.typ==="urlaub"?`Urlaub${e.titel?" · "+e.titel:""}`:`${t?t+"  ":""}${e.titel}`}
+function entryLine(e,day){const t=timeTxt(e);return e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?`Arbeit ${t}`:isGanz(e.typ)?`${TYPN[e.typ]}${e.titel?" · "+e.titel:""}`:`${t?t+"  ":""}${e.titel}`}
 function makeWidgetCanvas(){
   const W=1080,H=2400,c=document.createElement("canvas");c.width=W;c.height=H;const g=c.getContext("2d");
   const grad=g.createLinearGradient(0,0,0,H);grad.addColorStop(0,"#0b1f29");grad.addColorStop(.45,"#15394b");grad.addColorStop(1,"#0a1a22");g.fillStyle=grad;g.fillRect(0,0,W,H);
@@ -1562,7 +1567,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v68";
+const APP_VER="v69";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -2227,13 +2232,13 @@ function onDay(e,day){
   const end=e.endDatum&&e.endDatum>=e.datum?e.endDatum:e.datum;return e.datum<=day&&day<=end}
 function ageOn(e,day){const j=+e.geburtsjahr;return j>1900&&j<=+day.slice(0,4)?(+day.slice(0,4))-j:0}
 function bdayLabel(e,day){const a=ageOn(e,day);return `🎂 ${e.titel}${a?` wird ${a}`:""}`}
-const ORDER={geburtstag:-1,urlaub:0,arbeit:1,termin:2};
+const ORDER={geburtstag:-1,urlaub:0,ferien:0,arbeit:1,termin:2};
 function sortE(a,b){return(ORDER[a.typ]-ORDER[b.typ])||((!!b.wichtig)-(!!a.wichtig))||((a.von||"99")<(b.von||"99")?-1:(a.von||"99")>(b.von||"99")?1:0)}
-function timeTxt(e){if(e.typ==="urlaub")return"";if(e.von&&e.bis)return`${e.von}–${e.bis}`;if(e.von)return e.von;return""}
+function timeTxt(e){if(isGanz(e.typ))return"";if(e.von&&e.bis)return`${e.von}–${e.bis}`;if(e.von)return e.von;return""}
 function chipHTML(e,day){
   const multi=e.endDatum&&e.endDatum>e.datum;
   const t=timeTxt(e);
-  let label=emoP(e)+(e._privat?"👥 ":"")+(e.geschuetzt?"🔒 ":"")+(e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?(e.titel||"Arbeit"):e.typ==="urlaub"?(e.titel?`Urlaub · ${e.titel}`:"Urlaub"):e.titel);
+  let label=emoP(e)+(e._privat?"👥 ":"")+(e.geschuetzt?"🔒 ":"")+(e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?(e.titel||"Arbeit"):isGanz(e.typ)?(e.titel?`${TYPN[e.typ]} · ${e.titel}`:TYPN[e.typ]):e.titel);
   const range=multi&&e.typ!=="geburtstag"?` <span class="rep">(${fmt(e.datum).slice(3)}–${fmt(e.endDatum).slice(3)})</span>`:"";
   const rep=e.serie?` <span class="rep">↻</span>`:"";
   return `<button class="chip ${e.typ} ${e.person}${e.wichtig?" imp":""}${CLASH.has(e.id)?" clash":""}" data-id="${esc(e.id)}" ${CLASH.has(e.id)?'title="Überschneidet sich mit einem anderen Termin"':""}>${t?`<span class="t">${CLASH.has(e.id)?"⚠️ ":""}${t}</span>`:""}<span class="chip-label">${esc(label)}</span>${range}${rep}</button>`;
@@ -2295,14 +2300,14 @@ function renderDay(){
   const list=entries.filter(e=>onDay(e,day)).sort(sortE);
   const timed=[],allday=[];
   for(const e of list){const multi=e.endDatum&&e.endDatum>e.datum;
-    if(e.von&&e.typ!=="urlaub"&&e.typ!=="geburtstag"&&(!multi||e.datum===day))timed.push(e);else allday.push(e)}
+    if(e.von&&!isGanz(e.typ)&&e.typ!=="geburtstag"&&(!multi||e.datum===day))timed.push(e);else allday.push(e)}
   let startH=7,endH=21;
   for(const e of timed){const a=toMin(e.von),b=e.bis?toMin(e.bis):a+60;startH=Math.min(startH,Math.floor(a/60));endH=Math.max(endH,b<a?24:Math.ceil(b/60))}
   endH=Math.min(24,Math.max(endH,startH+1));
   const fe=feierOf(day),fr=ferienOf(day),pp=papaOf(day);
   const badges=[pp?`<span class="badge papa">bei Papa</span>`:"",fe?`<span class="badge feier">${esc(fe)}</span>`:"",fr?`<span class="badge fer">${esc(fr)}</span>`:""].join("");
   const cols=PEOPLE.map(([k])=>k);
-  const lab=e=>e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?`Arbeit${e.titel&&e.titel!=="Arbeit"?" · "+e.titel:""}`:e.typ==="urlaub"?`Urlaub${e.titel?" · "+e.titel:""}`:e.titel;
+  const lab=e=>e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?`Arbeit${e.titel&&e.titel!=="Arbeit"?" · "+e.titel:""}`:isGanz(e.typ)?`${TYPN[e.typ]}${e.titel?" · "+e.titel:""}`:e.titel;
   // Ganztägige Termine/Urlaub als Band durch die ganze Spalte, Geburtstage bleiben oben
   const bands=allday.filter(e=>e.typ!=="geburtstag");
   const topList=allday.filter(e=>e.typ==="geburtstag");
@@ -2352,7 +2357,7 @@ function renderMonth(){
     const d=parse(day),fe=feierOf(day),fr=ferienOf(day);
     const list=entries.filter(e=>onDay(e,day)).sort(sortE);
     list.sort((a,b)=>(!!b.wichtig)-(!!a.wichtig));
-    const bars=list.slice(0,3).map(e=>{const cls=e.typ==="termin"?e.person:e.typ;const t=emoP(e)+(e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?`${PNAME[e.person][0]} ${e.von||"Arbeit"}`:e.typ==="urlaub"?`${PNAME[e.person]} Urlaub`:`${e.von?e.von+" ":""}${e.titel}`);return `<div class="mbar ${cls}${e.wichtig?" imp":""}">${esc(t)}</div>`}).join("");
+    const bars=list.slice(0,3).map(e=>{const cls=e.typ==="termin"?e.person:e.typ;const t=emoP(e)+(e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?`${PNAME[e.person][0]} ${e.von||"Arbeit"}`:isGanz(e.typ)?`${PNAME[e.person]} ${TYPN[e.typ]}`:`${e.von?e.von+" ":""}${e.titel}`);return `<div class="mbar ${cls}${e.wichtig?" imp":""}">${esc(t)}</div>`}).join("");
     const pp=papaOf(day);
     h+=`<button class="mcell${[0,6].includes(d.getDay())?" we":""}${d.getMonth()!==m?" out":""}${pp?" papa":fr?" fer":""}${fe?" feier":""}${day===today?" today":""}" data-goday="${day}" aria-label="${fmt(day)}${fe?", "+fe:""}${fr?", "+fr:""}, ${list.length} Einträge"><span class="n">${d.getDate()}</span>${fe?`<span class="fname">${esc(fe)}</span>`:""}${bars}${list.length>3?`<span class="more">+${list.length-3} mehr</span>`:""}</button>`;
   }
@@ -2443,7 +2448,7 @@ const memName=id=>{const m=MEMBERS.find(x=>x.id===id);return id===MY_UID?"du":(m
 /* Termin-Schutz: nur der Ersteller darf löschen */
 
 /* ---------- Passende Emojis zu Terminen ---------- */
-const TYPE_EMO={termin:"📅",arbeit:"💼",urlaub:"🏖️",geburtstag:"🎂"};
+const TYPE_EMO={termin:"📅",arbeit:"💼",urlaub:"🏖️",ferien:"🎒",geburtstag:"🎂"};
 const EMO_RULES=[
  [/zahn|kieferorth/,"🦷"],[/tierarzt|tierärzt|impfung hund|impfung katze/,"🐾"],[/kinderarzt|arzt|ärztin|praxis|doktor|vorsorge|untersuchung|impf|u\d\b/,"🩺"],[/krankenhaus|klinik|op\b/,"🏥"],[/apotheke|rezept/,"💊"],[/physio|massage|ergo|logo/,"💆"],
  [/friseur|frisör|haare schneiden/,"💇"],[/fußball|fussball|kicken/,"⚽"],[/schwimm|baden|freibad|hallenbad/,"🏊"],[/turnen|sport|training|fitness|gym|verein/,"🏃"],[/tanz|ballett/,"💃"],[/reiten|pferd/,"🐴"],[/fahrrad/,"🚲"],
@@ -2459,7 +2464,7 @@ const startsEmo=t=>/^(\p{Extended_Pictographic}|\p{Regional_Indicator})/u.test(S
 function emo(e){
   if(!e)return "";
   if(e.typ==="geburtstag")return "";
-  if(e.typ==="urlaub")return "🏖️";
+  if(isGanz(e.typ))return TYPE_EMO[e.typ];
   if(e.typ==="arbeit"){const t=(e.titel||"").toLowerCase();if(/nacht/.test(t))return "🌙";if(/spät/.test(t))return "🌆";if(/früh/.test(t))return "🌅";const h=parseInt(e.von||"",10);return isNaN(h)?"💼":h<10?"🌅":h>=18?"🌙":h>=13?"🌆":"💼"}
   if(startsEmo(e.titel))return "";
   const t=(e.titel||"").toLowerCase();for(const[re,x] of EMO_RULES)if(re.test(t))return x;
@@ -2485,7 +2490,7 @@ function renderNews(){
   document.getElementById("newsTitle").textContent=`🔔 ${[nNew?`${nNew} ${nNew===1?"neuer Eintrag":"neue Einträge"}`:"",nEd?`${nEd} ${nEd===1?"Änderung":"Änderungen"}`:""].filter(Boolean).join(", ")}`;
   document.getElementById("newsList").innerHTML=groups.slice(0,8).map(g=>{
     const ed=isEd(g);
-    const what=g.typ==="geburtstag"?bdayLabel(g,g.datum):g.typ==="arbeit"?`Arbeit ${timeTxt(g)}`:g.typ==="urlaub"?"Urlaub":`${g.von?g.von+" ":""}${g.titel}`;
+    const what=g.typ==="geburtstag"?bdayLabel(g,g.datum):g.typ==="arbeit"?`Arbeit ${timeTxt(g)}`:isGanz(g.typ)?TYPN[g.typ]:`${g.von?g.von+" ":""}${g.titel}`;
     const termin=g.anzahl>1?`Serie mit ${g.anzahl} Terminen ab ${fmt(g.erster)}`:g.typ==="geburtstag"?fmt(bdayIn(g,+today.slice(0,4))<today?bdayIn(g,+today.slice(0,4)+1):bdayIn(g,+today.slice(0,4))):fmt(g.datum)+(g.endDatum&&g.endDatum>g.datum?` – ${fmt(g.endDatum)}`:"");
     return `<li><button class="newsrow" data-goday="${g.erster}"><span class="tag ${ed?"ed":"nw"}">${ed?"geändert":"neu"}</span>
       <span class="nt"><b class="p-${g.person}" style="background:none">${esc(PNAME[g.person]||"")}</b> ${esc(what)}<br><span class="meta">📅 ${esc(termin)} · ${ed?"geändert":"eingetragen"} ${esc(whenTxt(ed?g.geaendert:g.erstellt))}</span></span></button></li>`}).join("")
@@ -2601,7 +2606,7 @@ function renderRemind(){
 /* ---------- Überschneidungen ---------- */
 function spanOf(e){if(!e.von)return null;const a=toMin(e.von);let b=e.bis?toMin(e.bis):a+60;if(b<=a)b=e.bis?1440:a+60;return[a,b]}
 function relevant(p,q){return p===q||p==="gemeinsam"||q==="gemeinsam"}
-function clashTxt(o){return `${PNAME[o.person]||""} ${o.von?o.von+(o.bis?"–"+o.bis:"")+" ":""}${o.typ==="arbeit"?"Arbeit":o.typ==="urlaub"?"Urlaub":o.titel||TYPN[o.typ]}`}
+function clashTxt(o){return `${PNAME[o.person]||""} ${o.von?o.von+(o.bis?"–"+o.bis:"")+" ":""}${o.typ==="arbeit"?"Arbeit":isGanz(o.typ)?TYPN[o.typ]:o.titel||TYPN[o.typ]}`}
 // Überschneidungen eines (neuen oder geänderten) Eintrags am Tag d.datum
 function clashesFor(d,excludeId){
   if(!d||!d.datum||d.typ==="geburtstag")return[];
@@ -2609,10 +2614,10 @@ function clashesFor(d,excludeId){
   for(const o of entries){
     if(o.id===excludeId||o.typ==="geburtstag"||!onDay(o,day)||!relevant(d.person,o.person))continue;
     if(d.serie&&o.serie===d.serie)continue;
-    const os=spanOf(o);const oAll=!o.von||o.typ==="urlaub"||(o.endDatum&&o.endDatum>o.datum&&o.datum!==day);
+    const os=spanOf(o);const oAll=!o.von||isGanz(o.typ)||(o.endDatum&&o.endDatum>o.datum&&o.datum!==day);
     if(me&&os&&!oAll){if(me[0]<os[1]&&os[0]<me[1])out.push({o,txt:clashTxt(o)})}
-    else if(me&&oAll&&o.person===d.person&&(o.typ==="urlaub"||o.typ==="termin"))out.push({o,txt:`${PNAME[o.person]} ganztägig: ${o.typ==="urlaub"?"Urlaub":o.titel}`});
-    else if(!me&&d.typ==="urlaub"&&os&&o.person===d.person&&o.typ!=="urlaub")out.push({o,txt:clashTxt(o)});
+    else if(me&&oAll&&o.person===d.person&&(isGanz(o.typ)||o.typ==="termin"))out.push({o,txt:`${PNAME[o.person]} ganztägig: ${isGanz(o.typ)?TYPN[o.typ]:o.titel}`});
+    else if(!me&&isGanz(d.typ)&&os&&o.person===d.person&&!isGanz(o.typ))out.push({o,txt:clashTxt(o)});
   }
   return out;
 }
@@ -2620,7 +2625,7 @@ function showClash(d){const box=document.getElementById("clashBox");if(!box)retu
   const c=clashesFor(d,editId);if(!c.length){box.hidden=true;return}
   box.innerHTML=`⚠️ Überschneidet sich mit:<br>${c.slice(0,4).map(x=>"· "+esc(x.txt)).join("<br>")}${c.length>4?`<br>· und ${c.length-4} weitere`:""}`;box.hidden=false}
 // Einträge mit Überschneidung an einem Tag (für das ⚠️ in der Wochenansicht)
-function dayClashIds(list,day){const ids=new Set();const t=list.filter(e=>spanOf(e)&&e.typ!=="urlaub"&&!(e.endDatum&&e.endDatum>e.datum&&e.datum!==day));
+function dayClashIds(list,day){const ids=new Set();const t=list.filter(e=>spanOf(e)&&!isGanz(e.typ)&&!(e.endDatum&&e.endDatum>e.datum&&e.datum!==day));
   for(let i=0;i<t.length;i++)for(let j=i+1;j<t.length;j++){const a=t[i],b=t[j];if(!relevant(a.person,b.person))continue;const x=spanOf(a),y=spanOf(b);if(x[0]<y[1]&&y[0]<x[1]){ids.add(a.id);ids.add(b.id)}}
   return ids}
 let CLASH=new Set();
@@ -2629,7 +2634,7 @@ let CLASH=new Set();
 function nextEntry(){
   const now=new Date(),nowMin=now.getHours()*60+now.getMinutes();let best=null;
   for(let i=0;i<8;i++){const day=addDays(today,i);
-    for(const e of entries){if(!e.von||e.typ==="urlaub"||e.typ==="geburtstag"||!onDay(e,day))continue;if(e.endDatum&&e.endDatum>e.datum&&e.datum!==day)continue;
+    for(const e of entries){if(!e.von||isGanz(e.typ)||e.typ==="geburtstag"||!onDay(e,day))continue;if(e.endDatum&&e.endDatum>e.datum&&e.datum!==day)continue;
       const m=toMin(e.von)+i*1440;if(i===0&&toMin(e.von)<nowMin)continue;if(!best||m<best.m)best={e,day,m}}
     if(best)break}
   return best?{...best,diff:best.m-nowMin}:null;
@@ -2671,10 +2676,10 @@ function renderEve(){
   document.getElementById("eveTitle").textContent=`🌙 Morgen, ${WDL[d.getDay()]} ${d.getDate()}. ${MON[d.getMonth()]}`;
   const extra=[papaOf(tm)?"John bei Papa":"",feierOf(tm),ferienOf(tm)].filter(Boolean).join(" · ");
   document.getElementById("eveList").innerHTML=(extra?`<li class="eve-extra">${esc(extra)}</li>`:"")+(list.length?list.map(e=>{
-    const t=timeTxt(e);const lbl=emoP(e)+(e.typ==="geburtstag"?bdayLabel(e,tm):e.typ==="arbeit"?`Arbeit ${t}`:e.typ==="urlaub"?"Urlaub":`${t?t+" ":""}${e.titel}`);
+    const t=timeTxt(e);const lbl=emoP(e)+(e.typ==="geburtstag"?bdayLabel(e,tm):e.typ==="arbeit"?`Arbeit ${t}`:isGanz(e.typ)?TYPN[e.typ]:`${t?t+" ":""}${e.titel}`);
     return `<li${e.wichtig?' class="imp"':""}><span class="who p-${e.person}" style="background:none">${av(e.person,"av sm")}${esc(PNAME[e.person]||"")}</span><span>${e.wichtig?"❗ ":""}${esc(lbl)}</span></li>`}).join("")
     :`<li>Morgen steht nichts im Kalender. 🌿</li>`);
-  const first=list.find(e=>e.von&&e.typ!=="urlaub"&&e.typ!=="geburtstag");
+  const first=list.find(e=>e.von&&!isGanz(e.typ)&&e.typ!=="geburtstag");
   if(first&&toMin(first.von)<9*60){const li=document.createElement("li");li.className="eve-extra";li.textContent=`⏰ Früh los: ${PNAME[first.person]} um ${first.von}`;document.getElementById("eveList").appendChild(li)}
   box.hidden=false;
 }
@@ -2688,7 +2693,7 @@ function renderMorning(){
   const d=parse(today);
   document.getElementById("mTitle").textContent=`Heute, ${WDL[d.getDay()]} ${d.getDate()}. ${MON[d.getMonth()]}`;
   document.getElementById("mList").innerHTML=list.length?list.map(e=>{
-    const t=timeTxt(e);const lbl=emoP(e)+(e.typ==="geburtstag"?bdayLabel(e,today):e.typ==="arbeit"?`Arbeit ${t}`:e.typ==="urlaub"?"Urlaub":`${t?t+" ":""}${e.titel}`);
+    const t=timeTxt(e);const lbl=emoP(e)+(e.typ==="geburtstag"?bdayLabel(e,today):e.typ==="arbeit"?`Arbeit ${t}`:isGanz(e.typ)?TYPN[e.typ]:`${t?t+" ":""}${e.titel}`);
     return `<li${e.wichtig?' class="imp"':""}><span class="who p-${e.person}" style="background:none">${av(e.person,"av sm")}${PNAME[e.person]}</span><span>${e.wichtig?"❗ ":""}${esc(lbl)}${e.typ==="arbeit"&&e.titel&&e.titel!=="Arbeit"?" · "+esc(e.titel):""}</span></li>`}).join("")
     :`<li>Heute steht nichts im Kalender.</li>`;
   const up=[];for(let i=1;i<=7;i++){const dd=addDays(today,i);for(const e of entries)if(e.wichtig&&onDay(e,dd)&&!up.some(u=>u.e===e))up.push({e,dd})}
@@ -2716,14 +2721,14 @@ function closeSheet(){document.getElementById("sheetHost").innerHTML="";draft=nu
 function drawSheet(){
   const d=draft;const isEdit=!!editId;
   const bd=d.typ==="geburtstag";
-  const peopleAllowed=d.typ==="termin"||bd?PEOPLE:persons();
-  if(!(d.typ==="termin"||bd)&&d.person==="gemeinsam")d.person=persons()[0][0];
-  const showTime=d.typ!=="urlaub"&&!bd;
+  const peopleAllowed=d.typ==="termin"||d.typ==="ferien"||bd?PEOPLE:persons();
+  if(!(d.typ==="termin"||d.typ==="ferien"||bd)&&d.person==="gemeinsam")d.person=persons()[0][0];
+  const showTime=!isGanz(d.typ)&&!bd;
   const series=isEdit&&d.serie?entries.filter(x=>x.serie===d.serie).length:0;
   document.getElementById("sheetHost").innerHTML=`
   <div class="backdrop" id="bd"><div class="sheet" role="dialog" aria-modal="true" aria-label="${isEdit?"Eintrag bearbeiten":"Neuer Eintrag"}">
     <h3>${isEdit?"Eintrag bearbeiten":"Neuer Eintrag"}</h3>
-    <div class="seg" style="--n:4">${["termin","arbeit","urlaub","geburtstag"].map(t=>`<button class="typ" data-typ="${t}" aria-pressed="${d.typ===t}">${TYPE_EMO[t]} ${TYPN[t]}</button>`).join("")}</div>
+    <div class="seg typseg" style="--n:5">${["termin","arbeit","urlaub","ferien","geburtstag"].map(t=>`<button class="typ" data-typ="${t}" aria-pressed="${d.typ===t}"><span>${TYPE_EMO[t]}</span><span>${TYPN[t]}</span></button>`).join("")}</div>
     ${!isEdit&&voiceOK()?`<button class="btn ghost" id="voiceIn">🎤 Per Sprache ausfüllen</button>`:""}
     <div class="seg" style="--n:${Math.min(4,peopleAllowed.length)}">${peopleAllowed.map(([k,n])=>`<button class="p-${k}" data-person="${k}" aria-pressed="${d.person===k}">${n}</button>`).join("")}</div>
     ${bd?`<p class="hint">In welcher Spalte soll der Geburtstag stehen? Für Verwandte und Freunde passt „Gemeinsam“.</p>`:""}
@@ -2744,8 +2749,8 @@ function drawSheet(){
     ${bd?`<div class="row2"><label class="f">Geburtstag (Tag und Monat)<input type="date" id="i-datum" value="${d.datum}"></label>
       <label class="f">Geburtsjahr (optional)<input type="number" inputmode="numeric" id="i-jahr" min="1900" max="2100" value="${esc(d.geburtsjahr||"")}" placeholder="z. B. 1956"></label></div>
       <p class="hint">Kommt jedes Jahr automatisch wieder. Mit Geburtsjahr wird das Alter angezeigt.</p><input type="hidden" id="i-end" value="">`:`<div class="row2">
-      <label class="f">${d.typ==="urlaub"?"Erster Tag":"Datum"}<input type="date" id="i-datum" value="${d.datum}"></label>
-      <label class="f">${d.typ==="urlaub"?"Letzter Tag":"Bis Datum (mehrtägig)"}<input type="date" id="i-end" value="${d.endDatum||""}"></label>
+      <label class="f">${isGanz(d.typ)?"Erster Tag":"Datum"}<input type="date" id="i-datum" value="${d.datum}"></label>
+      <label class="f">${isGanz(d.typ)?"Letzter Tag":"Bis Datum (mehrtägig)"}<input type="date" id="i-end" value="${d.endDatum||""}"></label>
     </div>`}
     ${showTime?`<div class="row2">
       <label class="f">${d.typ==="arbeit"?"Arbeitsbeginn":"Von (optional)"}<input type="time" id="i-von" value="${d.von||""}"></label>
@@ -2782,7 +2787,7 @@ function drawSheet(){
     if($("i-wdhbis"))d.wdhBis=$("i-wdhbis").value||d.wdhBis;
     const vb=document.querySelectorAll(".sheet [data-visu]");if(vb.length&&isPrivObj(d))d.sichtbar=[MY_UID,...[...vb].filter(x=>x.checked&&x.dataset.visu!==MY_UID).map(x=>x.dataset.visu)];};
   $("bd").onclick=ev=>{if(ev.target.id==="bd")closeSheet()};
-  document.querySelectorAll(".sheet [data-typ]").forEach(b=>b.onclick=()=>{read();d.typ=b.dataset.typ;if(d.typ==="urlaub"){d.von="";d.bis=""}drawSheet()});
+  document.querySelectorAll(".sheet [data-typ]").forEach(b=>b.onclick=()=>{read();d.typ=b.dataset.typ;if(isGanz(d.typ)){d.von="";d.bis=""}drawSheet()});
   document.querySelectorAll(".sheet [data-person]").forEach(b=>b.onclick=()=>{read();d.person=b.dataset.person;drawSheet()});
   document.querySelectorAll(".sheet [data-wdh]").forEach(b=>b.onclick=()=>{read();d.wdh=b.dataset.wdh;if(d.wdh!=="keine"&&!d.tage.length)d.tage=[parse(d.datum).getDay()];drawSheet()});
   document.querySelectorAll(".sheet [data-wd]").forEach(b=>b.onclick=()=>{read();const w=+b.dataset.wd;d.tage=d.tage.includes(w)?d.tage.filter(x=>x!==w):[...d.tage,w];drawSheet()});
@@ -2819,7 +2824,7 @@ function drawSheet(){
 }
 function clean(d){
   const o={typ:d.typ,person:d.person,titel:d.titel||"",datum:d.datum,endDatum:(d.endDatum&&d.endDatum>d.datum)?d.endDatum:"",
-    von:d.typ==="urlaub"?"":(d.von||""),bis:d.typ==="urlaub"?"":(d.bis||""),serie:d.serie||"",intervall:d.intervall||0};
+    von:isGanz(d.typ)?"":(d.von||""),bis:isGanz(d.typ)?"":(d.bis||""),serie:d.serie||"",intervall:d.intervall||0};
   if(d.wichtig)o.wichtig=true;
   if(d.geschuetzt){o.geschuetzt=true;if(d.ersteller)o.ersteller=d.ersteller}
   if(isPrivObj(d)){o.sichtbar=[...new Set([...(d.sichtbar||[]),...(MY_UID&&(!d.ersteller||d.ersteller===MY_UID)?[MY_UID]:[])])].slice(0,30);o.ersteller=d.ersteller||MY_UID}
@@ -2834,7 +2839,7 @@ function validate(d){
   if(d.typ==="geburtstag"&&!d.titel){toast("Bitte eintragen, wer Geburtstag hat");return false}
   if(d.typ==="geburtstag")d.wdh="keine";
   if(d.typ==="arbeit"&&(!d.von||!d.bis)){toast("Bitte Arbeitsbeginn und -ende angeben");return false}
-  if(d.typ==="urlaub"&&!d.endDatum){d.endDatum=d.datum}
+  if(isGanz(d.typ)&&!d.endDatum){d.endDatum=d.datum}
   return true;
 }
 async function save(){
@@ -2992,7 +2997,7 @@ function parseOCR(text,todayISO){
   return events.map(e=>{
     const t=(e.titel||head||"Termin").slice(0,120);
     const l=(info[e.i].raw+" "+t).toLowerCase();
-    const typ=/urlaub/.test(l)?"urlaub":/(dienst|schicht|arbeit)/.test(l)?"arbeit":"termin";
+    const typ=/ferien/.test(l)?"ferien":/urlaub/.test(l)?"urlaub":/(dienst|schicht|arbeit)/.test(l)?"arbeit":"termin";
     const ctx=info.slice(Math.max(0,e.i-2),e.i+3).map(x=>x.raw).join(" ").toLowerCase();
     const nm=NM.filter(([k,n])=>ctx.includes(n)).map(([k])=>k);
     return{typ,person:nm.length===1?nm[0]:personAll,titel:t,datum:e.datum,endDatum:e.endDatum,von:e.von,bis:e.bis};
@@ -3003,11 +3008,11 @@ function normFound(x){
   const okDate=s=>/^\d{4}-\d{2}-\d{2}$/.test(String(s||""));
   const okTime=s=>/^\d{2}:\d{2}$/.test(String(s||""))?String(s):"";
   if(!okDate(x.datum))return null;
-  const typ=["termin","arbeit","urlaub"].includes(x.typ)?x.typ:"termin";
+  const typ=["termin","arbeit","urlaub","ferien"].includes(x.typ)?x.typ:"termin";
   let person=PNAME[String(x.person).toLowerCase()]?String(x.person).toLowerCase():"gemeinsam";
-  if(typ!=="termin"&&person==="gemeinsam")person=persons()[0][0];
+  if(typ!=="termin"&&typ!=="ferien"&&person==="gemeinsam")person=persons()[0][0];
   return{keep:true,typ,person,titel:String(x.titel||"").slice(0,200),datum:x.datum,endDatum:okDate(x.endDatum)&&x.endDatum>x.datum?x.endDatum:"",
-    von:typ==="urlaub"?"":okTime(x.von),bis:typ==="urlaub"?"":okTime(x.bis)};
+    von:isGanz(typ)?"":okTime(x.von),bis:isGanz(typ)?"":okTime(x.bis)};
 }
 function drawScan(state,msg){
   draft={scan:true};
@@ -3020,11 +3025,11 @@ function drawScan(state,msg){
     const n=found.filter(f=>f.keep).length;
     body=`<p class="hint">Bitte kurz prüfen und bei Bedarf korrigieren, vor allem den Text bei „Was?“. Abgewählte Einträge werden nicht übernommen.</p><details><summary>Erkannter Text</summary><pre style="white-space:pre-wrap;font-size:.8rem">${esc(ocrText)}</pre></details>
     <div class="found">${found.map((f,i)=>{
-      const pp=f.typ==="termin"?PEOPLE:persons();
+      const pp=f.typ==="termin"||f.typ==="ferien"?PEOPLE:persons();
       return `<div class="found-item${f.keep?"":" off"}" data-i="${i}">
         <label class="keep"><input type="checkbox" data-k="keep"${f.keep?" checked":""}> Übernehmen</label>
         <div class="row3b">
-          <select data-k="typ" aria-label="Art">${["termin","arbeit","urlaub"].map(t=>`<option value="${t}"${f.typ===t?" selected":""}>${TYPN[t]}</option>`).join("")}</select>
+          <select data-k="typ" aria-label="Art">${["termin","arbeit","urlaub","ferien"].map(t=>`<option value="${t}"${f.typ===t?" selected":""}>${TYPN[t]}</option>`).join("")}</select>
           <select data-k="person" aria-label="Person">${pp.map(([k,nm])=>`<option value="${k}"${f.person===k?" selected":""}>${nm}</option>`).join("")}</select>
         </div>
         <input data-k="titel" value="${esc(f.titel)}" aria-label="Was" placeholder="Was?">
@@ -3032,7 +3037,7 @@ function drawScan(state,msg){
           <input type="date" data-k="datum" value="${f.datum}" aria-label="Datum">
           <input type="date" data-k="endDatum" value="${f.endDatum}" aria-label="Bis Datum">
         </div>
-        ${f.typ!=="urlaub"?`<div class="row3b"><input type="time" data-k="von" value="${f.von}" aria-label="Von"><input type="time" data-k="bis" value="${f.bis}" aria-label="Bis"></div>`:""}
+        ${!isGanz(f.typ)?`<div class="row3b"><input type="time" data-k="von" value="${f.von}" aria-label="Von"><input type="time" data-k="bis" value="${f.bis}" aria-label="Bis"></div>`:""}
       </div>`}).join("")}</div>
     <div class="actions"><button class="btn" id="sc-save"${n?"":" disabled"}>${n} ${n===1?"Eintrag":"Einträge"} eintragen</button><button class="btn ghost" id="sc-close">Abbrechen</button></div>`;
   }
@@ -3047,7 +3052,7 @@ function drawScan(state,msg){
       const k=inp.dataset.k;
       inp.onchange=()=>{
         if(k==="keep")f.keep=inp.checked;else f[k]=inp.value;
-        if(k==="typ"){if(f.typ!=="termin"&&f.person==="gemeinsam")f.person=persons()[0][0];if(f.typ==="urlaub"){f.von="";f.bis=""}}
+        if(k==="typ"){if(f.typ!=="termin"&&f.typ!=="ferien"&&f.person==="gemeinsam")f.person=persons()[0][0];if(isGanz(f.typ)){f.von="";f.bis=""}}
         if(k==="keep"||k==="typ")drawScan("liste");
       };
     });
@@ -3062,7 +3067,7 @@ async function saveFound(){
     if(f.typ==="arbeit"&&(!f.von||!f.bis)){toast("Bei Arbeit bitte Beginn und Ende angeben");return}
   }
   closeSheet();
-  for(const f of list){const o=clean({...f,endDatum:f.typ==="urlaub"&&!f.endDatum?f.datum:f.endDatum});await store.add(o)}
+  for(const f of list){const o=clean({...f,endDatum:isGanz(f.typ)&&!f.endDatum?f.datum:f.endDatum});await store.add(o)}
   if(list.length){weekStart=mondayOf(list.map(f=>f.datum).sort()[0]);render()}
   toast(`${list.length} ${list.length===1?"Eintrag":"Einträge"} vom Foto eingetragen`);
 }
@@ -3111,7 +3116,7 @@ const TOUR=[
   {s:".tabs",t:"Ansichten",p:"Hier wechselst du zwischen Tag (mit Zeitstrahl), Woche, Monat und Jahr. Unter „Ferien“ stehen alle Berliner Schulferien und Feiertage, unter „Sterne“ Aufgaben und Belohnungen für die Kinder."},
   {s:".legend",v:"woche",t:"Eine Spalte pro Person",p:"Jede Person hat ihre eigene Spalte und Farbe. „Gemeinsam“ ist für Familientermine. Die Namen kannst du in den Einstellungen ändern."},
   {s:"#days .cell",v:"woche",t:"Schnell eintragen",p:"Tippe einfach in ein Feld. Dann ist der Eintrag gleich für diese Person und diesen Tag vorbereitet."},
-  {s:"#fab",t:"Neuer Eintrag",p:"Wähle Termin, Arbeitszeit, Urlaub oder Geburtstag. Termine kannst du jede Woche oder alle 2 Wochen wiederholen lassen und mit ❗ als wichtig markieren."},
+  {s:"#fab",t:"Neuer Eintrag",p:"Wähle Termin, Arbeitszeit, Urlaub, Ferien oder Geburtstag. Termine kannst du jede Woche oder alle 2 Wochen wiederholen lassen und mit ❗ als wichtig markieren."},
   {s:"#micBtn",t:"Per Sprache",p:"Sag zum Beispiel: „Donnerstag 15 Uhr Elternabend John“. Das Formular füllt sich von selbst, du prüfst es nur noch."},
   {s:"#photoBtn",t:"Per Foto",p:"Fotografiere einen Terminzettel, Brief oder Dienstplan. Die App liest Datum und Uhrzeit heraus und schlägt die Einträge vor."},
   {s:"#days .chip",v:"woche",t:"Eintrag bearbeiten",p:"Tippe auf einen Eintrag, um ihn zu ändern oder zu löschen. Dort kannst du ihn auch jede Woche oder alle 2 Wochen fortlaufend eintragen. Vor dem Löschen fragt die App immer nach."},
@@ -3360,6 +3365,9 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-09a",d:"2026-11-09",t:"🎒 Ferien",items:[
+    "🎒 Neue Art „Ferien“ neben Termin, Arbeit, Urlaub und Geburtstag, mit erstem und letztem Tag, ganztägig und in eigener Farbe",
+    "🎤 Per Sprache oder Text erkannt: z. B. „Ferien John 20.12. bis 3.1.“"]},
   {v:"2026-11-08f",d:"2026-11-08",t:"📲 iPhone-Installation",items:[
     "📲 Neue Schritt-für-Schritt-Hilfe zum Installieren auf dem iPhone (Safari und Chrome), mit Pfeil zum richtigen Knopf",
     "📋 Der Einladungslink wird dabei automatisch kopiert: Die installierte App verbindet sich mit einem Tipp"]},
@@ -3611,7 +3619,7 @@ async function loadWeather(){
 /* ---------- 📺 Wand-Kalender ---------- */
 let wallTimer=null,wallLock=null;
 function personDot(k){return `<i class="wdot" style="background:${shownColor(k)}"></i>`}
-function wallEvents(day){return ALLE_ENTRIES().filter(e=>onDay(e,day)).sort((a,b)=>(a.typ==="urlaub"?-1:0)-(b.typ==="urlaub"?-1:0)||String(a.von||"00").localeCompare(String(b.von||"00")))}
+function wallEvents(day){return ALLE_ENTRIES().filter(e=>onDay(e,day)).sort((a,b)=>(isGanz(a.typ)?-1:0)-(isGanz(b.typ)?-1:0)||String(a.von||"00").localeCompare(String(b.von||"00")))}
 function ALLE_ENTRIES(){return entries}
 async function showWall(){
   if(!premOn(10)){premGate(showWall);return}
@@ -3627,10 +3635,10 @@ async function showWall(){
     const cur=wx&&wx.current?WMO(wx.current.weather_code):null;
     const tm=addDays(t,1);
     const evT=wallEvents(t),evM=wallEvents(tm);
-    const nx=entries.filter(e=>e.typ!=="urlaub"&&e.von&&e.datum>=t).map(e=>({e,at:new Date(e.datum+"T"+e.von)})).filter(x=>x.at>now).sort((a,b)=>a.at-b.at)[0];
+    const nx=entries.filter(e=>!isGanz(e.typ)&&e.von&&e.datum>=t).map(e=>({e,at:new Date(e.datum+"T"+e.von)})).filter(x=>x.at>now).sort((a,b)=>a.at-b.at)[0];
     const cd=nx?(()=>{const m=Math.round((nx.at-now)/6e4);return m<60?`in ${m} Min`:m<1440?`in ${Math.floor(m/60)} Std ${m%60} Min`:`in ${Math.round(m/1440)} Tagen`})():"";
     const g=h<5?"Gute Nacht":h<11?"Guten Morgen":h<17?"Hallo":h<22?"Guten Abend":"Gute Nacht";
-    const row=e=>`<div class="wev">${personDot(e.person)}<span class="wt">${esc(e.typ==="urlaub"?"ganztags":timeTxt(e)||"ganztags")}</span><span class="wn">${esc(emoP(e)+(e.typ==="geburtstag"?bdayLabel(e,t):e.typ==="arbeit"?(e.titel||"Arbeit"):e.typ==="urlaub"?(e.titel?"Urlaub · "+e.titel:"Urlaub"):e.titel))}</span><span class="wp">${esc(PNAME[e.person]||"")}</span></div>`;
+    const row=e=>`<div class="wev">${personDot(e.person)}<span class="wt">${esc(isGanz(e.typ)?"ganztags":timeTxt(e)||"ganztags")}</span><span class="wn">${esc(emoP(e)+(e.typ==="geburtstag"?bdayLabel(e,t):e.typ==="arbeit"?(e.titel||"Arbeit"):isGanz(e.typ)?(e.titel?TYPN[e.typ]+" · "+e.titel:TYPN[e.typ]):e.titel))}</span><span class="wp">${esc(PNAME[e.person]||"")}</span></div>`;
     w.innerHTML=`<div class="wall-in">
       <div class="wl">
         <div class="wclock">${String(h).padStart(2,"0")}<span class="wcol">:</span>${String(now.getMinutes()).padStart(2,"0")}</div>
