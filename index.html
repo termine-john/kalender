@@ -1466,10 +1466,15 @@ function pickVoice(){if(!TTS_OK)return;const v=speechSynthesis.getVoices().filte
 if(TTS_OK){pickVoice();try{speechSynthesis.onvoiceschanged=pickVoice}catch(e){}}
 function speak(txt){
   if(!TTS_OK){toast("Vorlesen geht auf diesem Handy leider nicht");return}
-  speechSynthesis.cancel();
-  const parts=noEmo(txt).split(/(?<=[.!?])\s+/).filter(Boolean);
-  for(const p of parts){const u=new SpeechSynthesisUtterance(p);u.lang="de-DE";if(ttsVoice)u.voice=ttsVoice;u.rate=.95;u.pitch=1.05;speechSynthesis.speak(u)}
+  const parts=noEmo(txt).split(/(?<=[.!?])\s+/).filter(Boolean);if(!parts.length)return;
+  if(!ttsVoice)pickVoice();
+  const go=()=>{_utts=[];try{speechSynthesis.resume()}catch(e){}
+    for(const p of parts){const u=new SpeechSynthesisUtterance(p);u.lang="de-DE";if(ttsVoice)u.voice=ttsVoice;u.rate=.95;u.pitch=1.05;u.volume=1;
+      u.onerror=e=>{const er=e&&e.error||"";if(er&&er!=="interrupted"&&er!=="canceled")toast(er==="not-allowed"?"🔇 Bitte einmal auf „🔊 Frage vorlesen“ tippen":"🔇 Vorlesen klappt gerade nicht ("+er+")")};
+      _utts.push(u);speechSynthesis.speak(u)}};
+  if(speechSynthesis.speaking||speechSynthesis.pending){speechSynthesis.cancel();setTimeout(go,180)}else go();
 }
+let _utts=[];
 function readTasks(){
   const who=KID?[[KID,PNAME[KID]]]:persons().filter(([k])=>tasks.some(t=>t.person===k));
   const out=[];
@@ -1558,7 +1563,7 @@ function spielRunde(sp,p){
       const rest=Math.min(G.zeit,Math.max(0,G.zeit-(Date.now()-G.t0)/1000));bar.style.width=(rest/G.zeit*100)+"%";bar.style.background=rest<4?"#ff6b6b":rest<8?"#ffd166":"#5fd38d";
       if(rest<=0)antwort(null)},100)};
   const draw=()=>{const A=G.auf;
-    sheet(SPIELE[sp].n,`<div class="spiel"><div class="sphead"><span>Aufgabe ${G.i+1} von ${N}</span><span>✅ ${G.ok}</span><span>Stufe ${lvl}</span></div>
+    sheet(SPIELE[sp].n,`<div class="spiel"><div class="sphead"><span>Aufgabe ${G.i+1} von ${N}</span><span>✅ ${G.ok}</span><span>Stufe ${lvl} · ${APP_VER}</span></div>
       <div class="pbar"><i id="spBar" style="width:100%"></i></div>
       <div class="spq">${esc(A.q)}</div>
       ${vorlesen?`<div class="sptts"><button id="spSay">🔊 Frage vorlesen</button><label><input type="checkbox" id="spAuto" ${autoV?"checked":""}> automatisch</label></div>`:""}
@@ -1696,7 +1701,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v73";
+const APP_VER="v74";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
