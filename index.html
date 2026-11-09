@@ -233,6 +233,7 @@ html.kidmode #tAdd,html.kidmode #rAdd,html.kidmode #kpBtn,html.kidmode [data-rwe
 .spq{font-size:clamp(1.6rem,8vw,2.4rem);font-weight:800;text-align:center;margin:6px 0 10px;line-height:1.2}
 .spin{font-size:2rem;font-weight:800;text-align:center;border:2px solid var(--line);border-radius:14px;padding:6px;margin:0 auto 10px;max-width:180px;min-height:1.5em;background:var(--surface)}
 .keypad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;max-width:320px;margin:0 auto}.keypad button,.spopts button{font:inherit;font-size:1.5rem;font-weight:700;padding:12px 0;border-radius:14px;border:1px solid var(--line);background:var(--surface);color:inherit}.keypad .kok{background:#5fd38d;color:#06301a;border-color:transparent}
+.sptts{display:flex;justify-content:center;align-items:center;gap:12px;margin:-4px 0 12px;font-size:13px}.sptts button{font:inherit;font-weight:700;padding:8px 14px;border-radius:99px;border:1px solid var(--line);background:var(--surface);color:inherit}.sptts label{display:flex;gap:4px;align-items:center;opacity:.8}
 .spopts{display:grid;gap:10px}.spopts button{font-size:1.3rem;padding:14px 8px}.spfb{text-align:center;min-height:3em;margin-top:10px}
 #spLim{font:inherit;padding:2px 6px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:inherit}
 .thema{border:1px solid var(--line);border-radius:16px;margin:0 0 10px;background:var(--surface);overflow:hidden}
@@ -1550,14 +1551,17 @@ function spielStart(sp){
 }
 function spielRunde(sp,p){
   const lvl=p?spielLvl(p,sp):1,N=10,G={i:0,ok:0,zeit:sp==="mathe"?(lvl===1?15:13):14,eing:"",auf:null,t0:0,tim:null,fertig:false};
-  const neu=()=>{G.auf=sp==="mathe"?matheAufgabe(lvl):deutschAufgabe(lvl);G.eing="";G.t0=Date.now();draw();
+  const vorlesen=sp==="deutsch"&&TTS_OK,autoV=vorlesen&&(()=>{try{return localStorage.getItem("fk-spiel-tts")!=="0"}catch(e){return true}})();
+  const sagFrage=()=>speak(G.auf.q);
+  const neu=()=>{G.auf=sp==="mathe"?matheAufgabe(lvl):deutschAufgabe(lvl);G.eing="";G.t0=Date.now()+(autoV?2500:0);draw();if(autoV)sagFrage();
     clearInterval(G.tim);G.tim=setInterval(()=>{const bar=document.getElementById("spBar");if(!bar){clearInterval(G.tim);return}
-      const rest=Math.max(0,G.zeit-(Date.now()-G.t0)/1000);bar.style.width=(rest/G.zeit*100)+"%";bar.style.background=rest<4?"#ff6b6b":rest<8?"#ffd166":"#5fd38d";
+      const rest=Math.min(G.zeit,Math.max(0,G.zeit-(Date.now()-G.t0)/1000));bar.style.width=(rest/G.zeit*100)+"%";bar.style.background=rest<4?"#ff6b6b":rest<8?"#ffd166":"#5fd38d";
       if(rest<=0)antwort(null)},100)};
   const draw=()=>{const A=G.auf;
     sheet(SPIELE[sp].n,`<div class="spiel"><div class="sphead"><span>Aufgabe ${G.i+1} von ${N}</span><span>✅ ${G.ok}</span><span>Stufe ${lvl}</span></div>
       <div class="pbar"><i id="spBar" style="width:100%"></i></div>
       <div class="spq">${esc(A.q)}</div>
+      ${vorlesen?`<div class="sptts"><button id="spSay">🔊 Frage vorlesen</button><label><input type="checkbox" id="spAuto" ${autoV?"checked":""}> automatisch</label></div>`:""}
       ${A.typ==="zahl"?`<div class="spin" id="spIn">${esc(G.eing)||"&nbsp;"}</div>
         <div class="keypad">${[1,2,3,4,5,6,7,8,9].map(n=>`<button data-k="${n}">${n}</button>`).join("")}<button data-k="del" aria-label="Löschen">⌫</button><button data-k="0">0</button><button data-k="ok" class="kok" aria-label="Fertig">✓</button></div>`
       :`<div class="spopts">${A.opts.map(o=>`<button data-o="${esc(o)}">${esc(o)}</button>`).join("")}</div>`}
@@ -1566,7 +1570,8 @@ function spielRunde(sp,p){
     document.getElementById("bd").onclick=null;
     document.querySelectorAll("[data-k]").forEach(b=>b.onclick=()=>{const k=b.dataset.k;if(k==="ok"){if(G.eing)antwort(G.eing);return}
       if(k==="del")G.eing=G.eing.slice(0,-1);else if(G.eing.length<4)G.eing+=k;document.getElementById("spIn").innerHTML=esc(G.eing)||"&nbsp;"});
-    document.querySelectorAll("[data-o]").forEach(b=>b.onclick=()=>antwort(b.dataset.o));
+    document.querySelectorAll("[data-o]").forEach(b=>b.onclick=()=>{try{speechSynthesis.cancel()}catch(e){}antwort(b.dataset.o)});
+    {const sb=document.getElementById("spSay");if(sb)sb.onclick=sagFrage;const ab=document.getElementById("spAuto");if(ab)ab.onchange=()=>{try{localStorage.setItem("fk-spiel-tts",ab.checked?"1":"0")}catch(e){}}}
     document.getElementById("spStop").onclick=()=>{clearInterval(G.tim);closeSheet()};
   };
   let busy=false;
@@ -1691,7 +1696,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v72";
+const APP_VER="v73";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -3493,6 +3498,8 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-09e",d:"2026-11-09",t:"🔊 Fragen vorlesen",items:[
+    "🔊 Beim Deutsch-Detektiv wird die Frage vorgelesen, die Antworten nicht. Das Zeitlimit startet erst nach dem Vorlesen"]},
   {v:"2026-11-09d",d:"2026-11-09",t:"🗂️ Aufgaben nach Themen",items:[
     "🗂️ Aufgaben sind nach Themen sortiert: Morgens & abends, Schule & Lernen, Mein Zimmer, Im Haushalt helfen, Lieb & hilfsbereit",
     "📊 Jedes Thema zeigt, wie viel schon geschafft ist und wie viele Sterne noch drin sind",
