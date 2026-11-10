@@ -111,6 +111,10 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px}
 .tabs button{padding:9px 4px;border-radius:9px;font-weight:600;font-size:.88rem;color:var(--muted)}
 .tabs button[aria-selected="true"]{background:var(--accent);color:var(--surface)}
+.appbar .tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.appbar .tabs [data-view="ferien"]::before{content:"🎒 "}.appbar .tabs [data-view="sterne"]::before{content:"⭐ "}
+body.off-sterne .appbar .tabs,html.kidmode body.off-sterne .appbar .tabs{grid-template-columns:repeat(1,minmax(0,1fr))}
+.calswitch{grid-template-columns:repeat(4,minmax(0,1fr));margin:10px 0 6px;position:sticky;top:0;z-index:5;box-shadow:0 4px 14px rgba(0,0,0,.18)}
+.calswitch button{font-size:.95rem;padding:10px 4px}
 .badge{display:inline-block;font-size:.7rem;font-weight:600;padding:2px 6px;border-radius:6px;margin-left:6px;vertical-align:1px}
 .badge.fer{background:var(--fer);color:var(--fer-fg)}
 .badge.feier{background:color-mix(in srgb,var(--feier) 14%,transparent);color:var(--feier)}
@@ -207,7 +211,7 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .cdialog p{margin:0;font-size:1rem;font-weight:600}
 .btn.danger.solid{background:var(--c-christin);color:#fff;border-color:var(--c-christin)}
 body.ro .foot,body.ro .fabs,body.ro:not(.romem) #gear,body.ro [data-view="sterne"],body.ro .plus,body.ro .empty-note,body.ro #mImg{display:none!important}
-body.ro .tabs{grid-template-columns:repeat(5,minmax(0,1fr))}
+body.ro .appbar .tabs{grid-template-columns:repeat(1,minmax(0,1fr))}
 body.ro .cell{cursor:default}
 .help .hsearch{margin:4px 0 6px}
 .help details{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin:8px 0}
@@ -657,7 +661,7 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
   </div>
   <div class="greet" id="greet" aria-live="polite"></div>
   <div class="tabs" role="tablist" aria-label="Ansicht">
-    <button role="tab" data-view="tag">Tag</button><button role="tab" data-view="woche">Woche</button><button role="tab" data-view="monat">Monat</button><button role="tab" data-view="jahr">Jahr</button><button role="tab" data-view="ferien">Ferien</button><button role="tab" data-view="sterne">Sterne</button>
+    <button role="tab" data-view="ferien">Ferien</button><button role="tab" data-view="sterne">Sterne</button>
   </div>
   </header>
 
@@ -708,6 +712,9 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
     <div class="mbtns"><button class="btn ghost" id="mImg" aria-label="Bild für den Sperrbildschirm erstellen">🖼</button><button class="btn" id="mAck">Gelesen ✓</button></div>
     <ul id="mList"></ul>
   </section>
+  <div class="tabs calswitch" role="tablist" aria-label="Kalender-Ansicht">
+    <button role="tab" data-view="tag">Tag</button><button role="tab" data-view="woche">Woche</button><button role="tab" data-view="monat">Monat</button><button role="tab" data-view="jahr">Jahr</button>
+  </div>
   <div class="nav" id="navbar" title="Zum Blättern nach links oder rechts wischen">
     <button class="arrow" id="prev" aria-label="Zurück">‹</button>
     <div class="lbl" id="weekLbl"></div>
@@ -1701,7 +1708,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v74";
+const APP_VER="v75";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -3503,6 +3510,9 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-10a",d:"2026-11-10",t:"📅 Ansicht direkt am Kalender",items:[
+    "📅 Tag, Woche, Monat und Jahr sitzen jetzt direkt über dem Kalender und bleiben beim Scrollen oben stehen",
+    "🎒 Ferien und ⭐ Sterne bleiben oben im Kopfbereich"]},
   {v:"2026-11-09e",d:"2026-11-09",t:"🔊 Fragen vorlesen",items:[
     "🔊 Beim Deutsch-Detektiv wird die Frage vorgelesen, die Antworten nicht. Das Zeitlimit startet erst nach dem Vorlesen"]},
   {v:"2026-11-09d",d:"2026-11-09",t:"🗂️ Aufgaben nach Themen",items:[
