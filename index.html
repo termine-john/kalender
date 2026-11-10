@@ -247,6 +247,8 @@ html.kidmode #tAdd,html.kidmode #rAdd,html.kidmode #kpBtn,html.kidmode [data-rwe
 .thema .tasklist{padding:0 8px 8px}.th-routine .thi{background:rgba(111,209,194,.18)}.th-schule .thi{background:rgba(124,160,245,.2)}.th-zimmer .thi{background:rgba(240,138,170,.18)}.th-haushalt .thi{background:rgba(240,178,107,.2)}.th-helfen .thi{background:rgba(169,155,242,.2)}
 .kidsum{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0 2px}.kidsum span{display:flex;flex-direction:column;align-items:center;font-size:11.5px;opacity:.9;background:rgba(127,127,127,.1);border-radius:10px;padding:6px 2px;text-align:center}.kidsum b{font-size:1.25rem;color:var(--star)}
 .starcard{position:relative}.stfix{margin-top:6px;font:inherit;font-size:11.5px;padding:3px 9px;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--muted)}
+.pausebox{background:rgba(124,160,245,.15);border:1px solid rgba(124,160,245,.4);border-radius:12px;padding:10px;margin:0 0 10px;text-align:center}
+.task.paused{opacity:.45}.task.paused .chk{pointer-events:none}
 .kidbar{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
 .kidbar .pbar{height:12px;border-radius:99px;background:rgba(127,127,127,.2);overflow:hidden;margin:6px 0 2px}.kidbar .pbar i{display:block;height:100%;background:linear-gradient(90deg,#ffd166,#ff9f1c);border-radius:99px}
 .pend{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center}.pend button{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:10px;padding:6px 10px;font:inherit}
@@ -1402,11 +1404,11 @@ const THEMA=Object.fromEntries(THEMEN.map(t=>[t[0],t]));
 function taskThema(t){if(t.thema&&THEMA[t.thema])return t.thema;const x=THEMEN.find(([k,,,re])=>re.test(t.titel||""));return x?x[0]:"sonst"}
 function renderStars(){
   const P=persons();
-  const cards=P.map(([k,n])=>`<div class="starcard${popPerson===k?" pop":""}">${av(k,"av big-av")}<span class="nm p-${k}" style="background:none">${esc(n)}</span><span class="big">⭐ ${starBalance(k)}</span><span class="wk">diese Woche +${starWeek(k)}</span>${KID||READONLY?"":`<button class="stfix" data-fix="${k}" aria-label="Sterne von ${esc(n)} korrigieren">✏️ ändern</button>`}</div>`).join("");
+  const cards=P.map(([k,n])=>`<div class="starcard${popPerson===k?" pop":""}">${av(k,"av big-av")}<span class="nm p-${k}" style="background:none">${esc(n)}</span><span class="big">⭐ ${starBalance(k)}</span><span class="wk">${sternPause(k)?"🏠 heute bei Papa · Pause":`diese Woche +${starWeek(k)}`}</span>${KID||READONLY?"":`<button class="stfix" data-fix="${k}" aria-label="Sterne von ${esc(n)} korrigieren">✏️ ändern</button>`}</div>`).join("");
   popPerson="";
   const vis=tasks.filter(t=>{const l=logFor(t);return !(t.wiederholung==="einmalig"&&l&&l.datum<today)});
   vis.sort((a,b)=>(!!logFor(a))-(!!logFor(b))||String(a.person).localeCompare(b.person));
-  const row=t=>{const l=logFor(t);return `<div class="task${l?" done":""}"><button class="chk" data-done="${esc(t.id)}" aria-label="${l?"Als nicht erledigt markieren":"Erledigt"}: ${esc(t.titel)}">${l?(l.offen?"⏳":"✓"):""}</button>
+  const row=t=>{const l=logFor(t);return `<div class="task${l?" done":""}${sternPause(t.person)?" paused":""}"><button class="chk" data-done="${esc(t.id)}" aria-label="${l?"Als nicht erledigt markieren":"Erledigt"}: ${esc(t.titel)}">${l?(l.offen?"⏳":"✓"):""}</button>
     <button class="tt" data-task="${esc(t.id)}">${esc(t.titel)}<br><span class="meta"><span class="p-${t.person}" style="background:none;font-weight:700">${esc(PNAME[t.person]||"")}</span> · ${WIED[t.wiederholung]||"Einmalig"}${l&&l.offen?" · wartet auf Bestätigung":""}</span></button>
     <span class="st">${"⭐".repeat(Math.min(+t.sterne||1,5))}</span></div>`};
   const tl=THEMEN.map(([k,ic,nm])=>{const ts=vis.filter(t=>taskThema(t)===k);if(!ts.length)return "";
@@ -1421,7 +1423,7 @@ function renderStars(){
   let kidH="";
   if(KID){const b=starBalance(KID),nx=rewards.filter(r=>+r.kosten>b).sort((a,b2)=>(+a.kosten)-(+b2.kosten))[0],np=taskLogs.filter(l=>l.offen).reduce((a,l)=>a+(+l.sterne||0),0);
     const heute=taskLogs.filter(l=>l.person===KID&&l.datum===today).reduce((a,l)=>a+(+l.sterne||0),0),noch=vis.filter(t=>t.person===KID&&!logFor(t)).reduce((a,t)=>a+(+t.sterne||1),0);
-    kidH=`<div class="kidbar"><b>Hallo ${esc(PNAME[KID]||"")}! 👋</b><div class="kidsum"><span>⭐ Heute verdient<b>+${heute}</b></span><span>🎯 Noch möglich<b>${noch}</b></span><span>💰 Kontostand<b>${b}</b></span></div>${nx?`<div class="pbar"><i style="width:${Math.min(100,Math.round(b/(+nx.kosten)*100))}%"></i></div><span class="meta">Nächstes Ziel: <b>${esc(nx.titel)}</b> · noch ${+nx.kosten-b} ⭐</span>`:rewards.length?`<br><span class="meta">Du kannst dir jede Belohnung leisten! 🎉</span>`:""}${np?`<br><span class="meta">⏳ ${np} ⭐ warten noch auf Bestätigung</span>`:""}${abzugHTML()}</div>`}
+    kidH=`<div class="kidbar">${sternPause(KID)?`<div class="pausebox">🏠 <b>Heute bist du bei Papa.</b><br>Das Sterne-System macht Pause: keine Aufgaben, kein Abzug. Morgen geht es weiter!</div>`:""}<b>Hallo ${esc(PNAME[KID]||"")}! 👋</b><div class="kidsum"><span>⭐ Heute verdient<b>+${heute}</b></span><span>🎯 Noch möglich<b>${noch}</b></span><span>💰 Kontostand<b>${b}</b></span></div>${nx?`<div class="pbar"><i style="width:${Math.min(100,Math.round(b/(+nx.kosten)*100))}%"></i></div><span class="meta">Nächstes Ziel: <b>${esc(nx.titel)}</b> · noch ${+nx.kosten-b} ⭐</span>`:rewards.length?`<br><span class="meta">Du kannst dir jede Belohnung leisten! 🎉</span>`:""}${np?`<br><span class="meta">⏳ ${np} ⭐ warten noch auf Bestätigung</span>`:""}${abzugHTML()}</div>`}
   const tlH=tl||'<p class="hint">Noch keine Aufgaben. Leg zum Beispiel „Zimmer aufräumen“ für John mit 2 Sternen an. Wer eine Aufgabe erledigt, tippt auf den Kreis und bekommt die Sterne.</p>';
   document.getElementById("vOther").innerHTML=`<div class="starcards">${cards}</div>${kidH}
     ${KID?`<h3 class="sec">✅ Deine Aufgaben</h3>${tlH}`:""}
@@ -1444,7 +1446,7 @@ function renderStars(){
 document.getElementById("vOther").addEventListener("click",async ev=>{
   if(view!=="sterne")return;
   const dn=ev.target.closest("[data-done]");
-  if(dn){const t=tasks.find(x=>x.id===dn.dataset.done);if(!t||!store)return;const l=logFor(t);
+  if(dn){const t=tasks.find(x=>x.id===dn.dataset.done);if(!t||!store)return;if(sternPause(t.person)){pauseToast(t.person);return}const l=logFor(t);
     if(l){if(KID&&!l.offen){toast("Schon bestätigt ✓ Super gemacht!");return}
       if(!await askConfirm(l.offen?"Abhaken zurücknehmen?":`Erledigt zurücknehmen? ${PNAME[t.person]} verliert dafür ${+l.sterne||1} ⭐.`,"Zurücknehmen"))return;await store.del(l.id);toast("Zurückgenommen")}
     else if(KID){await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:+t.sterne||1,datum:today,titel:t.titel});render();confetti();toast(`⏳ Super! +${+t.sterne||1} ⭐, sobald Mama oder Papa bestätigt haben`);if(ttsAuto())speak(`Super gemacht, ${PNAME[KID]||""}! ${t.titel} ist abgehakt. Du bekommst ${sternTxt(+t.sterne||1)}, sobald Mama oder Papa bestätigt haben.`)}
@@ -1458,7 +1460,7 @@ document.getElementById("vOther").addEventListener("click",async ev=>{
   if(nob){const x=[...taskLogs,...redeems].find(y=>y.id===nob.dataset.no);if(!x)return;if(!await askConfirm(x.typ==="erledigt"?`„${x.titel}“ nicht bestätigen? Die Sterne gibt es dann nicht.`:`„${x.titel}“ ablehnen? Die Sterne bekommt ${PNAME[x.person]} zurück.`,"Ablehnen"))return;await store.del(x.id);toast("Abgelehnt");return}
   const tk=ev.target.closest("[data-task]");if(tk){if(KID){const t=tasks.find(x=>x.id===tk.dataset.task);if(t){const l=logFor(t);speak(`${t.titel}. ${sternTxt(+t.sterne||1)}. ${l?(l.offen?"Schon abgehakt, wartet auf Bestätigung.":"Schon erledigt. Super!"):"Noch zu erledigen."}`)}return}openTaskSheet(tasks.find(x=>x.id===tk.dataset.task));return}
   const re=ev.target.closest("[data-redeem]");
-  if(re){const r=rewards.find(x=>x.id===re.dataset.redeem),p=re.dataset.who;if(!r)return;
+  if(re){const r=rewards.find(x=>x.id===re.dataset.redeem),p=re.dataset.who;if(!r)return;if(sternPause(p)){pauseToast(p);return}
     if(KID){if(!await askConfirm(`„${r.titel}“ für ${+r.kosten} ⭐ einlösen? Mama oder Papa bekommen Bescheid und bestätigen.`,"Einlösen",false))return;
       await store.add({typ:"einloesung",person:p,kosten:+r.kosten,titel:r.titel,datum:today});confetti();toast("🎁 Wunsch geschickt! Warte auf die Bestätigung");if(ttsAuto())speak(`Toll! Dein Wunsch ${r.titel} ist verschickt.`);return}
     if(!await askConfirm(`„${r.titel}“ für ${PNAME[p]} einlösen? Dafür werden ${+r.kosten} ⭐ abgezogen.`,"Einlösen",false))return;
@@ -1507,6 +1509,9 @@ function readTasks(){
   speak(out.join(" "));
 }
 /* ---------- Verlauf ---------- */
+/* ---------- Sterne-Pause an Papa-Tagen ---------- */
+const sternPause=p=>!!p&&istWeg(p,today);
+const pauseToast=p=>toast(KID?"🏠 Heute bist du bei Papa: Sterne machen Pause. Morgen geht's weiter!":`🏠 ${PNAME[p]} ist heute bei Papa: Sterne-System gesperrt`);
 /* ---------- Abzug für Tage ohne Aufgabe ---------- */
 const abzugCfg=()=>{const a=FAMCONF&&FAMCONF.abzug;return a&&typeof a==="object"?a:{}};
 const istWeg=(p,day)=>entries.some(e=>e.person===p&&e.typ==="termin"&&/papa|pascal/i.test(e.titel||"")&&onDay(e,day));
@@ -1616,6 +1621,7 @@ function spielStart(sp){
   document.getElementById("spX").onclick=closeSheet;
 }
 function spielRunde(sp,p){
+  if(p&&sternPause(p)){pauseToast(p);return}
   const lvl=p?spielLvl(p,sp):1,N=10,G={i:0,ok:0,zeit:sp==="mathe"?(lvl===1?15:13):14,eing:"",auf:null,t0:0,tim:null,fertig:false};
   const vorlesen=sp==="deutsch"&&TTS_OK,autoV=vorlesen&&(()=>{try{return localStorage.getItem("fk-spiel-tts")!=="0"}catch(e){return true}})();
   const sagFrage=()=>speak(G.auf.q);
@@ -1762,7 +1768,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v78";
+const APP_VER="v79";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -3569,6 +3575,8 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-10e",d:"2026-11-10",t:"🏠 Sterne-Pause bei Papa",items:[
+    "🏠 An Tagen bei Papa ist das Sterne-System gesperrt: kein Abhaken, keine Spiele-Sterne, kein Einlösen und kein Abzug"]},
   {v:"2026-11-10d",d:"2026-11-10",t:"😴 Abzug fürs Nichtstun",items:[
     "😴 Eltern können einschalten: Für jeden Tag ohne erledigte Aufgabe gibt es automatisch 1 ⭐ Abzug (nie unter 0, Tage bei Papa zählen nicht)",
     "📜 Abzüge stehen im Verlauf, das Kind sieht den Hinweis auf seinem Handy"]},
