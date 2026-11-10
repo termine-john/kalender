@@ -1708,7 +1708,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v75";
+const APP_VER="v76";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -2906,9 +2906,10 @@ function drawSheet(){
       <label class="f">Fortlaufend bis<input type="date" id="i-wdhbis" value="${d.wdhBis}"></label>
       <p class="hint" id="wdhPrev">${seriesPreview(d)}</p>`:""}
     </div>`:`<div class="box">
-      ${d.serie?`<p class="hint">Teil einer Serie (${d.intervall===7?"jede Woche":"alle 2 Wochen"}, ${series} Einträge).</p>`:""}
+      ${d.serie?`<p class="hint">Teil einer Serie (${d.intervall===7?"jede Woche":d.intervall===365?"jedes Jahr":"alle 2 Wochen"}, ${series} Einträge).</p>`:""}
       <div class="actions"><button class="btn ghost" id="cont7">↻ Jede Woche fortlaufend</button><button class="btn ghost" id="cont14">↻ Alle 2 Wochen fortlaufend</button></div>
-      <p class="hint">Trägt diesen Eintrag ab hier für die nächsten 12 Monate weiter ein. Schon vorhandene Termine der Serie werden nicht doppelt angelegt.</p>
+      <button class="btn ghost" id="cont365" style="width:100%;margin-top:8px">↻ Jedes Jahr fortlaufend</button>
+      <p class="hint">Trägt diesen Eintrag ab hier weiter ein: wöchentlich für die nächsten 12 Monate, jährlich für die nächsten 10 Jahre. Schon vorhandene Termine der Serie werden nicht doppelt angelegt.</p>
     </div>`}
     <div class="actions">
       <button class="btn" id="save">${isEdit?"Änderungen speichern":"Eintragen"}</button>
@@ -2956,6 +2957,7 @@ function drawSheet(){
   $("save").onclick=()=>{read();save()};
   if($("cont7"))$("cont7").onclick=()=>{read();continueSeries(7)};
   if($("cont14"))$("cont14").onclick=()=>{read();continueSeries(14)};
+  if($("cont365"))$("cont365").onclick=()=>{read();continueSeries(365)};
   if($("del"))$("del").onclick=async()=>{read();
     if(d.serie&&series>1){confirmDel=true;drawSheet();return}
     if(await askConfirm(`„${d.typ==="geburtstag"?"Geburtstag "+d.titel:d.titel||TYPN[d.typ]}“ wirklich löschen?`)){const id=editId,old=entries.find(x=>x.id===id);await store.del(id);closeSheet();if(old)undoToast("Gelöscht",()=>store.set(id,strip(old)));else toast("Gelöscht")}};
@@ -3023,9 +3025,12 @@ async function continueSeries(step){
   await store.set(editId,clean({...d,serie,intervall:step}));
   const have=new Set(entries.filter(x=>x.serie===serie).map(x=>x.datum));have.add(d.datum);
   const base=clean({...d,serie,intervall:step});
-  const until=addDays(d.datum,365);closeSheet();let n=0;
-  for(let s=addDays(d.datum,step);s<=until;s=addDays(s,step)){if(have.has(s))continue;await store.add({...base,datum:s,endDatum:span?addDays(s,span):""});n++}
-  toast(n?`${n} weitere Einträge ${step===7?"jede Woche":"alle 2 Wochen"} angelegt`:"Serie ist schon vollständig eingetragen");
+  closeSheet();let n=0;
+  if(step===365){const md=d.datum.slice(5),y0=+d.datum.slice(0,4);
+    for(let y=y0+1;y<=y0+10;y++){let s=y+"-"+md;if(md==="02-29"&&!(y%4===0&&(y%100!==0||y%400===0)))s=y+"-02-28";if(have.has(s))continue;await store.add({...base,datum:s,endDatum:span?addDays(s,span):""});n++}}
+  else{const until=addDays(d.datum,365);
+    for(let s=addDays(d.datum,step);s<=until;s=addDays(s,step)){if(have.has(s))continue;await store.add({...base,datum:s,endDatum:span?addDays(s,span):""});n++}}
+  toast(n?`${n} weitere Einträge ${step===7?"jede Woche":step===365?"jedes Jahr (10 Jahre)":"alle 2 Wochen"} angelegt`:"Serie ist schon vollständig eingetragen");
 }
 
 /* ---------- Foto-Erkennung ---------- */
@@ -3510,6 +3515,8 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-10b",d:"2026-11-10",t:"↻ Jedes Jahr fortlaufend",items:[
+    "↻ Einträge lassen sich jetzt auch jedes Jahr fortlaufend eintragen, für die nächsten 10 Jahre (z. B. Jahrestage, Feste)"]},
   {v:"2026-11-10a",d:"2026-11-10",t:"📅 Ansicht direkt am Kalender",items:[
     "📅 Tag, Woche, Monat und Jahr sitzen jetzt direkt über dem Kalender und bleiben beim Scrollen oben stehen",
     "🎒 Ferien und ⭐ Sterne bleiben oben im Kopfbereich"]},
@@ -3971,7 +3978,7 @@ const I18N={
 "Geburtsjahr (optional)":["Year of birth (optional)","Doğum yılı (isteğe bağlı)","Rok urodzenia (opcjonalnie)","Рік народження (необов'язково)"],
 "Wiederholen":["Repeat","Tekrarla","Powtarzaj","Повторювати"],"Einmalig":["Once","Bir kez","Jednorazowo","Одноразово"],"Jede Woche":["Every week","Her hafta","Co tydzień","Щотижня"],"Alle 2 Wochen":["Every 2 weeks","2 haftada bir","Co 2 tygodnie","Кожні 2 тижні"],
 "An diesen Tagen":["On these days","Bu günlerde","W te dni","У ці дні"],"Fortlaufend bis":["Continue until","Şu tarihe kadar","Do dnia","До дати"],
-"↻ Jede Woche fortlaufend":["↻ Continue weekly","↻ Her hafta devam","↻ Kontynuuj co tydzień","↻ Продовжити щотижня"],"↻ Alle 2 Wochen fortlaufend":["↻ Continue every 2 weeks","↻ 2 haftada bir devam","↻ Kontynuuj co 2 tygodnie","↻ Продовжити кожні 2 тижні"],
+"↻ Jedes Jahr fortlaufend":["↻ Continue yearly","↻ Her yıl devam","↻ Kontynuuj co rok","↻ Продовжити щороку"],"↻ Jede Woche fortlaufend":["↻ Continue weekly","↻ Her hafta devam","↻ Kontynuuj co tydzień","↻ Продовжити щотижня"],"↻ Alle 2 Wochen fortlaufend":["↻ Continue every 2 weeks","↻ 2 haftada bir devam","↻ Kontynuuj co 2 tygodnie","↻ Продовжити кожні 2 тижні"],
 "🔔 Vorher erinnern":["🔔 Remind me before","🔔 Önceden hatırlat","🔔 Przypomnij wcześniej","🔔 Нагадати заздалегідь"],"Nein":["No","Hayır","Nie","Ні"],
 "1 Tag":["1 day","1 gün","1 dzień","1 день"],"3 Tage":["3 days","3 gün","3 dni","3 дні"],"1 Woche":["1 week","1 hafta","1 tydzień","1 тиждень"],"2 Wo.":["2 wks","2 hf.","2 tyg.","2 тиж."],
 "Woran erinnern?":["Remind about what?","Neyi hatırlatayım?","O czym przypomnieć?","Про що нагадати?"],
