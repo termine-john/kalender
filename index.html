@@ -252,6 +252,7 @@ html.kidmode #tAdd,html.kidmode #rAdd,html.kidmode #kpBtn,html.kidmode [data-rwe
 .rate{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.rate .btn{line-height:1.25}.rate small{font-weight:600;opacity:.85}
 .bonusbox{margin-top:8px;padding:8px 10px;border-radius:12px;background:linear-gradient(135deg,rgba(255,209,102,.16),rgba(255,159,28,.1));border:1px solid rgba(255,209,102,.35)}
 .task.pend button[data-rate]{white-space:nowrap;font-size:13px}
+.kidnews{display:grid;gap:10px;max-height:58vh;overflow:auto}.kn{display:flex;gap:10px;align-items:flex-start;background:rgba(127,127,127,.1);border-radius:14px;padding:10px;line-height:1.35}.kni{font-size:28px;flex:none}
 .kidbar{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
 .kidbar .pbar{height:12px;border-radius:99px;background:rgba(127,127,127,.2);overflow:hidden;margin:6px 0 2px}.kidbar .pbar i{display:block;height:100%;background:linear-gradient(90deg,#ffd166,#ff9f1c);border-radius:99px}
 .pend{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center}.pend button{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:10px;padding:6px 10px;font:inherit}
@@ -827,7 +828,7 @@ const KIDKEY=/^[a-z0-9_-]{1,20}$/;
 function setKid(p,g){p=p&&KIDKEY.test(p)?p:"";g=!!(g&&p);if(p===KID&&g===KIDGEM)return;KID=p;KIDGEM=g;
   try{p?localStorage.setItem("fk-kind",JSON.stringify({p,g})):localStorage.removeItem("fk-kind")}catch(e){}
   document.documentElement.classList.toggle("kidmode",!!p);FILTER="";
-  applyNames(NAMES);try{applyPersonStyles()}catch(e){}splitData(_ALL);if(p)view="sterne";render();try{showNews();renderAnn()}catch(e){}}
+  applyNames(NAMES);try{applyPersonStyles()}catch(e){}splitData(_ALL);if(p)view="sterne";render();try{showNews();renderAnn()}catch(e){}if(p)setTimeout(showKidNews,1500)}
 
 const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const parse=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
@@ -946,7 +947,7 @@ async function init(){
     else if(!snap.metadata.fromCache){clearTimeout(timer);setStatus(`${nr}alles übertragen ✓`)}
     else setStatus(`${nr}offline, zeigt gespeicherten Stand`);
     render();
-    if(!snap.metadata.fromCache&&!snap.metadata.hasPendingWrites){scheduleMirror();autoBackup();setTimeout(maybeKidPack,4000);setTimeout(runAbzug,6000);setTimeout(runBonus,8000)}
+    if(!snap.metadata.fromCache&&!snap.metadata.hasPendingWrites){scheduleMirror();autoBackup();setTimeout(maybeKidPack,4000);setTimeout(runAbzug,6000);setTimeout(runBonus,8000);setTimeout(showKidNews,2500)}
   },err=>{clearTimeout(timer);setStatus(err&&err.code==="permission-denied"?"Kein Zugriff · Datenbank-Regeln prüfen (Anleitung Schritt 4)":"Fehler beim Laden der Termine");});
 }
 
@@ -1645,6 +1646,27 @@ function wireBonus(){
     try{await store.conf({bonus:cfg});FAMCONF.bonus=cfg;toast(cfg[p]?`🏆 Bonus für perfekte Tage an für ${PNAME[p]}`:`Bonus für ${PNAME[p]} aus`);render()}catch(e){toast("Speichern ging nicht")}});
   document.querySelectorAll("[data-rate]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();fotoBewerten(b.dataset.rate)});
 }
+/* ---------- Neuigkeiten fürs Kinder-Handy (nur Sterne-System) ---------- */
+const KID_NEWS=[
+  {id:"k5",ic:"📸",t:"Foto-Beweis",x:"Bei Aufgaben mit 📸 machst du beim Abhaken ein Foto vom Ergebnis. Ist alles 100 % perfekt, gibt es doppelte Sterne!"},
+  {id:"k6",ic:"🏆",t:"Perfekte Tage",x:"Schaffst du alle Tagesaufgaben und alle Fotos sind perfekt, bekommst du 3 Extra-Sterne. 3 perfekte Tage hintereinander: 5 Sterne extra. 7 Tage: 10 Sterne extra!"},
+  {id:"k4",ic:"😴",t:"Achtung, Abzug",x:"An jedem Tag, an dem du gar keine Aufgabe machst, wird dir 1 Stern abgezogen."},
+  {id:"k3",ic:"🏠",t:"Pause bei Papa",x:"An den Tagen bei Papa macht das Sterne-System Pause. Dann gibt es keine Aufgaben und keinen Abzug."},
+  {id:"k2",ic:"🎮",t:"Lernspiele",x:"Mit Mathe-Blitz und Deutsch-Detektiv kannst du jeden Tag Sterne erspielen: 8 von 10 richtig gibt 1 Stern, alles richtig 2 Sterne."},
+  {id:"k1",ic:"🔁",t:"Nochmal machen",x:"Wenn Mama oder Papa „Nochmal“ sagen, steht bei der Aufgabe in Orange, was noch fehlt. Mach es fertig und schick ein neues Foto."}];
+let kidNewsShown=false;
+function showKidNews(force){
+  if(!KID||(kidNewsShown&&!force))return;
+  let seen=[];try{seen=JSON.parse(localStorage.getItem("fk-kidnews")||"[]")}catch(e){}
+  const passt=n=>n.id==="k5"?tasks.some(t=>t.foto):n.id==="k6"?!!bonusCfg()[KID]:n.id==="k4"?!!abzugCfg()[KID]:n.id==="k1"?tasks.some(t=>t.foto):true;
+  const neu=KID_NEWS.filter(n=>passt(n)&&(force||!seen.includes(n.id)));if(!neu.length)return;
+  if(document.querySelector("#sheetHost .sheet"))return setTimeout(()=>showKidNews(force),3000);
+  kidNewsShown=true;
+  sheet(`🎉 Neu für dich, ${esc(PNAME[KID]||"")}!`,`<div class="kidnews">${neu.map(n=>`<div class="kn"><span class="kni">${n.ic}</span><div><b>${esc(n.t)}</b><br>${esc(n.x)}</div></div>`).join("")}</div>
+    <div class="actions">${TTS_OK?`<button class="btn ghost" id="knSay">🔊 Vorlesen</button>`:""}<button class="btn" id="knOk">👍 Alles klar!</button></div>`);
+  const ks=document.getElementById("knSay");if(ks)ks.onclick=()=>speak(neu.map(n=>n.t+". "+n.x).join(" "));
+  document.getElementById("knOk").onclick=()=>{try{speechSynthesis.cancel()}catch(e){}try{localStorage.setItem("fk-kidnews",JSON.stringify([...new Set([...seen,...neu.map(n=>n.id)])]))}catch(e){}closeSheet();view="sterne";render()};
+}
 function fixStars(p){
   const cur=starBalance(p);
   sheet(`⭐ Sterne von ${esc(PNAME[p]||"")}`,`<p class="hint">Aktueller Stand: <b>${cur} ⭐</b>. Gib den neuen Stand ein. Die Änderung erscheint im 📜 Verlauf als „Korrektur“.</p>
@@ -1811,9 +1833,11 @@ function showKidSettings(){
     <div class="seg" style="--n:3">${[["dark","🌙 Dunkel"],["light","☀️ Hell"],["auto","📱 Wie Handy"]].map(([k,n])=>`<button class="typ" data-theme-set="${k}" aria-pressed="${themeNow()===k}">${n}</button>`).join("")}</div>
     ${TTS_OK?`<div class="rw"><label class="pick" style="justify-content:space-between"><span>🔊 Beim Abhaken laut loben</span><input type="checkbox" id="optTts" ${ttsAuto()?"checked":""}></label></div>`:""}
     ${pbgBox()}
+    <button class="btn ghost" id="knAgain" style="width:100%">🎉 So funktionieren die Sterne</button>
     <p class="hint">Umstellen können das nur Erwachsene: Einstellungen → Mitglieder & Rechte.</p>
     <button class="btn ghost" id="setClose">Schließen</button>`);
   wireNameBox(null);wirePbg(showSettings);wireLang();
+  {const ka=document.getElementById("knAgain");if(ka)ka.onclick=()=>{closeSheet();setTimeout(()=>showKidNews(true),200)}}
   {const ot=document.getElementById("optTts");if(ot)ot.onchange=()=>{try{localStorage.setItem("fk-tts-auto",ot.checked?"1":"0")}catch(e){}}}
   {const ib=document.getElementById("installSet");if(ib)ib.onclick=()=>{closeSheet();setTimeout(installApp,200)}}
   document.querySelectorAll("[data-theme-set]").forEach(b=>b.onclick=()=>{setTheme(b.dataset.themeSet);showSettings()});
@@ -1866,7 +1890,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v81";
+const APP_VER="v82";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
