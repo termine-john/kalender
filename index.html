@@ -274,6 +274,8 @@ html.kidmode #tAdd,html.kidmode #rAdd,html.kidmode #kpBtn,html.kidmode [data-rwe
 html.lesehilfe body{font-size:1.1em}html.lesehilfe .task .tt,html.lesehilfe .kidbar,html.lesehilfe .kn,html.lesehilfe .spq,html.lesehilfe .spopts button,html.lesehilfe .thema summary{letter-spacing:.04em;word-spacing:.12em;line-height:1.55}
 html.lesehilfe .spopts button{font-size:1.5rem;padding:16px 8px}html.lesehilfe .task .tt{font-size:1.05rem}
 .rw.ziel{border:2px solid #ffd166;box-shadow:0 0 0 3px rgba(255,209,102,.15)}
+.geldbox{border:1px solid var(--line);border-radius:16px;padding:12px;margin:0 0 10px;background:var(--surface)}.geldtop{display:flex;flex-direction:column;align-items:center;gap:2px;margin-bottom:8px}.geldtop b{font-size:2rem;color:#5fd38d}
+.wunsch{border-top:1px solid var(--line);padding:8px 0;display:flex;flex-direction:column;gap:4px}.wunsch .thbar i{display:block;height:100%;background:linear-gradient(90deg,#5fd38d,#ffd166)}
 .kidbar{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
 .kidbar .pbar{height:12px;border-radius:99px;background:rgba(127,127,127,.2);overflow:hidden;margin:6px 0 2px}.kidbar .pbar i{display:block;height:100%;background:linear-gradient(90deg,#ffd166,#ff9f1c);border-radius:99px}
 .pend{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center}.pend button{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:10px;padding:6px 10px;font:inherit}
@@ -831,17 +833,18 @@ const MON=["Jan","Feb","Mär","Apr","Mai","Jun","Jul","Aug","Sep","Okt","Nov","D
 const TYPN={termin:"Termin",arbeit:"Arbeit",urlaub:"Urlaub",ferien:"Ferien",geburtstag:"Geburtstag"};
 const CAL_TYPES=["termin","arbeit","urlaub","ferien","geburtstag"];
 const isGanz=t=>t==="urlaub"||t==="ferien";
-let tasks=[],taskLogs=[],rewards=[],redeems=[],backups=[];
+let tasks=[],taskLogs=[],rewards=[],redeems=[],backups=[],geldBuch=[],wuensche=[];
 function splitData(all){
   _ALL=all;
   if(KID){const ok=p=>p===KID||(KIDGEM&&p==="gemeinsam");
-    all=all.filter(e=>{const t=e.typ;if(t==="sicherung")return false;if(t==="belohnung")return true;if(t==="aufgabe"||t==="erledigt"||t==="einloesung")return e.person===KID;return ok(e.person)})}
+    all=all.filter(e=>{const t=e.typ;if(t==="sicherung")return false;if(t==="belohnung")return true;if(t==="aufgabe"||t==="erledigt"||t==="einloesung"||t==="geld"||t==="wunsch")return e.person===KID;return ok(e.person)})}
   entries=all.filter(e=>!e.typ||CAL_TYPES.includes(e.typ));
   tasks=all.filter(e=>e.typ==="aufgabe");
   taskLogs=all.filter(e=>e.typ==="erledigt");
   rewards=all.filter(e=>e.typ==="belohnung");
   redeems=all.filter(e=>e.typ==="einloesung");
   backups=all.filter(e=>e.typ==="sicherung");
+  geldBuch=all.filter(e=>e.typ==="geld");wuensche=all.filter(e=>e.typ==="wunsch");
   const tb=document.querySelector('[data-view="sterne"]');if(tb)tb.classList.toggle("hasbadge",!KID&&ROLE!=="lesen"&&pendingCount()>0);
 }
 function pendingCount(){return taskLogs.filter(l=>l.offen&&!l.abgelehnt).length+redeems.filter(r=>r.offen).length}
@@ -1458,6 +1461,7 @@ function renderStars(){
     ${KID?`<h3 class="sec">✅ Deine Aufgaben</h3>${hilfe(KID,"fokus")?jetztH():""}${hilfe(KID,"fokus")?`<details class="spaeter"><summary>📋 Alle Aufgaben ansehen</summary>${tlH}</details>`:tlH}${radHTML()}`:""}
     <div class="actions" style="margin:8px 0">${TTS_OK&&tasks.length?`<button class="btn${KID?"":" ghost"}" id="ttsBtn">🔊 Vorlesen</button>`:""}<button class="btn ghost" id="histBtn">📜 Verlauf</button></div>
     ${KID?"":radHTML()}
+    ${kontoHTML()}
     ${spieleHTML()}
     ${KID?`<h3 class="sec">🏅 Deine Abzeichen · ${abzVon(KID).filter(b=>b.ok).length}/${ABZ.length}</h3>${abzHTML(KID,true)}<button class="btn ghost" data-abzshow="${KID}" style="width:100%;margin-top:8px">Alle Abzeichen ansehen</button>`:""}
     ${KID?"":abzugHTML()+bonusHTML()+limitEinst()+hilfenEinst()}
@@ -1469,7 +1473,7 @@ function renderStars(){
     ${last?`<h3 class="sec">Zuletzt eingelöst</h3><ul class="hint" style="margin:0;padding-left:18px">${last}</ul>`:""}
     <button class="btn ghost" id="kpBtn" style="margin-top:12px">🎒 Startpaket: Kinder-Aufgaben & Belohnungen</button>`;
   document.getElementById("kpBtn").onclick=kidPackSheet;
-  document.getElementById("histBtn").onclick=()=>showHistory(KID||"");wireSpiele();wireAbzug();wireBonus();wireLimit();wireHilfen();
+  document.getElementById("histBtn").onclick=()=>showHistory(KID||"");wireSpiele();wireAbzug();wireBonus();wireLimit();wireHilfen();wireGeld();
   document.querySelectorAll("[data-rad]").forEach(b=>b.onclick=()=>radDrehen(b.dataset.rad));
   document.querySelectorAll("[data-abzshow]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();showAbz(b.dataset.abzshow)});
   if(KID)setTimeout(neueAbz,900);
@@ -1490,7 +1494,7 @@ document.getElementById("vOther").addEventListener("click",async ev=>{
   const zb=ev.target.closest("[data-ziel]");if(zb){const id=zb.dataset.ziel;zielSet(zielGet()===id?"":id);render();if(zielGet()){const r=rewards.find(x=>x.id===id);toast(`🎯 Dein Sparziel: ${r?r.titel:""}`)}return}
   const fx=ev.target.closest("[data-fix]");if(fx){fixStars(fx.dataset.fix);return}
   const okb=ev.target.closest("[data-ok]");
-  if(okb){const x=[...taskLogs,...redeems].find(y=>y.id===okb.dataset.ok);if(!x)return;const{id,offen,...o}=x;await store.set(id,o);popPerson=x.person;
+  if(okb){const x=[...taskLogs,...redeems].find(y=>y.id===okb.dataset.ok);if(!x)return;const{id,offen,...o}=x;await store.set(id,o);if(x.typ==="einloesung"&&+x.zuschuss)await zuschussBuchen(x);popPerson=x.person;
     toast(x.typ==="erledigt"?`⭐ +${+x.sterne||1} für ${PNAME[x.person]} bestätigt`:`🎉 „${x.titel}“ für ${PNAME[x.person]} bestätigt`);return}
   const nob=ev.target.closest("[data-no]");
   if(nob){const x=[...taskLogs,...redeems].find(y=>y.id===nob.dataset.no);if(!x)return;if(!await askConfirm(x.typ==="erledigt"?`„${x.titel}“ nicht bestätigen? Die Sterne gibt es dann nicht.`:`„${x.titel}“ ablehnen? Die Sterne bekommt ${PNAME[x.person]} zurück.`,"Ablehnen"))return;await store.del(x.id);toast("Abgelehnt");return}
@@ -1499,9 +1503,9 @@ document.getElementById("vOther").addEventListener("click",async ev=>{
   if(re){const r=rewards.find(x=>x.id===re.dataset.redeem),p=re.dataset.who;if(!r)return;if(sternPause(p)){pauseToast(p);return}
     if(monatVoll(p,r)){toast(`„${r.titel}“ gibt es höchstens ${r.proMonat}× im Monat. Ab dem 1. geht es wieder!`);return}
     if(KID){if(!await askConfirm(`„${r.titel}“ für ${+r.kosten} ⭐ einlösen? Mama oder Papa bekommen Bescheid und bestätigen.`,"Einlösen",false))return;
-      await store.add({typ:"einloesung",person:p,kosten:+r.kosten,titel:r.titel,datum:today});confetti();toast("🎁 Wunsch geschickt! Warte auf die Bestätigung");if(ttsAuto())speak(`Toll! Dein Wunsch ${r.titel} ist verschickt.`);return}
+      await store.add({typ:"einloesung",person:p,kosten:+r.kosten,titel:r.titel,datum:today,...(+r.zuschuss?{zuschuss:+r.zuschuss}:{})});confetti();toast("🎁 Wunsch geschickt! Warte auf die Bestätigung");if(ttsAuto())speak(`Toll! Dein Wunsch ${r.titel} ist verschickt.`);return}
     if(!await askConfirm(`„${r.titel}“ für ${PNAME[p]} einlösen? Dafür werden ${+r.kosten} ⭐ abgezogen.`,"Einlösen",false))return;
-    await store.add({typ:"einloesung",person:p,kosten:+r.kosten,titel:r.titel,datum:today});toast(`🎉 ${PNAME[p]} hat „${r.titel}“ eingelöst`);return}
+    await store.add({typ:"einloesung",person:p,kosten:+r.kosten,titel:r.titel,datum:today,...(+r.zuschuss?{zuschuss:+r.zuschuss}:{})});if(+r.zuschuss)await zuschussBuchen({person:p,zuschuss:+r.zuschuss,titel:r.titel});toast(`🎉 ${PNAME[p]} hat „${r.titel}“ eingelöst${+r.zuschuss?` · ${ctEuro(r.zuschuss)} aufs Ersparte`:""}`);return}
   if(KID&&ev.target.closest("[data-rwedit]"))return;
   const rw=ev.target.closest("[data-rwedit]");if(rw){openRewardSheet(rewards.find(x=>x.id===rw.dataset.rwedit))}
 });
@@ -1661,6 +1665,10 @@ async function runBonus(force){
         if(n===3)await add(`serie3-${p}-${d}`,5,"🔥 3 perfekte Tage in Folge");
         if(n>0&&n%7===0)await add(`serie7-${p}-${d}`,10,`🔥 ${n} perfekte Tage in Folge`);}}
     if(msgs.length)toast(msgs.slice(-2).join(" · "));
+    if(FAMCONF&&!FAMCONF.rewardsV3&&PREM.gruender&&ROLE==="schreiben"&&persons().some(([k,n])=>k==="john"||/^john$/i.test(n))){
+      for(let i=0;i<6;i++){const r=rewards.find(x=>x.id===`kp2-r${i}`);if(r)try{await store.del(r.id)}catch(e){}}
+      for(const [i,[titel,kosten,z]] of ZUSCHUSS_R.entries()){if(rewards.some(r=>r.titel===titel))continue;await store.set(`kp3-r${i}`,{typ:"belohnung",titel,kosten,zuschuss:z,...(z<=500?{proMonat:4}:{})})}
+      await store.conf({rewardsV3:true,rewardsV2:true});FAMCONF.rewardsV3=true;FAMCONF.rewardsV2=true;msgs.push("💶 Belohnungen umgestellt: Sterne werden zu Erspartem")}
     if(FAMCONF&&!FAMCONF.rewardsV2&&PREM.gruender&&ROLE==="schreiben"&&persons().some(([k,n])=>k==="john"||/^john$/i.test(n))){
       for(const [i,[titel,kosten,pm]] of KIDPACK_R2.entries()){if(rewards.some(r=>r.titel===titel))continue;const o={typ:"belohnung",titel,kosten};if(pm)o.proMonat=pm;await store.set(`kp2-r${i}`,o)}
       await store.conf({rewardsV2:true});FAMCONF.rewardsV2=true;msgs.push("🎁 Neue Belohnungen für John: Spiele-Guthaben & Nike")}
@@ -1688,6 +1696,7 @@ function wireBonus(){
 }
 /* ---------- Neuigkeiten fürs Kinder-Handy (nur Sterne-System) ---------- */
 const KID_NEWS=[
+  {id:"k12",ic:"💰",t:"Dein eigenes Geld",x:"Neu: Unter Mein Geld siehst du dein Erspartes und deine Wunschliste. Deine Sterne kannst du gegen echtes Geld für dein Erspartes tauschen. Davon kaufst du dir deine Wünsche selbst, zum Beispiel Nike-Sachen oder Spiele-Guthaben. Wer selbst kauft, bekommt 5 Sterne Stolz-Bonus!"},
   {id:"k11",ic:"🎯",t:"Sparziel & Spar-Zinsen",x:"Neue Belohnungen: Spiele-Guthaben und Nike-Sachen! Tipp bei einer großen Belohnung auf Sparziel, dann siehst du immer, wie viel noch fehlt. Und wer eine ganze Woche nichts ausgibt, bekommt Spar-Zinsen: bis zu 5 Sterne extra!"},
   {id:"k10",ic:"🎯",t:"Jetzt dran",x:"Oben siehst du immer nur die nächsten 3 Aufgaben. Tipp eine an: Dann siehst du kleine Schritte und kannst einen Timer starten. Pro Tag kannst du bis zu 10 Sterne mit Aufgaben und 5 Extra-Sterne verdienen."},
   {id:"k9",ic:"🏅",t:"Level & Abzeichen",x:"Mit jedem Stern steigst du auf: vom Anfänger bis zur Legende! Und du kannst 16 Abzeichen sammeln, zum Beispiel Bett-Profi oder Mathe-Ass."},
@@ -1768,6 +1777,73 @@ const monatVoll=(p,r)=>+r.proMonat>0&&imMonat(p,r)>=+r.proMonat;
 function zielGet(){try{return localStorage.getItem("fk-ziel")||""}catch(e){return ""}}
 function zielSet(id){try{id?localStorage.setItem("fk-ziel",id):localStorage.removeItem("fk-ziel")}catch(e){}}
 const KIDPACK_R2=[["🎮 5 € Spiele-Guthaben",70,2],["🎮 10 € Spiele-Guthaben",130,1],["🧦 Nike Socken",150,0],["🧢 Nike Cap oder Mütze",250,0],["👕 Nike T-Shirt",350,0],["👟 Nike Schuhe (50 € Zuschuss)",600,0]];
+/* ---------- Mein Geld: Erspartes, Wunschliste, Zuschüsse ---------- */
+const ctEuro=c=>((+c||0)/100).toFixed(2).replace(".",",")+" €";
+const geldVon=p=>geldBuch.filter(g=>g.person===p);
+const erspart=p=>geldVon(p).reduce((a,g)=>a+(+g.betrag||0),0);
+const spieleMonat=p=>-geldVon(p).filter(g=>g.art==="spiele"&&(g.datum||"").slice(0,7)===today.slice(0,7)).reduce((a,g)=>a+(+g.betrag||0),0);
+const geldCfg=k=>{const v=FAMCONF&&FAMCONF[k];return v&&typeof v==="object"?v:{}};
+const taschengeld=p=>+geldCfg("taschengeld")[p]||0, spieleMax=p=>+geldCfg("spieleMax")[p]||0;
+const ZUSCHUSS_R=[["💶 2 € für dein Erspartes",25,200],["💶 5 € für dein Erspartes",60,500],["💶 10 € für dein Erspartes",110,1000],["💶 20 € für dein Erspartes",200,2000]];
+async function zuschussBuchen(x){const z=+x.zuschuss||0;if(!z||!store)return;
+  await store.add({typ:"geld",person:x.person,betrag:z,titel:`💶 Sterne getauscht: ${x.titel.replace(/^💶\s*/,"")}`,art:"zuschuss",datum:today});}
+function kontoHTML(){
+  const P=KID?[[KID,PNAME[KID]]]:persons().filter(([k])=>tasks.some(t=>t.person===k)||geldVon(k).length||wuensche.some(w=>w.person===k));if(!P.length)return "";
+  return `<h3 class="sec">💰 ${KID?"Mein Geld":"Erspartes & Wünsche"}</h3>${P.map(([k,n])=>{
+    const e=erspart(k),tg=taschengeld(k),ws=wuensche.filter(w=>w.person===k&&!w.gekauft).sort((a,b)=>(+a.preis)-(+b.preis)),sm=spieleMax(k),sp=spieleMonat(k);
+    const wl=ws.map(w=>{const fehlt=Math.max(0,+w.preis-e),pct=Math.min(100,Math.round(e/(+w.preis||1)*100)),wo=tg&&fehlt?Math.ceil(fehlt/tg):0;
+      return `<div class="wunsch"><div class="rw-head"><b>${esc(w.titel)}</b><span>${ctEuro(w.preis)}</span></div><span class="thbar"><i style="width:${pct}%"></i></span>
+        <span class="meta">${fehlt?`Fehlt noch <b>${ctEuro(fehlt)}</b>${wo?` · mit Taschengeld in ca. ${wo} ${wo===1?"Woche":"Wochen"}`:""}`:`✅ <b>${KID?"Das kannst du dir selbst kaufen!":"Kann es sich selbst kaufen!"}</b>`}</span>
+        ${KID||READONLY?"":`<div class="rw-btns"><button data-wkauf="${esc(w.id)}" ${fehlt?"disabled":""}>🛍️ Selbst gekauft</button><button data-wdel="${esc(w.id)}">Löschen</button></div>`}</div>`}).join("");
+    const last=geldVon(k).slice().sort((a,b)=>(b.datum+(b.erstellt||"")).localeCompare(a.datum+(a.erstellt||""))).slice(0,5);
+    return `<div class="geldbox"><div class="geldtop"><span>${KID?"Dein Erspartes":esc(n)+" hat gespart"}</span><b>${ctEuro(e)}</b>${tg?`<span class="meta">Taschengeld: ${ctEuro(tg)} pro Woche</span>`:""}${sm?`<span class="meta">🎮 Spiele diesen Monat: ${ctEuro(sp)} von max. ${ctEuro(sm)}</span>`:""}</div>
+      ${wl||`<p class="hint">${KID?"Noch keine Wünsche. Sag Mama oder Papa, was du dir wünschst, dann kommt es auf deine Wunschliste.":"Noch keine Wünsche eingetragen."}</p>`}
+      ${KID?`<p class="hint">💡 Tausch Sterne gegen 💶 Geld für dein Erspartes, dann kannst du dir deine Wünsche selbst kaufen! Wer selbst kauft, bekommt +5 ⭐ Stolz-Bonus.</p>`:""}
+      ${last.length?`<details><summary class="meta">Letzte Buchungen</summary>${last.map(g=>`<div class="meta">${fmt(g.datum)}: ${esc(g.titel)} <b style="color:${+g.betrag<0?"#ff6b6b":"#5fd38d"}">${+g.betrag>0?"+":""}${ctEuro(g.betrag)}</b></div>`).join("")}</details>`:""}
+      ${KID||READONLY?"":`<div class="rw-btns"><button data-gbuch="${k}:ein">➕ Geld rein</button><button data-gbuch="${k}:aus">➖ Ausgabe</button><button data-wneu="${k}">⭐ Wunsch</button><button data-gset="${k}">⚙️</button></div>`}</div>`}).join("")}`;
+}
+const euroIn=v=>Math.round(parseFloat(String(v||"").replace(",","."))*100)||0;
+function geldBuchen(p,richt){
+  sheet(richt==="ein"?`➕ Geld für ${esc(PNAME[p]||"")}`:`➖ Ausgabe von ${esc(PNAME[p]||"")}`,`<p class="hint">Erspartes jetzt: <b>${ctEuro(erspart(p))}</b></p>
+    <label class="f">Betrag in €<input id="gB" inputmode="decimal" placeholder="z. B. 10 oder 4,50"></label>
+    <label class="f">Wofür?<input id="gT" maxlength="60" placeholder="${richt==="ein"?"z. B. Taschengeld, Geld von Oma":"z. B. Spiele-Guthaben, Süßigkeiten"}"></label>
+    ${richt==="aus"?`<label class="f">Art<select id="gA"><option value="aus">Sonstiges</option><option value="spiele">🎮 Online-Spiele</option></select></label>`:`<label class="f">Art<select id="gA"><option value="taschengeld">Taschengeld</option><option value="geschenk">Geschenk</option><option value="ein">Sonstiges</option></select></label>`}
+    <div class="actions"><button class="btn" id="gOk">Speichern</button><button class="btn ghost" id="gX">Abbrechen</button></div>`);
+  document.getElementById("gX").onclick=closeSheet;
+  document.getElementById("gOk").onclick=async()=>{const b=euroIn(document.getElementById("gB").value),t=document.getElementById("gT").value.trim().slice(0,60),a=document.getElementById("gA").value;
+    if(b<=0){toast("Bitte einen Betrag eingeben");return}
+    if(richt==="aus"){if(b>erspart(p)&&!await askConfirm(`Das ist mehr, als ${PNAME[p]} gespart hat (${ctEuro(erspart(p))}). Trotzdem buchen?`,"Trotzdem"))return;
+      if(a==="spiele"&&spieleMax(p)&&spieleMonat(p)+b>spieleMax(p)&&!await askConfirm(`Damit wären es diesen Monat ${ctEuro(spieleMonat(p)+b)} für Spiele, das Limit ist ${ctEuro(spieleMax(p))}. Trotzdem buchen?`,"Trotzdem"))return}
+    closeSheet();await store.add({typ:"geld",person:p,betrag:richt==="ein"?b:-b,titel:t||(a==="taschengeld"?"Taschengeld":a==="geschenk"?"Geschenk":a==="spiele"?"🎮 Online-Spiel":richt==="ein"?"Einzahlung":"Ausgabe"),art:a,datum:today});toast("Gebucht ✓")};
+}
+function wunschNeu(p){
+  sheet(`⭐ Wunsch für ${esc(PNAME[p]||"")}`,`<p class="hint">Auf die Wunschliste kommt, was ${esc(PNAME[p]||"")} sich <b>selbst</b> von seinem Ersparten kaufen soll. Die App zeigt, wie viel noch fehlt.</p>
+    <label class="f">Was?<input id="wT" maxlength="60" placeholder="z. B. 👟 Nike Air Max"></label><label class="f">Preis in €<input id="wP" inputmode="decimal" placeholder="z. B. 89,99"></label>
+    <div class="actions"><button class="btn" id="wOk">Auf die Wunschliste</button><button class="btn ghost" id="wX">Abbrechen</button></div>`);
+  document.getElementById("wX").onclick=closeSheet;
+  document.getElementById("wOk").onclick=async()=>{const t=document.getElementById("wT").value.trim().slice(0,60),pr=euroIn(document.getElementById("wP").value);if(!t||pr<=0){toast("Bitte Wunsch und Preis eingeben");return}
+    closeSheet();await store.add({typ:"wunsch",person:p,titel:t,preis:pr});toast("⭐ Auf der Wunschliste")};
+}
+function geldEinst(p){
+  sheet(`⚙️ Geld-Einstellungen: ${esc(PNAME[p]||"")}`,`<label class="f">Taschengeld pro Woche in € (nur für die Berechnung „in X Wochen“)<input id="gsT" inputmode="decimal" value="${taschengeld(p)?String(taschengeld(p)/100).replace(".",","):""}" placeholder="z. B. 3"></label>
+    <label class="f">Höchstens für Online-Spiele pro Monat in € (leer = kein Limit)<input id="gsS" inputmode="decimal" value="${spieleMax(p)?String(spieleMax(p)/100).replace(".",","):""}" placeholder="z. B. 10"></label>
+    <div class="actions"><button class="btn" id="gsOk">Speichern</button><button class="btn ghost" id="gsX">Abbrechen</button></div>`);
+  document.getElementById("gsX").onclick=closeSheet;
+  document.getElementById("gsOk").onclick=async()=>{const t={...geldCfg("taschengeld"),[p]:euroIn(document.getElementById("gsT").value)},s2={...geldCfg("spieleMax"),[p]:euroIn(document.getElementById("gsS").value)};
+    try{await store.conf({taschengeld:t,spieleMax:s2});FAMCONF.taschengeld=t;FAMCONF.spieleMax=s2;closeSheet();toast("Gespeichert ✓");render()}catch(e){toast("Speichern ging nicht")}};
+}
+function wireGeld(){
+  document.querySelectorAll("[data-gbuch]").forEach(b=>b.onclick=()=>{const [p,r]=b.dataset.gbuch.split(":");geldBuchen(p,r)});
+  document.querySelectorAll("[data-wneu]").forEach(b=>b.onclick=()=>wunschNeu(b.dataset.wneu));
+  document.querySelectorAll("[data-gset]").forEach(b=>b.onclick=()=>geldEinst(b.dataset.gset));
+  document.querySelectorAll("[data-wdel]").forEach(b=>b.onclick=async()=>{const w=wuensche.find(x=>x.id===b.dataset.wdel);if(!w||!await askConfirm(`„${w.titel}“ von der Wunschliste löschen?`))return;await store.del(w.id)});
+  document.querySelectorAll("[data-wkauf]").forEach(b=>b.onclick=async()=>{const w=wuensche.find(x=>x.id===b.dataset.wkauf);if(!w)return;
+    if(!await askConfirm(`Hat ${PNAME[w.person]} „${w.titel}“ selbst gekauft? ${ctEuro(w.preis)} werden vom Ersparten abgezogen, und es gibt +5 ⭐ Stolz-Bonus.`,"Ja, selbst gekauft"))return;
+    await store.add({typ:"geld",person:w.person,betrag:-(+w.preis),titel:`🛍️ Selbst gekauft: ${w.titel}`,art:"kauf",datum:today});
+    const{id,...o}=w;await store.set(id,{...o,gekauft:today});
+    const st=capSterne(w.person,today,"sonder",5);if(st)await store.add({typ:"erledigt",aufgabe:"bonus",person:w.person,sterne:st,datum:today,titel:`🛍️ Stolz-Bonus: ${w.titel} selbst gekauft`});
+    confetti();toast(`🛍️ Super! ${PNAME[w.person]} hat es sich selbst gekauft${st?` · +${st} ⭐`:""}`)});
+}
 function fixStars(p){
   const cur=starBalance(p);
   sheet(`⭐ Sterne von ${esc(PNAME[p]||"")}`,`<p class="hint">Aktueller Stand: <b>${cur} ⭐</b>. Gib den neuen Stand ein. Die Änderung erscheint im 📜 Verlauf als „Korrektur“.</p>
@@ -2084,13 +2160,14 @@ function openRewardSheet(r){
   const draw=()=>{sheet(r?"Belohnung bearbeiten":"Neue Belohnung",`
     <label class="f">Belohnung<input id="rTit" value="${esc(d.titel)}" placeholder="z. B. Kinobesuch, Pizza-Abend"></label>
     <label class="f">Kostet so viele Sterne<input id="rCost" type="number" inputmode="numeric" min="1" max="999" value="${+d.kosten||10}"></label>
+    <label class="f">Geld fürs Ersparte in € (optional)<input id="rZu" inputmode="decimal" value="${+d.zuschuss?String(d.zuschuss/100).replace(".",","):""}" placeholder="leer = kein Geld"></label>
     <label class="f">Höchstens pro Monat<select id="rMon">${[[0,"unbegrenzt"],[1,"1×"],[2,"2×"],[4,"4×"]].map(([v,n])=>`<option value="${v}" ${(+d.proMonat||0)===v?"selected":""}>${n}</option>`).join("")}</select></label>
     <div class="actions"><button class="btn" id="rSave">${r?"Speichern":"Belohnung anlegen"}</button><button class="btn ghost" id="rCancel">Abbrechen</button></div>
     ${r?`<button class="btn danger" id="rDel">Belohnung löschen</button>`:""}`);
     const $=id=>document.getElementById(id);
     $("rCancel").onclick=closeSheet;
     $("rSave").onclick=async()=>{const ti=$("rTit").value.trim(),k=Math.max(1,Math.min(999,parseInt($("rCost").value,10)||0));if(!ti){toast("Bitte eine Belohnung eintragen");return}if(!store)return;
-      closeSheet();const o={typ:"belohnung",titel:ti.slice(0,120),kosten:k};const pm=+$("rMon").value;if(pm)o.proMonat=pm;if(r)await store.set(r.id,o);else await store.add(o);toast("Gespeichert")};
+      closeSheet();const o={typ:"belohnung",titel:ti.slice(0,120),kosten:k};const pm=+$("rMon").value;if(pm)o.proMonat=pm;const zu=euroIn($("rZu").value);if(zu>0)o.zuschuss=zu;if(r)await store.set(r.id,o);else await store.add(o);toast("Gespeichert")};
     if($("rDel"))$("rDel").onclick=async()=>{d.titel=$("rTit").value;d.kosten=$("rCost").value;if(!await askConfirm(`Belohnung „${r.titel}“ wirklich löschen?`))return;closeSheet();await store.del(r.id);toast("Belohnung gelöscht")};
   };draw();
 }
@@ -2099,7 +2176,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v86";
+const APP_VER="v87";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -3906,6 +3983,11 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-11e",d:"2026-11-11",t:"💰 Erspartes & Wunschliste",items:[
+    "💰 Neues Geld-Konto pro Kind: Taschengeld, Geschenke und Ausgaben eintragen, das Kind sieht sein Erspartes",
+    "⭐ Wunschliste mit Preis: Die App zeigt, wie viel noch fehlt und wie viele Wochen Taschengeld das sind",
+    "💶 Belohnungen können Geld fürs Ersparte sein. So kauft sich das Kind seine Wünsche selbst, mit +5 ⭐ Stolz-Bonus",
+    "🎮 Optionales Monatslimit für Online-Spiele-Ausgaben"]},
   {v:"2026-11-11d",d:"2026-11-11",t:"🎯 Sparziel & Monatslimit",items:[
     "🎯 Sparziel: Kinder wählen eine große Belohnung und sehen immer, wie viele Sterne noch fehlen",
     "🗓️ Belohnungen können ein Monatslimit haben (z. B. Spiele-Guthaben höchstens 2× im Monat)",
