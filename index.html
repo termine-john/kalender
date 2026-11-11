@@ -253,6 +253,8 @@ html.kidmode #tAdd,html.kidmode #rAdd,html.kidmode #kpBtn,html.kidmode [data-rwe
 .bonusbox{margin-top:8px;padding:8px 10px;border-radius:12px;background:linear-gradient(135deg,rgba(255,209,102,.16),rgba(255,159,28,.1));border:1px solid rgba(255,209,102,.35)}
 .task.pend button[data-rate]{white-space:nowrap;font-size:13px}
 .kidnews{display:grid;gap:10px;max-height:58vh;overflow:auto}.kn{display:flex;gap:10px;align-items:flex-start;background:rgba(127,127,127,.1);border-radius:14px;padding:10px;line-height:1.35}.kni{font-size:28px;flex:none}
+.loesungen{margin:8px 0 4px;border:1px solid var(--line);border-radius:14px;padding:8px 10px;max-height:46vh;overflow:auto}.loesungen summary{cursor:pointer;font-weight:700;padding:4px 0}
+.lsg{display:flex;gap:8px;padding:7px 0;border-top:1px solid var(--line);line-height:1.35;font-size:14px}.lsg .lnr{flex:none}.lsg.no{background:rgba(255,107,107,.07)}.lfal{color:#ff6b6b}.lgut{color:#5fd38d}
 .kidbar{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
 .kidbar .pbar{height:12px;border-radius:99px;background:rgba(127,127,127,.2);overflow:hidden;margin:6px 0 2px}.kidbar .pbar i{display:block;height:100%;background:linear-gradient(90deg,#ffd166,#ff9f1c);border-radius:99px}
 .pend{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center}.pend button{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:10px;padding:6px 10px;font:inherit}
@@ -1740,7 +1742,7 @@ function spielStart(sp){
 }
 function spielRunde(sp,p){
   if(p&&sternPause(p)){pauseToast(p);return}
-  const lvl=p?spielLvl(p,sp):1,N=10,G={i:0,ok:0,zeit:sp==="mathe"?(lvl===1?15:13):14,eing:"",auf:null,t0:0,tim:null,fertig:false};
+  const lvl=p?spielLvl(p,sp):1,N=10,G={i:0,ok:0,zeit:sp==="mathe"?(lvl===1?15:13):14,eing:"",auf:null,t0:0,tim:null,fertig:false,log:[]};
   const vorlesen=sp==="deutsch"&&TTS_OK,autoV=vorlesen&&(()=>{try{return localStorage.getItem("fk-spiel-tts")!=="0"}catch(e){return true}})();
   const sagFrage=()=>speak(G.auf.q);
   const neu=()=>{G.auf=sp==="mathe"?matheAufgabe(lvl):deutschAufgabe(lvl);G.eing="";G.t0=Date.now()+(autoV?2500:0);draw();if(autoV)sagFrage();
@@ -1765,7 +1767,7 @@ function spielRunde(sp,p){
     document.getElementById("spStop").onclick=()=>{clearInterval(G.tim);closeSheet()};
   };
   let busy=false;
-  const antwort=v=>{if(busy)return;busy=true;clearInterval(G.tim);const A=G.auf,ok=v!==null&&String(v)===A.a;
+  const antwort=v=>{if(busy)return;busy=true;clearInterval(G.tim);const A=G.auf,ok=v!==null&&String(v)===A.a;G.log.push({q:A.q,opts:A.opts||null,v,a:A.a,ok});
     if(ok){G.ok++;const t=(Date.now()-G.t0)/1000;if(t<G.zeit*.5)G.zeit=Math.max(sp==="mathe"?7:8,G.zeit-1)}else G.zeit=Math.min(20,G.zeit+2);
     const fb=document.getElementById("spFb");if(fb)fb.innerHTML=ok?`<b style="color:#5fd38d">✓ Richtig!</b>`:`<b style="color:#ff6b6b">${v===null?"⏰ Zeit ist um!":"✗ Leider falsch."}</b> Richtig ist: <b>${esc(A.a)}</b>${A.hint?`<br><span class="hint">${esc(A.hint)}</span>`:""}`;
     document.querySelectorAll(".spiel button").forEach(b=>b.disabled=true);
@@ -1782,6 +1784,10 @@ function spielRunde(sp,p){
       <h3 style="margin:4px 0">${G.ok} von ${N} richtig</h3><p>${msg}</p>
       ${st?`<p><b style="color:var(--star)">+${st} ⭐</b>${KID?" · sobald Mama oder Papa bestätigt haben":""}</p>`:""}${info?`<p class="hint">${info}</p>`:""}
       ${p&&G.ok>=9&&lvl<3?`<p class="hint">⬆️ Nächstes Mal geht es eine Stufe schwerer.</p>`:""}</div>
+      <details class="loesungen" ${G.ok<N?"open":""}><summary>📋 Lösungen ansehen${G.ok<N?` · ${N-G.ok} ${N-G.ok===1?"Fehler":"Fehler"}`:""}</summary>
+        ${G.log.map((x,i)=>`<div class="lsg ${x.ok?"ok":"no"}"><span class="lnr">${x.ok?"✅":"❌"}</span><div><b>${i+1}. ${esc(x.q)}</b>${x.opts&&x.opts.length===2?`<br><span class="meta">${x.opts.map(esc).join(" oder ")}</span>`:""}
+          <br>${x.ok?`Deine Antwort: <b>${esc(x.a)}</b>`:`${x.v===null?"⏰ Keine Antwort":`Deine Antwort: <b class="lfal">${esc(x.v)}</b>`} · Richtig: <b class="lgut">${esc(x.a)}</b>`}</div></div>`).join("")}
+      </details>
       <div class="actions"><button class="btn" id="spAgain">🔁 Nochmal</button><button class="btn ghost" id="spEnd">Fertig</button></div>`);
     if(KID&&ttsAuto())speak(`${G.ok} von ${N} richtig. ${msg}`);
     document.getElementById("spAgain").onclick=()=>spielRunde(sp,p);
@@ -1890,7 +1896,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v82";
+const APP_VER="v83";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
