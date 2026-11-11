@@ -827,7 +827,7 @@ const KIDKEY=/^[a-z0-9_-]{1,20}$/;
 function setKid(p,g){p=p&&KIDKEY.test(p)?p:"";g=!!(g&&p);if(p===KID&&g===KIDGEM)return;KID=p;KIDGEM=g;
   try{p?localStorage.setItem("fk-kind",JSON.stringify({p,g})):localStorage.removeItem("fk-kind")}catch(e){}
   document.documentElement.classList.toggle("kidmode",!!p);FILTER="";
-  applyNames(NAMES);try{applyPersonStyles()}catch(e){}splitData(_ALL);if(p)view="sterne";render()}
+  applyNames(NAMES);try{applyPersonStyles()}catch(e){}splitData(_ALL);if(p)view="sterne";render();try{showNews();renderAnn()}catch(e){}}
 
 const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
 const parse=s=>{const[y,m,d]=s.split("-").map(Number);return new Date(y,m-1,d)};
@@ -1866,7 +1866,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v80";
+const APP_VER="v81";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -3549,7 +3549,7 @@ function annReader(){const c=getCfg();return IS_READER_SITE||!!(c&&c.lesen)}
 function renderAnn(){
   const el=document.getElementById("annCard");if(!el)return;
   let x="";try{x=localStorage.getItem("fk-ann-x")||""}catch(e){}
-  const a=ANN;const ok=a&&a.id&&a.text&&(!a.bis||a.bis>=today)&&(!annReader()||a.papa)&&x!==a.id;
+  const a=ANN;const ok=!KID&&a&&a.id&&a.text&&(!a.bis||a.bis>=today)&&(!annReader()||a.papa)&&x!==a.id;
   el.hidden=!ok;if(!ok)return;
   document.getElementById("annTxt").innerHTML=`${a.titel?`<b>${esc(a.titel)}</b><br>`:""}<span>${esc(a.text)}</span>`;
 }
@@ -3772,7 +3772,7 @@ let CL_LOADED=false;
 function clReleased(){const fr=CTL.steuerung&&CTL.steuerung.clFrei;const i=fr?CHANGELOG.findIndex(c=>c.v===fr):-1;return i<0?[]:CHANGELOG.slice(i)}
 function showNews(){
   const el=document.getElementById("newCard");if(!el)return;
-  if(IS_READER_SITE||annReader()||!CL_LOADED){el.hidden=true;return}
+  if(IS_READER_SITE||annReader()||!CL_LOADED||KID){el.hidden=true;return}
   const rel=clReleased();if(!rel.length){el.hidden=true;return}
   const top=rel[0].v;
   let seen=null;try{seen=localStorage.getItem("fk-cl-seen")}catch(e){return}
