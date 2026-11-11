@@ -276,6 +276,8 @@ html.lesehilfe .spopts button{font-size:1.5rem;padding:16px 8px}html.lesehilfe .
 .rw.ziel{border:2px solid #ffd166;box-shadow:0 0 0 3px rgba(255,209,102,.15)}
 .geldbox{border:1px solid var(--line);border-radius:16px;padding:12px;margin:0 0 10px;background:var(--surface)}.geldtop{display:flex;flex-direction:column;align-items:center;gap:2px;margin-bottom:8px}.geldtop b{font-size:2rem;color:#5fd38d}
 .wunsch{border-top:1px solid var(--line);padding:8px 0;display:flex;flex-direction:column;gap:4px}.wunsch .thbar i{display:block;height:100%;background:linear-gradient(90deg,#5fd38d,#ffd166)}
+.tausch{margin:10px 0 4px;padding:10px;border-radius:14px;background:linear-gradient(135deg,rgba(95,211,141,.14),rgba(255,209,102,.1));border:1px solid rgba(95,211,141,.35);display:flex;flex-direction:column;gap:6px}
+.tauschbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.tauschbtns button{font:inherit;display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 2px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:inherit}.tauschbtns button:disabled{opacity:.45}.tauschbtns em{font-style:normal;font-size:11px;color:#5fd38d;font-weight:700}
 .kidbar{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
 .kidbar .pbar{height:12px;border-radius:99px;background:rgba(127,127,127,.2);overflow:hidden;margin:6px 0 2px}.kidbar .pbar i{display:block;height:100%;background:linear-gradient(90deg,#ffd166,#ff9f1c);border-radius:99px}
 .pend{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center}.pend button{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:10px;padding:6px 10px;font:inherit}
@@ -1665,10 +1667,13 @@ async function runBonus(force){
         if(n===3)await add(`serie3-${p}-${d}`,5,"🔥 3 perfekte Tage in Folge");
         if(n>0&&n%7===0)await add(`serie7-${p}-${d}`,10,`🔥 ${n} perfekte Tage in Folge`);}}
     if(msgs.length)toast(msgs.slice(-2).join(" · "));
+    if(FAMCONF&&FAMCONF.rewardsV3&&!FAMCONF.rewardsV4&&ROLE==="schreiben"){
+      for(const r of rewards.filter(r=>/^kp3-r/.test(r.id)||/taschengeld/i.test(r.titel||"")))try{await store.del(r.id)}catch(e){}
+      await store.conf({rewardsV4:true});FAMCONF.rewardsV4=true;msgs.push("💶 Neu: Zahltag statt Geld-Belohnungen")}
     if(FAMCONF&&!FAMCONF.rewardsV3&&PREM.gruender&&ROLE==="schreiben"&&persons().some(([k,n])=>k==="john"||/^john$/i.test(n))){
       for(let i=0;i<6;i++){const r=rewards.find(x=>x.id===`kp2-r${i}`);if(r)try{await store.del(r.id)}catch(e){}}
-      for(const [i,[titel,kosten,z]] of ZUSCHUSS_R.entries()){if(rewards.some(r=>r.titel===titel))continue;await store.set(`kp3-r${i}`,{typ:"belohnung",titel,kosten,zuschuss:z,...(z<=500?{proMonat:4}:{})})}
-      await store.conf({rewardsV3:true,rewardsV2:true});FAMCONF.rewardsV3=true;FAMCONF.rewardsV2=true;msgs.push("💶 Belohnungen umgestellt: Sterne werden zu Erspartem")}
+
+      await store.conf({rewardsV3:true,rewardsV2:true});FAMCONF.rewardsV3=true;FAMCONF.rewardsV2=true}
     if(FAMCONF&&!FAMCONF.rewardsV2&&PREM.gruender&&ROLE==="schreiben"&&persons().some(([k,n])=>k==="john"||/^john$/i.test(n))){
       for(const [i,[titel,kosten,pm]] of KIDPACK_R2.entries()){if(rewards.some(r=>r.titel===titel))continue;const o={typ:"belohnung",titel,kosten};if(pm)o.proMonat=pm;await store.set(`kp2-r${i}`,o)}
       await store.conf({rewardsV2:true});FAMCONF.rewardsV2=true;msgs.push("🎁 Neue Belohnungen für John: Spiele-Guthaben & Nike")}
@@ -1696,6 +1701,7 @@ function wireBonus(){
 }
 /* ---------- Neuigkeiten fürs Kinder-Handy (nur Sterne-System) ---------- */
 const KID_NEWS=[
+  {id:"k13",ic:"💶",t:"Zahltag",x:"Einmal pro Woche ist Zahltag. Dann kannst du Sterne in Geld für dein Erspartes tauschen. Tipp: Je mehr Sterne du auf einmal tauschst, desto mehr Geld bekommst du! 100 Sterne geben 12 Euro statt 10. Sparen lohnt sich also."},
   {id:"k12",ic:"💰",t:"Dein eigenes Geld",x:"Neu: Unter Mein Geld siehst du dein Erspartes und deine Wunschliste. Deine Sterne kannst du gegen echtes Geld für dein Erspartes tauschen. Davon kaufst du dir deine Wünsche selbst, zum Beispiel Nike-Sachen oder Spiele-Guthaben. Wer selbst kauft, bekommt 5 Sterne Stolz-Bonus!"},
   {id:"k11",ic:"🎯",t:"Sparziel & Spar-Zinsen",x:"Neue Belohnungen: Spiele-Guthaben und Nike-Sachen! Tipp bei einer großen Belohnung auf Sparziel, dann siehst du immer, wie viel noch fehlt. Und wer eine ganze Woche nichts ausgibt, bekommt Spar-Zinsen: bis zu 5 Sterne extra!"},
   {id:"k10",ic:"🎯",t:"Jetzt dran",x:"Oben siehst du immer nur die nächsten 3 Aufgaben. Tipp eine an: Dann siehst du kleine Schritte und kannst einen Timer starten. Pro Tag kannst du bis zu 10 Sterne mit Aufgaben und 5 Extra-Sterne verdienen."},
@@ -1798,7 +1804,8 @@ function kontoHTML(){
     const last=geldVon(k).slice().sort((a,b)=>(b.datum+(b.erstellt||"")).localeCompare(a.datum+(a.erstellt||""))).slice(0,5);
     return `<div class="geldbox"><div class="geldtop"><span>${KID?"Dein Erspartes":esc(n)+" hat gespart"}</span><b>${ctEuro(e)}</b>${tg?`<span class="meta">Taschengeld: ${ctEuro(tg)} pro Woche</span>`:""}${sm?`<span class="meta">🎮 Spiele diesen Monat: ${ctEuro(sp)} von max. ${ctEuro(sm)}</span>`:""}</div>
       ${wl||`<p class="hint">${KID?"Noch keine Wünsche. Sag Mama oder Papa, was du dir wünschst, dann kommt es auf deine Wunschliste.":"Noch keine Wünsche eingetragen."}</p>`}
-      ${KID?`<p class="hint">💡 Tausch Sterne gegen 💶 Geld für dein Erspartes, dann kannst du dir deine Wünsche selbst kaufen! Wer selbst kauft, bekommt +5 ⭐ Stolz-Bonus.</p>`:""}
+      ${tauschHTML(k)}
+      ${KID?`<p class="hint">💡 Von deinem Ersparten kaufst du dir deine Wünsche selbst. Wer selbst kauft, bekommt +5 ⭐ Stolz-Bonus!</p>`:""}
       ${last.length?`<details><summary class="meta">Letzte Buchungen</summary>${last.map(g=>`<div class="meta">${fmt(g.datum)}: ${esc(g.titel)} <b style="color:${+g.betrag<0?"#ff6b6b":"#5fd38d"}">${+g.betrag>0?"+":""}${ctEuro(g.betrag)}</b></div>`).join("")}</details>`:""}
       ${KID||READONLY?"":`<div class="rw-btns"><button data-gbuch="${k}:ein">➕ Geld rein</button><button data-gbuch="${k}:aus">➖ Ausgabe</button><button data-wneu="${k}">⭐ Wunsch</button><button data-gset="${k}">⚙️</button></div>`}</div>`}).join("")}`;
 }
@@ -1827,12 +1834,39 @@ function wunschNeu(p){
 function geldEinst(p){
   sheet(`⚙️ Geld-Einstellungen: ${esc(PNAME[p]||"")}`,`<label class="f">Taschengeld pro Woche in € (nur für die Berechnung „in X Wochen“)<input id="gsT" inputmode="decimal" value="${taschengeld(p)?String(taschengeld(p)/100).replace(".",","):""}" placeholder="z. B. 3"></label>
     <label class="f">Höchstens für Online-Spiele pro Monat in € (leer = kein Limit)<input id="gsS" inputmode="decimal" value="${spieleMax(p)?String(spieleMax(p)/100).replace(".",","):""}" placeholder="z. B. 10"></label>
+    <label class="f">Zahltag (Sterne in Geld tauschen)<select id="gsZ">${TAGE.map((n2,i)=>`<option value="${i}" ${zahltagTag(p)===i?"selected":""}>${n2}</option>`).join("")}</select></label>
+    <label class="f">Höchstens so viel Geld aus Sternen pro Monat in €<input id="gsM" inputmode="decimal" value="${String(tauschMax(p)/100).replace(".",",")}"></label>
     <div class="actions"><button class="btn" id="gsOk">Speichern</button><button class="btn ghost" id="gsX">Abbrechen</button></div>`);
   document.getElementById("gsX").onclick=closeSheet;
   document.getElementById("gsOk").onclick=async()=>{const t={...geldCfg("taschengeld"),[p]:euroIn(document.getElementById("gsT").value)},s2={...geldCfg("spieleMax"),[p]:euroIn(document.getElementById("gsS").value)};
-    try{await store.conf({taschengeld:t,spieleMax:s2});FAMCONF.taschengeld=t;FAMCONF.spieleMax=s2;closeSheet();toast("Gespeichert ✓");render()}catch(e){toast("Speichern ging nicht")}};
+    const zt={...geldCfg("zahltag"),[p]:+document.getElementById("gsZ").value},tm={...geldCfg("tauschMax"),[p]:euroIn(document.getElementById("gsM").value)};
+    try{await store.conf({taschengeld:t,spieleMax:s2,zahltag:zt,tauschMax:tm});FAMCONF.taschengeld=t;FAMCONF.spieleMax=s2;FAMCONF.zahltag=zt;FAMCONF.tauschMax=tm;closeSheet();toast("Gespeichert ✓");render()}catch(e){toast("Speichern ging nicht")}};
+}
+/* Zahltag: Sterne gegen Geld tauschen */
+const TAUSCH=[[20,200,""],[50,550,"+10 % Bonus"],[100,1200,"+20 % Bonus"]];
+const zahltagTag=p=>{const v=geldCfg("zahltag")[p];return v===undefined||v===""?0:+v};
+const tauschMax=p=>{const v=geldCfg("tauschMax")[p];return v===undefined?1000:+v};
+const TAGE=["Sonntag","Montag","Dienstag","Mittwoch","Donnerstag","Freitag","Samstag"];
+const getauschtMonat=p=>redeems.filter(r=>r.person===p&&r.tausch&&(r.datum||"").slice(0,7)===today.slice(0,7)).reduce((a,r)=>a+(+r.zuschuss||0),0);
+function istZahltag(p){const dow=new Date(today+"T12:00:00").getDay(),z=zahltagTag(p);if(dow===z&&!sternPause(p))return true;
+  const gestern=addDays(today,-1);return dow===(z+1)%7&&istWeg(p,gestern)&&!redeems.some(r=>r.person===p&&r.tausch&&r.datum===gestern)}
+const schonGetauscht=p=>redeems.some(r=>r.person===p&&r.tausch&&mondayOf(r.datum)===mondayOf(today));
+function tauschHTML(p){
+  const b=starBalance(p),zt=istZahltag(p),voll=getauschtMonat(p),max=tauschMax(p),done=schonGetauscht(p);
+  return `<div class="tausch"><b>💶 Zahltag: Sterne gegen Geld</b><span class="meta">Jeden ${TAGE[zahltagTag(p)]} kannst du einmal Sterne in Geld für dein Erspartes tauschen. <b>Je mehr du auf einmal tauschst, desto mehr bekommst du.</b> Diesen Monat: ${ctEuro(voll)} von max. ${ctEuro(max)}.</span>
+    <div class="tauschbtns">${TAUSCH.map(([st,ct,bon])=>{const ok=zt&&!done&&b>=st&&voll+ct<=max;return `<button data-tausch="${p}:${st}" ${ok?"":"disabled"}><b>${st} ⭐</b><span>→ ${ctEuro(ct)}</span>${bon?`<em>${bon}</em>`:""}</button>`}).join("")}</div>
+    <span class="meta">${done?"✅ Diese Woche schon getauscht. Nächster Zahltag: "+TAGE[zahltagTag(p)]:zt?(voll>=max?"Für diesen Monat ist das Tausch-Limit erreicht.":"Heute ist Zahltag! 🎉"):`Nächster Zahltag: ${TAGE[zahltagTag(p)]}. Bis dahin weitersammeln lohnt sich!`}</span></div>`;
+}
+async function tauschen(p,st){
+  const t=TAUSCH.find(x=>x[0]===st);if(!t)return;const [,ct]=t;
+  if(!istZahltag(p)||schonGetauscht(p)||starBalance(p)<st||getauschtMonat(p)+ct>tauschMax(p)){toast("Tauschen geht gerade nicht");return}
+  if(!await askConfirm(`${st} ⭐ gegen ${ctEuro(ct)} für ${KID?"dein":"das"} Erspartes tauschen?${KID?" Mama oder Papa bestätigen das noch.":""}`,"Tauschen",false))return;
+  await store.add({typ:"einloesung",person:p,kosten:st,titel:`💶 Zahltag: ${st} ⭐ → ${ctEuro(ct)}`,zuschuss:ct,tausch:true,datum:today});
+  if(!KID)await zuschussBuchen({person:p,zuschuss:ct,titel:`Zahltag ${st} ⭐`});
+  confetti();toast(KID?"💶 Getauscht! Sobald Mama oder Papa bestätigen, ist das Geld auf deinem Konto.":`💶 ${ctEuro(ct)} aufs Ersparte von ${PNAME[p]}`);
 }
 function wireGeld(){
+  document.querySelectorAll("[data-tausch]").forEach(b=>b.onclick=()=>{const [p,st]=b.dataset.tausch.split(":");tauschen(p,+st)});
   document.querySelectorAll("[data-gbuch]").forEach(b=>b.onclick=()=>{const [p,r]=b.dataset.gbuch.split(":");geldBuchen(p,r)});
   document.querySelectorAll("[data-wneu]").forEach(b=>b.onclick=()=>wunschNeu(b.dataset.wneu));
   document.querySelectorAll("[data-gset]").forEach(b=>b.onclick=()=>geldEinst(b.dataset.gset));
@@ -2176,7 +2210,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v87";
+const APP_VER="v88";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -3983,6 +4017,10 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-11f",d:"2026-11-11",t:"💶 Zahltag",items:[
+    "💶 Sterne lassen sich einmal pro Woche am Zahltag in Geld fürs Ersparte tauschen, nicht jederzeit",
+    "📈 Wer mehr auf einmal tauscht, bekommt mehr: 20 ⭐ = 2 €, 50 ⭐ = 5,50 €, 100 ⭐ = 12 €",
+    "🔒 Monatsgrenze für Geld aus Sternen (Standard 10 €), damit Sterne nicht nur noch Lohn sind"]},
   {v:"2026-11-11e",d:"2026-11-11",t:"💰 Erspartes & Wunschliste",items:[
     "💰 Neues Geld-Konto pro Kind: Taschengeld, Geschenke und Ausgaben eintragen, das Kind sieht sein Erspartes",
     "⭐ Wunschliste mit Preis: Die App zeigt, wie viel noch fehlt und wie viele Wochen Taschengeld das sind",
