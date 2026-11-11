@@ -249,6 +249,9 @@ html.kidmode #tAdd,html.kidmode #rAdd,html.kidmode #kpBtn,html.kidmode [data-rwe
 .starcard{position:relative}.stfix{margin-top:6px;font:inherit;font-size:11.5px;padding:3px 9px;border-radius:99px;border:1px solid var(--line);background:transparent;color:var(--muted)}
 .pausebox{background:rgba(124,160,245,.15);border:1px solid rgba(124,160,245,.4);border-radius:12px;padding:10px;margin:0 0 10px;text-align:center}
 .task.paused{opacity:.45}.task.paused .chk{pointer-events:none}
+.rate{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:12px 0}.rate .btn{line-height:1.25}.rate small{font-weight:600;opacity:.85}
+.bonusbox{margin-top:8px;padding:8px 10px;border-radius:12px;background:linear-gradient(135deg,rgba(255,209,102,.16),rgba(255,159,28,.1));border:1px solid rgba(255,209,102,.35)}
+.task.pend button[data-rate]{white-space:nowrap;font-size:13px}
 .kidbar{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
 .kidbar .pbar{height:12px;border-radius:99px;background:rgba(127,127,127,.2);overflow:hidden;margin:6px 0 2px}.kidbar .pbar i{display:block;height:100%;background:linear-gradient(90deg,#ffd166,#ff9f1c);border-radius:99px}
 .pend{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center}.pend button{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:10px;padding:6px 10px;font:inherit}
@@ -819,7 +822,7 @@ function splitData(all){
   backups=all.filter(e=>e.typ==="sicherung");
   const tb=document.querySelector('[data-view="sterne"]');if(tb)tb.classList.toggle("hasbadge",!KID&&ROLE!=="lesen"&&pendingCount()>0);
 }
-function pendingCount(){return taskLogs.filter(l=>l.offen).length+redeems.filter(r=>r.offen).length}
+function pendingCount(){return taskLogs.filter(l=>l.offen&&!l.abgelehnt).length+redeems.filter(r=>r.offen).length}
 const KIDKEY=/^[a-z0-9_-]{1,20}$/;
 function setKid(p,g){p=p&&KIDKEY.test(p)?p:"";g=!!(g&&p);if(p===KID&&g===KIDGEM)return;KID=p;KIDGEM=g;
   try{p?localStorage.setItem("fk-kind",JSON.stringify({p,g})):localStorage.removeItem("fk-kind")}catch(e){}
@@ -943,7 +946,7 @@ async function init(){
     else if(!snap.metadata.fromCache){clearTimeout(timer);setStatus(`${nr}alles übertragen ✓`)}
     else setStatus(`${nr}offline, zeigt gespeicherten Stand`);
     render();
-    if(!snap.metadata.fromCache&&!snap.metadata.hasPendingWrites){scheduleMirror();autoBackup();setTimeout(maybeKidPack,4000);setTimeout(runAbzug,6000)}
+    if(!snap.metadata.fromCache&&!snap.metadata.hasPendingWrites){scheduleMirror();autoBackup();setTimeout(maybeKidPack,4000);setTimeout(runAbzug,6000);setTimeout(runBonus,8000)}
   },err=>{clearTimeout(timer);setStatus(err&&err.code==="permission-denied"?"Kein Zugriff · Datenbank-Regeln prüfen (Anleitung Schritt 4)":"Fehler beim Laden der Termine");});
 }
 
@@ -1386,7 +1389,7 @@ function showWidgetImage(){
 /* ---------- Aufgaben & Belohnungssterne ---------- */
 const WIED={einmalig:"Einmalig",taeglich:"Jeden Tag",woechentlich:"Jede Woche"};
 function logFor(t){
-  const ls=taskLogs.filter(l=>l.aufgabe===t.id);
+  const ls=taskLogs.filter(l=>l.aufgabe===t.id&&!l.abgelehnt);
   if(t.wiederholung==="taeglich")return ls.find(l=>l.datum===today);
   if(t.wiederholung==="woechentlich")return ls.find(l=>mondayOf(l.datum)===mondayOf(today));
   return ls[0];
@@ -1409,7 +1412,7 @@ function renderStars(){
   const vis=tasks.filter(t=>{const l=logFor(t);return !(t.wiederholung==="einmalig"&&l&&l.datum<today)});
   vis.sort((a,b)=>(!!logFor(a))-(!!logFor(b))||String(a.person).localeCompare(b.person));
   const row=t=>{const l=logFor(t);return `<div class="task${l?" done":""}${sternPause(t.person)?" paused":""}"><button class="chk" data-done="${esc(t.id)}" aria-label="${l?"Als nicht erledigt markieren":"Erledigt"}: ${esc(t.titel)}">${l?(l.offen?"⏳":"✓"):""}</button>
-    <button class="tt" data-task="${esc(t.id)}">${esc(t.titel)}<br><span class="meta"><span class="p-${t.person}" style="background:none;font-weight:700">${esc(PNAME[t.person]||"")}</span> · ${WIED[t.wiederholung]||"Einmalig"}${l&&l.offen?" · wartet auf Bestätigung":""}</span></button>
+    <button class="tt" data-task="${esc(t.id)}">${esc(t.titel)}<br><span class="meta"><span class="p-${t.person}" style="background:none;font-weight:700">${esc(PNAME[t.person]||"")}</span> · ${WIED[t.wiederholung]||"Einmalig"}${t.foto?" · 📸 mit Foto":""}${l&&l.offen?" · wartet auf Bestätigung":""}${!l&&abgelehntVon(t)?`</span><br><span class="meta" style="color:#ff9f6b;font-weight:700">🔁 Nochmal: ${esc(abgelehntVon(t).hinweis||"")}`:""}</span></button>
     <span class="st">${"⭐".repeat(Math.min(+t.sterne||1,5))}</span></div>`};
   const tl=THEMEN.map(([k,ic,nm])=>{const ts=vis.filter(t=>taskThema(t)===k);if(!ts.length)return "";
     const done=ts.filter(t=>logFor(t)).length,offen=ts.filter(t=>!logFor(t)).reduce((a,t)=>a+(+t.sterne||1),0),pct=Math.round(done/ts.length*100);
@@ -1418,18 +1421,18 @@ function renderStars(){
   const rws=rewards.slice().sort((a,b)=>(+a.kosten)-(+b.kosten)).map(r=>`<div class="rw"><div class="rw-head"><b>${esc(r.titel)}</b><span class="st" style="color:var(--star);font-weight:700">${+r.kosten} ⭐</span></div>
     <div class="rw-btns">${P.map(([k,n])=>`<button data-redeem="${esc(r.id)}" data-who="${k}" ${starBalance(k)>=+r.kosten?"":"disabled"}>${KID?(starBalance(k)>=+r.kosten?"🎁 Einlösen":`🔒 noch ${+r.kosten-starBalance(k)} ⭐`):"Einlösen für "+esc(n)}</button>`).join("")}<button data-rwedit="${esc(r.id)}">Bearbeiten</button></div></div>`).join("");
   const last=redeems.slice().sort((a,b)=>a.datum<b.datum?1:-1).slice(0,5).map(r=>`<li>${fmt(r.datum)}: ${esc(PNAME[r.person]||"")} hat „${esc(r.titel)}“ eingelöst (−${+r.kosten} ⭐)${r.offen?" · ⏳ wartet auf Bestätigung":""}</li>`).join("");
-  const pend=[...taskLogs.filter(l=>l.offen).map(l=>({id:l.id,txt:`${esc(PNAME[l.person]||"")}: „${esc(l.titel)}“ erledigt`,st:`+${+l.sterne||1} ⭐`})),...redeems.filter(r=>r.offen).map(r=>({id:r.id,txt:`${esc(PNAME[r.person]||"")} möchte „${esc(r.titel)}“ einlösen`,st:`−${+r.kosten} ⭐`}))];
-  const pendH=!KID&&!READONLY&&pend.length?`<h3 class="sec">✅ Zu bestätigen</h3><div class="tasklist">${pend.map(x=>`<div class="task pend"><span>${x.txt} <b style="color:var(--star)">${x.st}</b></span><button data-ok="${esc(x.id)}" aria-label="Bestätigen">✅</button><button data-no="${esc(x.id)}" aria-label="Ablehnen">✖</button></div>`).join("")}</div>`:"";
+  const pend=[...taskLogs.filter(l=>l.offen&&!l.abgelehnt).map(l=>({id:l.id,foto:!!l.foto,txt:`${l.foto?"📸 ":""}${esc(PNAME[l.person]||"")}: „${esc(l.titel)}“ erledigt`,st:`+${+l.sterne||1} ⭐`})),...redeems.filter(r=>r.offen).map(r=>({id:r.id,txt:`${esc(PNAME[r.person]||"")} möchte „${esc(r.titel)}“ einlösen`,st:`−${+r.kosten} ⭐`}))];
+  const pendH=!KID&&!READONLY&&pend.length?`<h3 class="sec">✅ Zu bestätigen</h3><div class="tasklist">${pend.map(x=>`<div class="task pend"><span>${x.txt} <b style="color:var(--star)">${x.st}</b></span>${x.foto?`<button data-rate="${esc(x.id)}" aria-label="Foto ansehen und bewerten">📸 ansehen</button>`:`<button data-ok="${esc(x.id)}" aria-label="Bestätigen">✅</button>`}<button data-no="${esc(x.id)}" aria-label="Ablehnen">✖</button></div>`).join("")}</div>`:"";
   let kidH="";
-  if(KID){const b=starBalance(KID),nx=rewards.filter(r=>+r.kosten>b).sort((a,b2)=>(+a.kosten)-(+b2.kosten))[0],np=taskLogs.filter(l=>l.offen).reduce((a,l)=>a+(+l.sterne||0),0);
-    const heute=taskLogs.filter(l=>l.person===KID&&l.datum===today).reduce((a,l)=>a+(+l.sterne||0),0),noch=vis.filter(t=>t.person===KID&&!logFor(t)).reduce((a,t)=>a+(+t.sterne||1),0);
-    kidH=`<div class="kidbar">${sternPause(KID)?`<div class="pausebox">🏠 <b>Heute bist du bei Papa.</b><br>Das Sterne-System macht Pause: keine Aufgaben, kein Abzug. Morgen geht es weiter!</div>`:""}<b>Hallo ${esc(PNAME[KID]||"")}! 👋</b><div class="kidsum"><span>⭐ Heute verdient<b>+${heute}</b></span><span>🎯 Noch möglich<b>${noch}</b></span><span>💰 Kontostand<b>${b}</b></span></div>${nx?`<div class="pbar"><i style="width:${Math.min(100,Math.round(b/(+nx.kosten)*100))}%"></i></div><span class="meta">Nächstes Ziel: <b>${esc(nx.titel)}</b> · noch ${+nx.kosten-b} ⭐</span>`:rewards.length?`<br><span class="meta">Du kannst dir jede Belohnung leisten! 🎉</span>`:""}${np?`<br><span class="meta">⏳ ${np} ⭐ warten noch auf Bestätigung</span>`:""}${abzugHTML()}</div>`}
+  if(KID){const b=starBalance(KID),nx=rewards.filter(r=>+r.kosten>b).sort((a,b2)=>(+a.kosten)-(+b2.kosten))[0],np=taskLogs.filter(l=>l.offen&&!l.abgelehnt).reduce((a,l)=>a+(+l.sterne||0),0);
+    const heute=taskLogs.filter(l=>l.person===KID&&l.datum===today&&!l.abgelehnt).reduce((a,l)=>a+(+l.sterne||0),0),noch=vis.filter(t=>t.person===KID&&!logFor(t)).reduce((a,t)=>a+(+t.sterne||1),0);
+    kidH=`<div class="kidbar">${sternPause(KID)?`<div class="pausebox">🏠 <b>Heute bist du bei Papa.</b><br>Das Sterne-System macht Pause: keine Aufgaben, kein Abzug. Morgen geht es weiter!</div>`:""}<b>Hallo ${esc(PNAME[KID]||"")}! 👋</b><div class="kidsum"><span>⭐ Heute verdient<b>+${heute}</b></span><span>🎯 Noch möglich<b>${noch}</b></span><span>💰 Kontostand<b>${b}</b></span></div>${nx?`<div class="pbar"><i style="width:${Math.min(100,Math.round(b/(+nx.kosten)*100))}%"></i></div><span class="meta">Nächstes Ziel: <b>${esc(nx.titel)}</b> · noch ${+nx.kosten-b} ⭐</span>`:rewards.length?`<br><span class="meta">Du kannst dir jede Belohnung leisten! 🎉</span>`:""}${np?`<br><span class="meta">⏳ ${np} ⭐ warten noch auf Bestätigung</span>`:""}${abzugHTML()}${bonusHTML()}</div>`}
   const tlH=tl||'<p class="hint">Noch keine Aufgaben. Leg zum Beispiel „Zimmer aufräumen“ für John mit 2 Sternen an. Wer eine Aufgabe erledigt, tippt auf den Kreis und bekommt die Sterne.</p>';
   document.getElementById("vOther").innerHTML=`<div class="starcards">${cards}</div>${kidH}
     ${KID?`<h3 class="sec">✅ Deine Aufgaben</h3>${tlH}`:""}
     <div class="actions" style="margin:8px 0">${TTS_OK&&tasks.length?`<button class="btn${KID?"":" ghost"}" id="ttsBtn">🔊 Vorlesen</button>`:""}<button class="btn ghost" id="histBtn">📜 Verlauf</button></div>
     ${spieleHTML()}
-    ${KID?"":abzugHTML()}
+    ${KID?"":abzugHTML()+bonusHTML()}
     <div class="actions"><button class="btn" id="tAdd">+ Aufgabe</button><button class="btn ghost" id="rAdd">+ Belohnung</button></div>
     ${pendH}
     ${KID?"":`<h3 class="sec">Aufgaben</h3>${tlH}`}
@@ -1438,7 +1441,7 @@ function renderStars(){
     ${last?`<h3 class="sec">Zuletzt eingelöst</h3><ul class="hint" style="margin:0;padding-left:18px">${last}</ul>`:""}
     <button class="btn ghost" id="kpBtn" style="margin-top:12px">🎒 Startpaket: Kinder-Aufgaben & Belohnungen</button>`;
   document.getElementById("kpBtn").onclick=kidPackSheet;
-  document.getElementById("histBtn").onclick=()=>showHistory(KID||"");wireSpiele();wireAbzug();
+  document.getElementById("histBtn").onclick=()=>showHistory(KID||"");wireSpiele();wireAbzug();wireBonus();
   {const tb=document.getElementById("ttsBtn");if(tb)tb.onclick=()=>{if(speechSynthesis.speaking){speechSynthesis.cancel();return}readTasks()}}
   document.getElementById("tAdd").onclick=()=>openTaskSheet(null);
   document.getElementById("rAdd").onclick=()=>openRewardSheet(null);
@@ -1449,6 +1452,7 @@ document.getElementById("vOther").addEventListener("click",async ev=>{
   if(dn){const t=tasks.find(x=>x.id===dn.dataset.done);if(!t||!store)return;if(sternPause(t.person)){pauseToast(t.person);return}const l=logFor(t);
     if(l){if(KID&&!l.offen){toast("Schon bestätigt ✓ Super gemacht!");return}
       if(!await askConfirm(l.offen?"Abhaken zurücknehmen?":`Erledigt zurücknehmen? ${PNAME[t.person]} verliert dafür ${+l.sterne||1} ⭐.`,"Zurücknehmen"))return;await store.del(l.id);toast("Zurückgenommen")}
+    else if(KID&&t.foto){kidFoto(t)}
     else if(KID){await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:+t.sterne||1,datum:today,titel:t.titel});render();confetti();toast(`⏳ Super! +${+t.sterne||1} ⭐, sobald Mama oder Papa bestätigt haben`);if(ttsAuto())speak(`Super gemacht, ${PNAME[KID]||""}! ${t.titel} ist abgehakt. Du bekommst ${sternTxt(+t.sterne||1)}, sobald Mama oder Papa bestätigt haben.`)}
     else{await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:+t.sterne||1,datum:today,titel:t.titel});popPerson=t.person;render();if(premOn(3))confetti();toast(`⭐ +${+t.sterne||1} für ${PNAME[t.person]}!`)}
     return}
@@ -1504,7 +1508,7 @@ function readTasks(){
     const b=starBalance(k);out.push(`${KID?"Du hast":n+" hat"} ${b===1?"einen Stern":b+" Sterne"}.`);
     const nx=rewards.filter(r=>+r.kosten>b).sort((a,c)=>(+a.kosten)-(+c.kosten))[0];
     if(KID&&nx)out.push(`Bis ${nx.titel} fehlen dir noch ${sternTxt(+nx.kosten-b)}.`);
-    const wait=taskLogs.filter(l=>l.person===k&&l.offen).length;if(KID&&wait)out.push(`${wait===1?"Eine Aufgabe wartet":wait+" Aufgaben warten"} noch auf Bestätigung.`);
+    const wait=taskLogs.filter(l=>l.person===k&&l.offen&&!l.abgelehnt).length;if(KID&&wait)out.push(`${wait===1?"Eine Aufgabe wartet":wait+" Aufgaben warten"} noch auf Bestätigung.`);
   }
   speak(out.join(" "));
 }
@@ -1549,6 +1553,98 @@ function wireAbzug(){
     if(cfg[p])delete cfg[p];else cfg[p]=today;
     try{await store.conf({abzug:cfg});FAMCONF.abzug=cfg;toast(cfg[p]?`😴 Ab heute: 1 ⭐ Abzug pro Tag ohne Aufgabe für ${PNAME[p]}`:`Abzug für ${PNAME[p]} ausgeschaltet`);render()}catch(e){toast("Speichern ging nicht")}});
 }
+/* ---------- Foto-Beweis & Bonus für perfekte Tage ---------- */
+const FOTO_AUFGABEN=/bett machen|zimmer aufräumen|tisch decken|hausaufgaben/i;
+const _fotoLokal={};
+function fotoCol(){const c=getCfg();return FS&&c&&c.code&&store&&store.mode==="db"?FS.collection(`familien/${c.code}/fotos`):null}
+function bildKlein(file){return new Promise((ok,no)=>{const fr=new FileReader();fr.onerror=()=>no(new Error("lesen"));fr.onload=()=>{const im=new Image();im.onerror=()=>no(new Error("bild"));im.onload=()=>{
+  let q=.62,max=900,out="";for(let i=0;i<4;i++){const f=Math.min(1,max/Math.max(im.width,im.height)),cv=document.createElement("canvas");cv.width=Math.round(im.width*f);cv.height=Math.round(im.height*f);
+    cv.getContext("2d").drawImage(im,0,0,cv.width,cv.height);out=cv.toDataURL("image/jpeg",q);if(out.length<450000)break;max=Math.round(max*.75);q=Math.max(.4,q-.08)}
+  ok(out)};im.src=fr.result};fr.readAsDataURL(file)})}
+async function fotoSpeichern(bild,p){
+  const col=fotoCol();
+  if(!col){const id="lf"+Date.now().toString(36);_fotoLokal[id]=bild;return id}
+  const r=await col.add({bild,person:p,zeit:nowISO(),ersteller:MY_UID||""});return r.id;
+}
+async function fotoLaden(id){if(_fotoLokal[id])return _fotoLokal[id];const col=fotoCol();if(!col)return "";const s=await col.doc(id).get();return s.exists?s.data().bild:""}
+async function fotoWeg(id){if(!id)return;delete _fotoLokal[id];const col=fotoCol();if(col)try{await col.doc(id).delete()}catch(e){}}
+const abgelehntVon=t=>taskLogs.filter(l=>l.aufgabe===t.id&&l.abgelehnt&&l.datum===today).pop();
+function kidFoto(t){
+  const inp=document.createElement("input");inp.type="file";inp.accept="image/*";inp.setAttribute("capture","environment");inp.style.display="none";document.body.appendChild(inp);
+  inp.onchange=async()=>{const f=inp.files&&inp.files[0];inp.remove();if(!f)return;let bild="";
+    try{bild=await bildKlein(f)}catch(e){toast("Das Foto ging nicht · bitte nochmal");return}
+    sheet("📸 Foto-Beweis",`<p style="margin:0 0 8px"><b>${esc(t.titel)}</b></p><img src="${bild}" alt="Dein Foto" style="width:100%;border-radius:14px;max-height:55vh;object-fit:contain;background:#000">
+      <p class="hint">Ist alles gut zu sehen? Mama oder Papa schauen sich das Foto an. Ist alles perfekt, gibt es <b>doppelte Sterne</b>! 🌟</p>
+      <div class="actions"><button class="btn" id="fSend">📤 Foto schicken</button><button class="btn ghost" id="fNeu">🔁 Neues Foto</button></div>`);
+    document.getElementById("fNeu").onclick=()=>{closeSheet();setTimeout(()=>kidFoto(t),150)};
+    document.getElementById("fSend").onclick=async()=>{const b=document.getElementById("fSend");b.disabled=true;b.textContent="Wird geschickt …";
+      try{const fid=await fotoSpeichern(bild,t.person);const alt=abgelehntVon(t);if(alt){try{await store.del(alt.id)}catch(e){}}
+        await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:+t.sterne||1,datum:today,titel:t.titel,foto:fid});
+        closeSheet();render();confetti();toast("📸 Foto geschickt! Mama oder Papa schauen es sich an");if(ttsAuto())speak(`Super, ${PNAME[KID]||""}! Dein Foto ist verschickt.`)}
+      catch(e){b.disabled=false;b.textContent="📤 Foto schicken";toast(e&&e.code==="permission-denied"?"Fotos sind noch nicht freigeschaltet (Firebase-Regeln)":"Schicken ging nicht · bitte nochmal")}};
+  };
+  inp.click();
+}
+async function fotoBewerten(id){
+  const x=taskLogs.find(l=>l.id===id);if(!x)return;
+  sheet("📸 Foto bewerten",`<p style="margin:0 0 8px"><b>${esc(PNAME[x.person]||"")}:</b> ${esc(x.titel)}</p><div id="fImg" class="hint" style="text-align:center;padding:30px 0">Foto wird geladen …</div>
+    <div class="rate"><button class="btn" data-rt="ok">✅ Gut gemacht<br><small>+${+x.sterne||1} ⭐</small></button><button class="btn" data-rt="perfekt" style="background:linear-gradient(135deg,#ffd166,#ff9f1c);color:#3a2300">🌟 100 % perfekt<br><small>+${2*(+x.sterne||1)} ⭐</small></button></div>
+    <label class="f">Was fehlt noch? (bei „Nochmal“)<input id="fHint" maxlength="80" placeholder="z. B. Schreibtisch auch aufräumen"></label>
+    <div class="actions"><button class="btn ghost" data-rt="nochmal">🔁 Nochmal machen</button><button class="btn ghost" id="fX">Später</button></div>`);
+  document.getElementById("fX").onclick=closeSheet;
+  fotoLaden(x.foto).then(b=>{const el=document.getElementById("fImg");if(el)el.outerHTML=b?`<img src="${b}" alt="Foto" style="width:100%;border-radius:14px;max-height:50vh;object-fit:contain;background:#000">`:'<p class="hint">Das Foto ist nicht mehr da.</p>'}).catch(()=>{});
+  document.querySelectorAll("[data-rt]").forEach(b=>b.onclick=async()=>{const rt=b.dataset.rt;const{id:_i,offen,foto,...o}=x;
+    if(rt==="nochmal"){const h=document.getElementById("fHint").value.trim().slice(0,80);await store.set(x.id,{...o,offen:true,abgelehnt:true,hinweis:h||"Bitte nochmal ordentlich machen"});
+      toast(`🔁 ${PNAME[x.person]} soll „${x.titel}“ nochmal machen`)}
+    else if(rt==="perfekt"){await store.set(x.id,{...o,sterne:2*(+x.sterne||1),perfekt:true});popPerson=x.person;confetti();toast(`🌟 Perfekt! +${2*(+x.sterne||1)} ⭐ für ${PNAME[x.person]}`)}
+    else{await store.set(x.id,{...o,fotoOk:true});popPerson=x.person;toast(`✅ +${+x.sterne||1} ⭐ für ${PNAME[x.person]}`)}
+    closeSheet();fotoWeg(foto);setTimeout(()=>runBonus(),800)});
+}
+/* Perfekte Tage */
+const bonusCfg=()=>{const a=FAMCONF&&FAMCONF.bonus;return a&&typeof a==="object"?a:{}};
+function perfekterTag(p,d){
+  if(istWeg(p,d))return false;
+  const ds=tasks.filter(t=>t.person===p&&t.wiederholung==="taeglich"&&(!t.erstellt||t.erstellt<=d));if(!ds.length)return false;
+  for(const t of ds){const l=taskLogs.find(x=>x.aufgabe===t.id&&x.datum===d&&!x.abgelehnt&&!x.offen);if(!l)return false;if(t.foto&&!l.perfekt)return false}
+  return !taskLogs.some(x=>x.person===p&&x.datum===d&&!x.abgelehnt&&(x.foto||x.fotoOk)&&!x.perfekt);
+}
+function serieBis(p,d,extra){let n=0,x=d;for(let i=0;i<90;i++){if(istWeg(p,x)){x=addDays(x,-1);continue}if((extra&&extra.has(`perfekt-${p}-${x}`))||taskLogs.some(l=>l.id===`perfekt-${p}-${x}`)){n++;x=addDays(x,-1)}else break}return n}
+let bonusBusy=false,fotoAufger=false;
+async function runBonus(force){
+  if(bonusBusy||KID||READONLY||ROLE==="lesen"||!DATA_READY||!store||(store.mode!=="db"&&!force))return;
+  bonusBusy=true;
+  try{
+    if(FAMCONF&&FAMCONF.fotoSetup===undefined&&PREM.gruender&&ROLE==="schreiben"){
+      const j=persons().find(([k,n])=>k==="john"||/^john$/i.test(n));
+      if(j){for(const t of tasks.filter(t=>t.person===j[0]&&!t.foto&&FOTO_AUFGABEN.test(t.titel||""))){const{id,...o}=t;await store.set(id,{...o,foto:true})}
+        const cfg={...bonusCfg()};if(!cfg[j[0]])cfg[j[0]]=today;await store.conf({fotoSetup:true,bonus:cfg});FAMCONF.fotoSetup=true;FAMCONF.bonus=cfg}}
+    const neu=new Set(),msgs=[];
+    for(const [p,ab] of Object.entries(bonusCfg())){if(!ab||!PNAME[p])continue;const start=ab>addDays(today,-14)?ab:addDays(today,-14);
+      for(let d=start;d<=today;d=addDays(d,1)){if(!perfekterTag(p,d))continue;const pid=`perfekt-${p}-${d}`;
+        if(!taskLogs.some(l=>l.id===pid)){await store.set(pid,{typ:"erledigt",aufgabe:"bonus",person:p,sterne:3,datum:d,titel:"🏆 Perfekter Tag"});msgs.push(`🏆 ${PNAME[p]}: perfekter Tag +3 ⭐`)}
+        neu.add(pid);const n=serieBis(p,d,neu);
+        const add=async(id,st,ti)=>{if(!taskLogs.some(l=>l.id===id)){await store.set(id,{typ:"erledigt",aufgabe:"bonus",person:p,sterne:st,datum:d,titel:ti});msgs.push(`${ti} +${st} ⭐`)}};
+        if(n===3)await add(`serie3-${p}-${d}`,5,"🔥 3 perfekte Tage in Folge");
+        if(n>0&&n%7===0)await add(`serie7-${p}-${d}`,10,`🔥 ${n} perfekte Tage in Folge`);}}
+    if(msgs.length)toast(msgs.slice(-2).join(" · "));
+    for(const l of taskLogs.filter(l=>l.abgelehnt&&l.datum<today))try{await store.del(l.id)}catch(e){}
+    if(!fotoAufger&&fotoCol()){fotoAufger=true;try{const alt=new Date(Date.now()-7*864e5).toISOString(),offenIds=new Set(taskLogs.filter(l=>l.foto&&l.offen&&!l.abgelehnt).map(l=>l.foto));
+      const sn=await fotoCol().get();for(const d of sn.docs){const z=d.data().zeit||"";if(!offenIds.has(d.id)&&z<alt)await d.ref.delete()}}catch(e){}}
+  }catch(e){}
+  bonusBusy=false;
+}
+function bonusHTML(){
+  if(KID){if(!bonusCfg()[KID])return "";const s=Math.max(serieBis(KID,today),serieBis(KID,addDays(today,-1)));
+    return `<div class="bonusbox">${s?`<b>🔥 ${s} ${s===1?"perfekter Tag":"perfekte Tage"} in Folge!</b><br>`:""}<span class="meta">🏆 Alle Tagesaufgaben erledigt und alle 📸-Fotos perfekt = <b>+3 ⭐</b>. 3 Tage in Folge = <b>+5 ⭐</b>, 7 Tage = <b>+10 ⭐</b></span></div>`}
+  if(READONLY)return "";const P=persons().filter(([k])=>tasks.some(t=>t.person===k));if(!P.length)return "";
+  return `<h3 class="sec">🏆 Bonus für perfekte Tage</h3><p class="hint">Alle Tagesaufgaben erledigt und jede 📸-Foto-Aufgabe als „100 % perfekt“ bewertet = +3 ⭐. Dazu 3 Tage in Folge +5 ⭐, alle 7 Tage +10 ⭐. Fotos werden nach der Bewertung gelöscht.</p>
+    <div class="nameq">${P.map(([k,n])=>`<button data-bon="${k}" ${bonusCfg()[k]?'style="outline:2px solid var(--accent)"':""}>${bonusCfg()[k]?"✅":"⬜"} ${esc(n)}</button>`).join("")}</div>`;
+}
+function wireBonus(){
+  document.querySelectorAll("[data-bon]").forEach(b=>b.onclick=async()=>{const p=b.dataset.bon,cfg={...bonusCfg()};if(cfg[p])delete cfg[p];else cfg[p]=today;
+    try{await store.conf({bonus:cfg});FAMCONF.bonus=cfg;toast(cfg[p]?`🏆 Bonus für perfekte Tage an für ${PNAME[p]}`:`Bonus für ${PNAME[p]} aus`);render()}catch(e){toast("Speichern ging nicht")}});
+  document.querySelectorAll("[data-rate]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();fotoBewerten(b.dataset.rate)});
+}
 function fixStars(p){
   const cur=starBalance(p);
   sheet(`⭐ Sterne von ${esc(PNAME[p]||"")}`,`<p class="hint">Aktueller Stand: <b>${cur} ⭐</b>. Gib den neuen Stand ein. Die Änderung erscheint im 📜 Verlauf als „Korrektur“.</p>
@@ -1575,7 +1671,7 @@ function showHistory(who){
     const days={};for(const x of xs)(days[x.datum]=days[x.datum]||[]).push(x);
     return `<details class="rw" ${m===wk[0]?"open":""}><summary style="cursor:pointer"><b>${m===mondayOf(today)?"Diese Woche":m===mondayOf(addDays(today,-7))?"Letzte Woche":"Woche ab "+fmt(m)}</b> · ✅ ${cnt} erledigt · <span style="color:var(--star)">+${plus} ⭐</span>${minus?` · 🎁 −${minus} ⭐`:""}</summary>
       ${Object.keys(days).sort().reverse().map(d=>`<div style="margin-top:8px"><span class="lbl-s">${d===today?"Heute":d===addDays(today,-1)?"Gestern":fmt(d)}</span>
-        ${days[d].map(x=>`<div class="hint" style="margin:2px 0">${x._k==="t"?(x.offen?"⏳":"✅"):"🎁"} ${!who?`<b>${esc(PNAME[x.person]||"")}</b>: `:""}${esc(x.titel||"")}${x._k==="t"?` <span style="color:var(--star)">+${+x.sterne||1} ⭐</span>${x.offen?" · wartet auf Bestätigung":""}`:` <span>−${+x.kosten} ⭐</span>${x.offen?" · wartet auf Bestätigung":""}`}</div>`).join("")}</div>`).join("")}</details>`}).join("");
+        ${days[d].map(x=>`<div class="hint" style="margin:2px 0">${x._k==="t"?(x.abgelehnt?"🔁":x.offen?"⏳":"✅"):"🎁"} ${!who?`<b>${esc(PNAME[x.person]||"")}</b>: `:""}${esc(x.titel||"")}${x._k==="t"?` <span style="color:var(--star)">+${+x.sterne||1} ⭐</span>${x.offen?" · wartet auf Bestätigung":""}`:` <span>−${+x.kosten} ⭐</span>${x.offen?" · wartet auf Bestätigung":""}`}</div>`).join("")}</div>`).join("")}</details>`}).join("");
   sheet("📜 Verlauf",`${!KID&&P.length>1?`<div class="nameq"><button data-hw="" ${who?"":'style="outline:2px solid var(--accent)"'}>Alle</button>${P.map(([k,n])=>`<button data-hw="${k}" ${who===k?'style="outline:2px solid var(--accent)"':""}>${esc(n)}</button>`).join("")}</div>`:""}
     ${who?`<p class="hint">${esc(PNAME[who]||"")} hat insgesamt <b>${taskLogs.filter(l=>l.person===who&&!l.offen).length}</b> Aufgaben erledigt und hat jetzt <b>${starBalance(who)} ⭐</b>.</p>`:""}
     ${html||'<p class="hint">Noch nichts erledigt.</p>'}
@@ -1731,6 +1827,7 @@ function openTaskSheet(t){
     <div class="seg" style="--n:${Math.min(4,persons().length)}">${persons().map(([k,n])=>`<button class="p-${k}" data-tp="${k}" aria-pressed="${d.person===k}">${esc(n)}</button>`).join("")}</div>
     <span class="lbl-s">Sterne als Belohnung</span>
     <div class="seg" style="--n:5">${[1,2,3,4,5].map(n=>`<button class="typ" data-ts="${n}" aria-pressed="${+d.sterne===n}">${n} ⭐</button>`).join("")}</div>
+    <button class="btn ghost" id="tFoto" style="width:100%;margin:6px 0">${d.foto?"📸 Foto-Beweis nötig ✅":"📸 Foto-Beweis nötig ⬜"}</button>
     <span class="lbl-s">Thema</span>
     <div class="nameq">${THEMEN.map(([k,ic,nm])=>`<button data-tth="${k}" style="${(d.thema||taskThema(d))===k?"outline:2px solid var(--accent)":""}">${ic} ${nm}</button>`).join("")}</div>
     <span class="lbl-s">Wie oft?</span>
@@ -1742,9 +1839,10 @@ function openTaskSheet(t){
     document.querySelectorAll("[data-ts]").forEach(b=>b.onclick=()=>{rd();d.sterne=+b.dataset.ts;draw()});
     document.querySelectorAll("[data-tw]").forEach(b=>b.onclick=()=>{rd();d.wiederholung=b.dataset.tw;draw()});
     document.querySelectorAll("[data-tth]").forEach(b=>b.onclick=()=>{rd();d.thema=b.dataset.tth;draw()});
+    $("tFoto").onclick=()=>{rd();d.foto=!d.foto;draw()};
     $("tCancel").onclick=closeSheet;
     $("tSave").onclick=async()=>{rd();if(!d.titel){toast("Bitte eintragen, was zu tun ist");return}if(!store)return;
-      const o={typ:"aufgabe",titel:d.titel.slice(0,120),person:d.person,sterne:+d.sterne||1,wiederholung:d.wiederholung,erstellt:d.erstellt||today};if(d.thema&&THEMA[d.thema])o.thema=d.thema;
+      const o={typ:"aufgabe",titel:d.titel.slice(0,120),person:d.person,sterne:+d.sterne||1,wiederholung:d.wiederholung,erstellt:d.erstellt||today};if(d.thema&&THEMA[d.thema])o.thema=d.thema;if(d.foto)o.foto=true;
       closeSheet();if(t)await store.set(t.id,o);else await store.add(o);toast(t?"Gespeichert":"Aufgabe angelegt")};
     if($("tDel"))$("tDel").onclick=async()=>{rd();if(!await askConfirm(`Aufgabe „${t.titel}“ wirklich löschen?`))return;closeSheet();await store.del(t.id);toast("Aufgabe gelöscht")};
   };draw();
@@ -1768,7 +1866,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v79";
+const APP_VER="v80";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -3575,6 +3673,11 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-11a",d:"2026-11-11",t:"📸 Foto-Beweis & perfekte Tage",items:[
+    "📸 Aufgaben können einen Foto-Beweis verlangen: Das Kind macht beim Abhaken ein Foto vom Ergebnis",
+    "🌟 Eltern bewerten das Foto: gut (normale Sterne), 100 % perfekt (doppelte Sterne) oder nochmal (mit Hinweis, was fehlt)",
+    "🏆 Perfekter Tag: alle Tagesaufgaben erledigt und alle Fotos perfekt = +3 ⭐. 3 Tage in Folge +5 ⭐, alle 7 Tage +10 ⭐",
+    "🔒 Fotos werden klein gespeichert, bleiben in der Familie und werden nach der Bewertung gelöscht"]},
   {v:"2026-11-10e",d:"2026-11-10",t:"🏠 Sterne-Pause bei Papa",items:[
     "🏠 An Tagen bei Papa ist das Sterne-System gesperrt: kein Abhaken, keine Spiele-Sterne, kein Einlösen und kein Abzug"]},
   {v:"2026-11-10d",d:"2026-11-10",t:"😴 Abzug fürs Nichtstun",items:[
