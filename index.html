@@ -265,6 +265,14 @@ html.kidmode #tAdd,html.kidmode #rAdd,html.kidmode #kpBtn,html.kidmode [data-rwe
 .radwrap{position:relative;width:min(300px,78vw);aspect-ratio:1;margin:6px auto 10px}.radzeiger{position:absolute;top:-14px;left:50%;transform:translateX(-50%);font-size:30px;z-index:2;color:#ff4d6d;text-shadow:0 2px 4px rgba(0,0,0,.4)}
 .rad{width:100%;height:100%;border-radius:50%;position:relative;border:6px solid #fff3;box-shadow:0 6px 24px rgba(0,0,0,.35)}.rad span{position:absolute;left:50%;top:0;width:0;height:50%;transform-origin:bottom center}.rad em{position:absolute;top:16px;left:50%;transform:translateX(-50%);font-style:normal;font-weight:900;font-size:clamp(15px,4.6vw,20px);color:#1b1b1b;white-space:nowrap}
 .radbtn{width:100%;font-size:1.1rem;padding:14px;background:linear-gradient(135deg,#ffd166,#ff6b6b);color:#2a1300;margin:4px 0}
+.limbar{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}.limbar span{flex:1;min-width:140px;font-size:12.5px;background:rgba(127,127,127,.1);border-radius:10px;padding:6px 8px}
+.limsel{display:flex;flex-wrap:wrap;gap:12px}.limsel select{font:inherit;padding:3px 6px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:inherit}
+.jetzt{border:2px solid rgba(124,196,245,.55);border-radius:16px;padding:10px;margin:0 0 10px;display:flex;flex-direction:column;gap:4px;background:rgba(124,196,245,.08)}.jetzt.fertig{text-align:center;font-weight:700;font-size:1.1rem}
+.spaeter{margin:0 0 10px}.spaeter>summary{cursor:pointer;font-weight:700;padding:8px 2px}
+.schritte{display:grid;gap:8px;margin:10px 0}.schritt{display:flex;gap:10px;align-items:center;padding:10px;border:1px solid var(--line);border-radius:12px;font-size:1.05rem}.schritt input{width:24px;height:24px;flex:none}.schritt input:checked+span{text-decoration:line-through;opacity:.6}
+.ftimer{text-align:center;margin:8px 0}.fkzeit{font-size:2.2rem;font-weight:800;margin:4px 0 8px;font-variant-numeric:tabular-nums}
+html.lesehilfe body{font-size:1.1em}html.lesehilfe .task .tt,html.lesehilfe .kidbar,html.lesehilfe .kn,html.lesehilfe .spq,html.lesehilfe .spopts button,html.lesehilfe .thema summary{letter-spacing:.04em;word-spacing:.12em;line-height:1.55}
+html.lesehilfe .spopts button{font-size:1.5rem;padding:16px 8px}html.lesehilfe .task .tt{font-size:1.05rem}
 .kidbar{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
 .kidbar .pbar{height:12px;border-radius:99px;background:rgba(127,127,127,.2);overflow:hidden;margin:6px 0 2px}.kidbar .pbar i{display:block;height:100%;background:linear-gradient(90deg,#ffd166,#ff9f1c);border-radius:99px}
 .pend{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center}.pend button{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:10px;padding:6px 10px;font:inherit}
@@ -1419,14 +1427,18 @@ const THEMEN=[["routine","🪥","Morgens & abends",/zähne|zahn|dusch|wasch|anzi
 const THEMA=Object.fromEntries(THEMEN.map(t=>[t[0],t]));
 function taskThema(t){if(t.thema&&THEMA[t.thema])return t.thema;const x=THEMEN.find(([k,,,re])=>re.test(t.titel||""));return x?x[0]:"sonst"}
 function renderStars(){
+  applyHilfen();
   const P=persons();
   const cards=P.map(([k,n])=>`<div class="starcard${popPerson===k?" pop":""}">${av(k,"av big-av")}<span class="nm p-${k}" style="background:none">${esc(n)}</span><span class="big">⭐ ${starBalance(k)}</span><button class="lvlchip" data-abzshow="${k}">${levelVon(k).ic} ${levelVon(k).n}</button><span class="wk">${sternPause(k)?"🏠 heute bei Papa · Pause":`diese Woche +${starWeek(k)}`}</span>${KID||READONLY?"":`<button class="stfix" data-fix="${k}" aria-label="Sterne von ${esc(n)} korrigieren">✏️ ändern</button>`}</div>`).join("");
   popPerson="";
   const vis=tasks.filter(t=>{const l=logFor(t);return !(t.wiederholung==="einmalig"&&l&&l.datum<today)});
   vis.sort((a,b)=>(!!logFor(a))-(!!logFor(b))||String(a.person).localeCompare(b.person));
   const row=t=>{const l=logFor(t);return `<div class="task${l?" done":""}${sternPause(t.person)?" paused":""}"><button class="chk" data-done="${esc(t.id)}" aria-label="${l?"Als nicht erledigt markieren":"Erledigt"}: ${esc(t.titel)}">${l?(l.offen?"⏳":"✓"):""}</button>
-    <button class="tt" data-task="${esc(t.id)}">${esc(t.titel)}<br><span class="meta"><span class="p-${t.person}" style="background:none;font-weight:700">${esc(PNAME[t.person]||"")}</span> · ${WIED[t.wiederholung]||"Einmalig"}${t.foto?" · 📸 mit Foto":""}${l&&l.offen?" · wartet auf Bestätigung":""}${!l&&abgelehntVon(t)?`</span><br><span class="meta" style="color:#ff9f6b;font-weight:700">🔁 Nochmal: ${esc(abgelehntVon(t).hinweis||"")}`:""}</span></button>
+    <button class="tt" data-task="${esc(t.id)}">${esc(t.titel)}<br><span class="meta"><span class="p-${t.person}" style="background:none;font-weight:700">${esc(PNAME[t.person]||"")}</span> · ${WIED[t.wiederholung]||"Einmalig"}${t.foto?" · 📸 mit Foto":""}${KID&&(hilfe(KID,"lesen")||hilfe(KID,"fokus"))?` · ${hilfe(KID,"fokus")?"👆 antippen":"🔊 antippen"}`:""}${l&&l.offen?" · wartet auf Bestätigung":""}${!l&&abgelehntVon(t)?`</span><br><span class="meta" style="color:#ff9f6b;font-weight:700">🔁 Nochmal: ${esc(abgelehntVon(t).hinweis||"")}`:""}</span></button>
     <span class="st">${"⭐".repeat(Math.min(+t.sterne||1,5))}</span></div>`};
+  const jetztH=()=>{const ord=THEMEN.map(x=>x[0]),offen=vis.filter(t=>t.person===KID&&!logFor(t)&&!sternPause(t.person)).sort((a,b)=>(a.wiederholung==="taeglich"?0:1)-(b.wiederholung==="taeglich"?0:1)||ord.indexOf(taskThema(a))-ord.indexOf(taskThema(b)));
+    if(!offen.length)return `<div class="jetzt fertig">🎉 Alles geschafft für heute! Super!</div>`;
+    return `<div class="jetzt"><b>🎯 Jetzt dran</b><span class="meta">Eins nach dem anderen. Tipp auf eine Aufgabe für Schritte und Timer.</span><div class="tasklist">${offen.slice(0,3).map(row).join("")}</div>${offen.length>3?`<span class="meta">Danach warten noch ${offen.length-3} weitere.</span>`:""}</div>`};
   const tl=THEMEN.map(([k,ic,nm])=>{const ts=vis.filter(t=>taskThema(t)===k);if(!ts.length)return "";
     const done=ts.filter(t=>logFor(t)).length,offen=ts.filter(t=>!logFor(t)).reduce((a,t)=>a+(+t.sterne||1),0),pct=Math.round(done/ts.length*100);
     return `<details class="thema th-${k}" ${done<ts.length?"open":""}><summary><span class="thi">${ic}</span><span class="thn"><b>${nm}</b><span class="meta">${done===ts.length?"✅ alles geschafft!":`${done} von ${ts.length} erledigt · noch ${offen} ⭐ drin`}</span><span class="thbar"><i style="width:${pct}%"></i></span></span></summary>
@@ -1439,15 +1451,15 @@ function renderStars(){
   let kidH="";
   if(KID){const b=starBalance(KID),nx=rewards.filter(r=>+r.kosten>b).sort((a,b2)=>(+a.kosten)-(+b2.kosten))[0],np=taskLogs.filter(l=>l.offen&&!l.abgelehnt).reduce((a,l)=>a+(+l.sterne||0),0);
     const heute=taskLogs.filter(l=>l.person===KID&&l.datum===today&&!l.abgelehnt).reduce((a,l)=>a+(+l.sterne||0),0),noch=vis.filter(t=>t.person===KID&&!logFor(t)).reduce((a,t)=>a+(+t.sterne||1),0);
-    kidH=levelHTML(KID)+`<div class="kidbar">${sternPause(KID)?`<div class="pausebox">🏠 <b>Heute bist du bei Papa.</b><br>Das Sterne-System macht Pause: keine Aufgaben, kein Abzug. Morgen geht es weiter!</div>`:""}<b>Hallo ${esc(PNAME[KID]||"")}! 👋</b><div class="kidsum"><span>⭐ Heute verdient<b>+${heute}</b></span><span>🎯 Noch möglich<b>${noch}</b></span><span>💰 Kontostand<b>${b}</b></span></div>${nx?`<div class="pbar"><i style="width:${Math.min(100,Math.round(b/(+nx.kosten)*100))}%"></i></div><span class="meta">Nächstes Ziel: <b>${esc(nx.titel)}</b> · noch ${+nx.kosten-b} ⭐</span>`:rewards.length?`<br><span class="meta">Du kannst dir jede Belohnung leisten! 🎉</span>`:""}${np?`<br><span class="meta">⏳ ${np} ⭐ warten noch auf Bestätigung</span>`:""}${abzugHTML()}${bonusHTML()}</div>`}
+    kidH=levelHTML(KID)+`<div class="kidbar">${sternPause(KID)?`<div class="pausebox">🏠 <b>Heute bist du bei Papa.</b><br>Das Sterne-System macht Pause: keine Aufgaben, kein Abzug. Morgen geht es weiter!</div>`:""}<b>Hallo ${esc(PNAME[KID]||"")}! 👋</b><div class="kidsum"><span>⭐ Heute verdient<b>+${heute}</b></span><span>🎯 Noch möglich<b>${noch}</b></span><span>💰 Kontostand<b>${b}</b></span></div>${nx?`<div class="pbar"><i style="width:${Math.min(100,Math.round(b/(+nx.kosten)*100))}%"></i></div><span class="meta">Nächstes Ziel: <b>${esc(nx.titel)}</b> · noch ${+nx.kosten-b} ⭐</span>`:rewards.length?`<br><span class="meta">Du kannst dir jede Belohnung leisten! 🎉</span>`:""}${np?`<br><span class="meta">⏳ ${np} ⭐ warten noch auf Bestätigung</span>`:""}${limitHTML(KID)}${abzugHTML()}${bonusHTML()}</div>`}
   const tlH=tl||'<p class="hint">Noch keine Aufgaben. Leg zum Beispiel „Zimmer aufräumen“ für John mit 2 Sternen an. Wer eine Aufgabe erledigt, tippt auf den Kreis und bekommt die Sterne.</p>';
   document.getElementById("vOther").innerHTML=`<div class="starcards">${cards}</div>${kidH}
-    ${KID?`<h3 class="sec">✅ Deine Aufgaben</h3>${tlH}${radHTML()}`:""}
+    ${KID?`<h3 class="sec">✅ Deine Aufgaben</h3>${hilfe(KID,"fokus")?jetztH():""}${hilfe(KID,"fokus")?`<details class="spaeter"><summary>📋 Alle Aufgaben ansehen</summary>${tlH}</details>`:tlH}${radHTML()}`:""}
     <div class="actions" style="margin:8px 0">${TTS_OK&&tasks.length?`<button class="btn${KID?"":" ghost"}" id="ttsBtn">🔊 Vorlesen</button>`:""}<button class="btn ghost" id="histBtn">📜 Verlauf</button></div>
     ${KID?"":radHTML()}
     ${spieleHTML()}
     ${KID?`<h3 class="sec">🏅 Deine Abzeichen · ${abzVon(KID).filter(b=>b.ok).length}/${ABZ.length}</h3>${abzHTML(KID,true)}<button class="btn ghost" data-abzshow="${KID}" style="width:100%;margin-top:8px">Alle Abzeichen ansehen</button>`:""}
-    ${KID?"":abzugHTML()+bonusHTML()}
+    ${KID?"":abzugHTML()+bonusHTML()+limitEinst()+hilfenEinst()}
     <div class="actions"><button class="btn" id="tAdd">+ Aufgabe</button><button class="btn ghost" id="rAdd">+ Belohnung</button></div>
     ${pendH}
     ${KID?"":`<h3 class="sec">Aufgaben</h3>${tlH}`}
@@ -1456,7 +1468,7 @@ function renderStars(){
     ${last?`<h3 class="sec">Zuletzt eingelöst</h3><ul class="hint" style="margin:0;padding-left:18px">${last}</ul>`:""}
     <button class="btn ghost" id="kpBtn" style="margin-top:12px">🎒 Startpaket: Kinder-Aufgaben & Belohnungen</button>`;
   document.getElementById("kpBtn").onclick=kidPackSheet;
-  document.getElementById("histBtn").onclick=()=>showHistory(KID||"");wireSpiele();wireAbzug();wireBonus();
+  document.getElementById("histBtn").onclick=()=>showHistory(KID||"");wireSpiele();wireAbzug();wireBonus();wireLimit();wireHilfen();
   document.querySelectorAll("[data-rad]").forEach(b=>b.onclick=()=>radDrehen(b.dataset.rad));
   document.querySelectorAll("[data-abzshow]").forEach(b=>b.onclick=ev=>{ev.stopPropagation();showAbz(b.dataset.abzshow)});
   if(KID)setTimeout(neueAbz,900);
@@ -1471,8 +1483,8 @@ document.getElementById("vOther").addEventListener("click",async ev=>{
     if(l){if(KID&&!l.offen){toast("Schon bestätigt ✓ Super gemacht!");return}
       if(!await askConfirm(l.offen?"Abhaken zurücknehmen?":`Erledigt zurücknehmen? ${PNAME[t.person]} verliert dafür ${+l.sterne||1} ⭐.`,"Zurücknehmen"))return;await store.del(l.id);toast("Zurückgenommen")}
     else if(KID&&t.foto){kidFoto(t)}
-    else if(KID){await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:+t.sterne||1,datum:today,titel:t.titel});render();confetti();toast(`⏳ Super! +${+t.sterne||1} ⭐, sobald Mama oder Papa bestätigt haben`);if(ttsAuto())speak(`Super gemacht, ${PNAME[KID]||""}! ${t.titel} ist abgehakt. Du bekommst ${sternTxt(+t.sterne||1)}, sobald Mama oder Papa bestätigt haben.`)}
-    else{await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:+t.sterne||1,datum:today,titel:t.titel});popPerson=t.person;render();if(premOn(3))confetti();toast(`⭐ +${+t.sterne||1} für ${PNAME[t.person]}!`)}
+    else if(KID){const w=+t.sterne||1,st=capSterne(t.person,today,artVon(t),w);await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:st,datum:today,titel:t.titel});render();confetti();toast(st?`⏳ Super! +${st} ⭐, sobald Mama oder Papa bestätigt haben${capTxt(st,w)}`:"✅ Super gemacht! Für heute ist das Sterne-Limit erreicht.");if(ttsAuto())speak(`Super gemacht, ${PNAME[KID]||""}! ${t.titel} ist abgehakt. Du bekommst ${sternTxt(+t.sterne||1)}, sobald Mama oder Papa bestätigt haben.`)}
+    else{const w=+t.sterne||1,st=capSterne(t.person,today,artVon(t),w);await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:st,datum:today,titel:t.titel});popPerson=t.person;render();if(premOn(3))confetti();toast(`⭐ +${st} für ${PNAME[t.person]}!${capTxt(st,w)}`)}
     return}
   const fx=ev.target.closest("[data-fix]");if(fx){fixStars(fx.dataset.fix);return}
   const okb=ev.target.closest("[data-ok]");
@@ -1480,7 +1492,7 @@ document.getElementById("vOther").addEventListener("click",async ev=>{
     toast(x.typ==="erledigt"?`⭐ +${+x.sterne||1} für ${PNAME[x.person]} bestätigt`:`🎉 „${x.titel}“ für ${PNAME[x.person]} bestätigt`);return}
   const nob=ev.target.closest("[data-no]");
   if(nob){const x=[...taskLogs,...redeems].find(y=>y.id===nob.dataset.no);if(!x)return;if(!await askConfirm(x.typ==="erledigt"?`„${x.titel}“ nicht bestätigen? Die Sterne gibt es dann nicht.`:`„${x.titel}“ ablehnen? Die Sterne bekommt ${PNAME[x.person]} zurück.`,"Ablehnen"))return;await store.del(x.id);toast("Abgelehnt");return}
-  const tk=ev.target.closest("[data-task]");if(tk){if(KID){const t=tasks.find(x=>x.id===tk.dataset.task);if(t){const l=logFor(t);speak(`${t.titel}. ${sternTxt(+t.sterne||1)}. ${l?(l.offen?"Schon abgehakt, wartet auf Bestätigung.":"Schon erledigt. Super!"):"Noch zu erledigen."}`)}return}openTaskSheet(tasks.find(x=>x.id===tk.dataset.task));return}
+  const tk=ev.target.closest("[data-task]");if(tk){if(KID){const t=tasks.find(x=>x.id===tk.dataset.task);if(t&&hilfe(KID,"fokus")){fokusSheet(t);return}if(t){const l=logFor(t);speak(`${t.titel}. ${sternTxt(+t.sterne||1)}. ${l?(l.offen?"Schon abgehakt, wartet auf Bestätigung.":"Schon erledigt. Super!"):"Noch zu erledigen."}`)}return}openTaskSheet(tasks.find(x=>x.id===tk.dataset.task));return}
   const re=ev.target.closest("[data-redeem]");
   if(re){const r=rewards.find(x=>x.id===re.dataset.redeem),p=re.dataset.who;if(!r)return;if(sternPause(p)){pauseToast(p);return}
     if(KID){if(!await askConfirm(`„${r.titel}“ für ${+r.kosten} ⭐ einlösen? Mama oder Papa bekommen Bescheid und bestätigen.`,"Einlösen",false))return;
@@ -1597,7 +1609,7 @@ function kidFoto(t){
     document.getElementById("fNeu").onclick=()=>{closeSheet();setTimeout(()=>kidFoto(t),150)};
     document.getElementById("fSend").onclick=async()=>{const b=document.getElementById("fSend");b.disabled=true;b.textContent="Wird geschickt …";
       try{const fid=await fotoSpeichern(bild,t.person);const alt=abgelehntVon(t);if(alt){try{await store.del(alt.id)}catch(e){}}
-        await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:+t.sterne||1,datum:today,titel:t.titel,foto:fid});
+        await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:capSterne(t.person,today,artVon(t),+t.sterne||1),datum:today,titel:t.titel,foto:fid});
         closeSheet();render();confetti();toast("📸 Foto geschickt! Mama oder Papa schauen es sich an");if(ttsAuto())speak(`Super, ${PNAME[KID]||""}! Dein Foto ist verschickt.`)}
       catch(e){b.disabled=false;b.textContent="📤 Foto schicken";toast(e&&e.code==="permission-denied"?"Fotos sind noch nicht freigeschaltet (Firebase-Regeln)":"Schicken ging nicht · bitte nochmal")}};
   };
@@ -1614,7 +1626,7 @@ async function fotoBewerten(id){
   document.querySelectorAll("[data-rt]").forEach(b=>b.onclick=async()=>{const rt=b.dataset.rt;const{id:_i,offen,foto,...o}=x;
     if(rt==="nochmal"){const h=document.getElementById("fHint").value.trim().slice(0,80);await store.set(x.id,{...o,offen:true,abgelehnt:true,hinweis:h||"Bitte nochmal ordentlich machen"});
       toast(`🔁 ${PNAME[x.person]} soll „${x.titel}“ nochmal machen`)}
-    else if(rt==="perfekt"){await store.set(x.id,{...o,sterne:2*(+x.sterne||1),perfekt:true});popPerson=x.person;confetti();toast(`🌟 Perfekt! +${2*(+x.sterne||1)} ⭐ für ${PNAME[x.person]}`)}
+    else if(rt==="perfekt"){const w=2*(+x.sterne||1),st=Math.max(+x.sterne||0,capSterne(x.person,x.datum,logArt(x),w,x.id));await store.set(x.id,{...o,sterne:st,perfekt:true});popPerson=x.person;confetti();toast(`🌟 Perfekt! +${st} ⭐ für ${PNAME[x.person]}${capTxt(st,w)}`)}
     else{await store.set(x.id,{...o,fotoOk:true});popPerson=x.person;toast(`✅ +${+x.sterne||1} ⭐ für ${PNAME[x.person]}`)}
     closeSheet();fotoWeg(foto);setTimeout(()=>runBonus(),800)});
 }
@@ -1636,12 +1648,13 @@ async function runBonus(force){
       const j=persons().find(([k,n])=>k==="john"||/^john$/i.test(n));
       if(j){for(const t of tasks.filter(t=>t.person===j[0]&&!t.foto&&FOTO_AUFGABEN.test(t.titel||""))){const{id,...o}=t;await store.set(id,{...o,foto:true})}
         const cfg={...bonusCfg()};if(!cfg[j[0]])cfg[j[0]]=today;await store.conf({fotoSetup:true,bonus:cfg});FAMCONF.fotoSetup=true;FAMCONF.bonus=cfg}}
+    if(FAMCONF&&FAMCONF.hilfen===undefined&&PREM.gruender&&ROLE==="schreiben"){const j=persons().find(([k,n])=>k==="john"||/^john$/i.test(n));if(j){const h={[j[0]]:{lesen:true,fokus:true}};await store.conf({hilfen:h});FAMCONF.hilfen=h}}
     const neu=new Set(),msgs=[];
     for(const [p,ab] of Object.entries(bonusCfg())){if(!ab||!PNAME[p])continue;const start=ab>addDays(today,-14)?ab:addDays(today,-14);
       for(let d=start;d<=today;d=addDays(d,1)){if(!perfekterTag(p,d))continue;const pid=`perfekt-${p}-${d}`;
-        if(!taskLogs.some(l=>l.id===pid)){await store.set(pid,{typ:"erledigt",aufgabe:"bonus",person:p,sterne:3,datum:d,titel:"🏆 Perfekter Tag"});msgs.push(`🏆 ${PNAME[p]}: perfekter Tag +3 ⭐`)}
+        if(!taskLogs.some(l=>l.id===pid)){await store.set(pid,{typ:"erledigt",aufgabe:"bonus",person:p,sterne:capSterne(p,d,"sonder",3),datum:d,titel:"🏆 Perfekter Tag"});msgs.push(`🏆 ${PNAME[p]}: perfekter Tag +3 ⭐`)}
         neu.add(pid);const n=serieBis(p,d,neu);
-        const add=async(id,st,ti)=>{if(!taskLogs.some(l=>l.id===id)){await store.set(id,{typ:"erledigt",aufgabe:"bonus",person:p,sterne:st,datum:d,titel:ti});msgs.push(`${ti} +${st} ⭐`)}};
+        const add=async(id,st,ti)=>{if(!taskLogs.some(l=>l.id===id)){st=capSterne(p,d,"sonder",st);await store.set(id,{typ:"erledigt",aufgabe:"bonus",person:p,sterne:st,datum:d,titel:ti});msgs.push(`${ti} +${st} ⭐`)}};
         if(n===3)await add(`serie3-${p}-${d}`,5,"🔥 3 perfekte Tage in Folge");
         if(n>0&&n%7===0)await add(`serie7-${p}-${d}`,10,`🔥 ${n} perfekte Tage in Folge`);}}
     if(msgs.length)toast(msgs.slice(-2).join(" · "));
@@ -1665,6 +1678,7 @@ function wireBonus(){
 }
 /* ---------- Neuigkeiten fürs Kinder-Handy (nur Sterne-System) ---------- */
 const KID_NEWS=[
+  {id:"k10",ic:"🎯",t:"Jetzt dran",x:"Oben siehst du immer nur die nächsten 3 Aufgaben. Tipp eine an: Dann siehst du kleine Schritte und kannst einen Timer starten. Pro Tag kannst du bis zu 10 Sterne mit Aufgaben und 5 Extra-Sterne verdienen."},
   {id:"k9",ic:"🏅",t:"Level & Abzeichen",x:"Mit jedem Stern steigst du auf: vom Anfänger bis zur Legende! Und du kannst 16 Abzeichen sammeln, zum Beispiel Bett-Profi oder Mathe-Ass."},
   {id:"k8",ic:"🎡",t:"Glücksrad",x:"Schaffst du in einer Woche 15 Sterne, darfst du am Wochenende einmal am Glücksrad drehen. Zu gewinnen gibt es Sterne, Nachtisch aussuchen, Film aussuchen und mehr!"},
   {id:"k7",ic:"🕐",t:"Neue Lernspiele",x:"Neu sind Uhr-Profi zum Uhrzeit-Lesen und Geld-Profi zum Geld-Zählen. Auch hier gibt es Sterne!"},
@@ -1678,7 +1692,7 @@ let kidNewsShown=false;
 function showKidNews(force){
   if(!KID||(kidNewsShown&&!force))return;
   let seen=[];try{seen=JSON.parse(localStorage.getItem("fk-kidnews")||"[]")}catch(e){}
-  const passt=n=>n.id==="k5"?tasks.some(t=>t.foto):n.id==="k6"?!!bonusCfg()[KID]:n.id==="k4"?!!abzugCfg()[KID]:n.id==="k1"?tasks.some(t=>t.foto):true;
+  const passt=n=>n.id==="k10"?hilfe(KID,"fokus"):n.id==="k5"?tasks.some(t=>t.foto):n.id==="k6"?!!bonusCfg()[KID]:n.id==="k4"?!!abzugCfg()[KID]:n.id==="k1"?tasks.some(t=>t.foto):true;
   const neu=KID_NEWS.filter(n=>passt(n)&&(force||!seen.includes(n.id)));if(!neu.length)return;
   if(document.querySelector("#sheetHost .sheet"))return setTimeout(()=>showKidNews(force),3000);
   kidNewsShown=true;
@@ -1686,6 +1700,56 @@ function showKidNews(force){
     <div class="actions">${TTS_OK?`<button class="btn ghost" id="knSay">🔊 Vorlesen</button>`:""}<button class="btn" id="knOk">👍 Alles klar!</button></div>`);
   const ks=document.getElementById("knSay");if(ks)ks.onclick=()=>speak(neu.map(n=>n.t+". "+n.x).join(" "));
   document.getElementById("knOk").onclick=()=>{try{speechSynthesis.cancel()}catch(e){}try{localStorage.setItem("fk-kidnews",JSON.stringify([...new Set([...seen,...neu.map(n=>n.id)])]))}catch(e){}closeSheet();view="sterne";render()};
+}
+/* ---------- Tageslimit für Sterne ---------- */
+const limN=()=>{const v=FAMCONF&&FAMCONF.limitN;return v===0||v?+v:10};
+const limS=()=>{const v=FAMCONF&&FAMCONF.limitS;return v===0||v?+v:5};
+function logArt(l){if(l.aufgabe==="korrektur")return "x";const t=tasks.find(x=>x.id===l.aufgabe);return t&&t.wiederholung!=="einmalig"?"normal":"sonder"}
+const artVon=t=>t&&t.wiederholung!=="einmalig"?"normal":"sonder";
+const heuteArt=(p,d,art,ohne)=>taskLogs.filter(l=>l.person===p&&l.datum===d&&!l.abgelehnt&&l.id!==ohne&&logArt(l)===art).reduce((a,l)=>a+(+l.sterne||0),0);
+function capSterne(p,d,art,will,ohne){const lim=art==="normal"?limN():limS();return Math.max(0,Math.min(will,lim-heuteArt(p,d,art,ohne)))}
+const capTxt=(st,will)=>st<will?(st?` (Tageslimit: nur ${st} von ${will} ⭐)`:" (Tageslimit für heute erreicht)"):"";
+function limitHTML(p){const n=heuteArt(p,today,"normal"),s=heuteArt(p,today,"sonder");
+  return `<div class="limbar"><span>📋 Aufgaben heute <b>${n}/${limN()} ⭐</b></span><span>✨ Extras heute <b>${s}/${limS()} ⭐</b></span></div>`}
+function limitEinst(){if(KID||READONLY)return "";const o=n=>[0,3,5,8,10,12,15,20].map(v=>`<option value="${v}" ${n===v?"selected":""}>${v}</option>`).join("");
+  return `<h3 class="sec">📏 Tageslimit für Sterne</h3><p class="hint">Höchstens so viele Sterne pro Kind und Tag. Aufgaben = tägliche und wöchentliche Aufgaben. Extras = einmalige Aufgaben, Lernspiele, Boni und Glücksrad.</p>
+    <div class="limsel"><label>📋 Aufgaben <select id="limN">${o(limN())}</select> ⭐</label><label>✨ Extras <select id="limS">${o(limS())}</select> ⭐</label></div>`}
+function wireLimit(){for(const [id,k] of [["limN","limitN"],["limS","limitS"]]){const s=document.getElementById(id);if(s)s.onchange=async()=>{try{await store.conf({[k]:+s.value});FAMCONF[k]=+s.value;toast("📏 Tageslimit gespeichert");render()}catch(e){toast("Speichern ging nicht")}}}}
+/* ---------- Lern- und Fokus-Hilfen (z. B. bei LRS / ADHS) ---------- */
+const hilfenCfg=()=>{const h=FAMCONF&&FAMCONF.hilfen;return h&&typeof h==="object"?h:{}};
+const hilfe=(p,k)=>!!(p&&hilfenCfg()[p]&&hilfenCfg()[p][k]);
+function applyHilfen(){const p=KID;document.documentElement.classList.toggle("lesehilfe",hilfe(p,"lesen"));document.documentElement.classList.toggle("fokushilfe",hilfe(p,"fokus"))}
+function hilfenEinst(){if(KID||READONLY)return "";const P=persons().filter(([k])=>tasks.some(t=>t.person===k));if(!P.length)return "";
+  return `<h3 class="sec">🧩 Lern- & Fokus-Hilfen</h3><p class="hint"><b>📖 Lese-Hilfe</b> (z. B. bei LRS): größere Schrift mit mehr Abstand, alles zum Anhören, beim Deutsch-Detektiv mehr Zeit und schon ab 7 von 10 ein Stern.<br><b>🎯 Fokus-Hilfe</b> (z. B. bei ADHS): immer nur die nächsten 3 Aufgaben im Blick, Aufgaben in kleinen Schritten mit Timer, kürzere Spielrunden (6 statt 10 Aufgaben).</p>
+    ${P.map(([k,n])=>`<div class="nameq"><b style="align-self:center;min-width:60px">${esc(n)}</b><button data-hilfe="${k}:lesen">${hilfe(k,"lesen")?"✅":"⬜"} 📖 Lese-Hilfe</button><button data-hilfe="${k}:fokus">${hilfe(k,"fokus")?"✅":"⬜"} 🎯 Fokus-Hilfe</button></div>`).join("")}`}
+function wireHilfen(){document.querySelectorAll("[data-hilfe]").forEach(b=>b.onclick=async()=>{const [p,k]=b.dataset.hilfe.split(":"),h=JSON.parse(JSON.stringify(hilfenCfg()));h[p]=h[p]||{};h[p][k]=!h[p][k];
+  try{await store.conf({hilfen:h});FAMCONF.hilfen=h;toast(h[p][k]?"✅ Eingeschaltet":"Ausgeschaltet");render()}catch(e){toast("Speichern ging nicht")}})}
+const SCHRITTE=[[/zimmer|aufräum/i,["👕 Kleidung in den Schrank oder Wäschekorb","🧸 Spielzeug in die Kisten","📚 Schreibtisch frei machen","🧦 Boden frei: nichts liegt mehr rum","🗑️ Müll in den Mülleimer"]],
+  [/bett/i,["🛏️ Decke ausschütteln","🧸 Kissen ordentlich hinlegen","✨ Decke glatt ziehen"]],
+  [/tisch/i,["🍽️ Teller","🥄 Besteck","🥤 Gläser","🧻 Servietten"]],
+  [/hausaufgabe/i,["📒 Ins Hausaufgabenheft schauen","✏️ Stifte und Hefte bereitlegen","📝 Eine Aufgabe nach der anderen (Pause ist erlaubt!)","🎒 Alles zurück in den Ranzen"]],
+  [/ranzen|schultasche/i,["📅 Stundenplan für morgen ansehen","📚 Bücher und Hefte einpacken","✏️ Federmappe rein","🥤 Trinkflasche und Brotdose bereitstellen"]],
+  [/zähne|zahn/i,["🪥 Zahnpasta auf die Bürste","⏱️ 2 Minuten putzen (Timer!)","💧 Ausspülen"]],
+  [/wäsche/i,["👕 Wäsche aufs Bett legen","🧦 Socken zusammenlegen","🗄️ Alles in den Schrank"]],
+  [/müll/i,["🗑️ Tüte zubinden","🚪 Rausbringen","🆕 Neue Tüte rein"]],
+  [/lesen/i,["📖 Buch aussuchen","⏱️ Timer auf 20 Minuten","🛋️ Gemütlich hinsetzen und los!"]]];
+let fokusTimer=null;
+function piep(){try{const C=new (window.AudioContext||window.webkitAudioContext)();[0,.35,.7].forEach(t=>{const o=C.createOscillator(),g=C.createGain();o.frequency.value=880;o.connect(g);g.connect(C.destination);g.gain.setValueAtTime(.25,C.currentTime+t);g.gain.exponentialRampToValueAtTime(.001,C.currentTime+t+.3);o.start(C.currentTime+t);o.stop(C.currentTime+t+.3)})}catch(e){}try{navigator.vibrate&&navigator.vibrate([300,150,300])}catch(e){}}
+function fokusSheet(t){
+  const st=(SCHRITTE.find(([re])=>re.test(t.titel||""))||[null,[]])[1],l=logFor(t);
+  sheet(`🎯 ${esc(t.titel)}`,`<p class="hint" style="margin-top:0">${sternTxt(+t.sterne||1)}${t.foto?" · 📸 mit Foto":""}${l?(l.offen?" · ⏳ wartet auf Bestätigung":" · ✅ schon erledigt"):""}</p>
+    ${TTS_OK?`<button class="btn ghost" id="fkSay" style="width:100%">🔊 Vorlesen</button>`:""}
+    ${st.length?`<div class="schritte">${st.map((x,i)=>`<label class="schritt"><input type="checkbox" data-st="${i}"><span>${esc(x)}</span></label>`).join("")}</div>`:""}
+    <div class="ftimer"><div id="fkZeit" class="fkzeit">⏱️</div><div class="nameq" style="justify-content:center">${[2,5,10,15].map(m=>`<button data-fk="${m}">${m} Min.</button>`).join("")}</div></div>
+    <div class="actions">${l?"":`<button class="btn" id="fkDone">✅ Fertig – abhaken</button>`}<button class="btn ghost" id="fkX">Schließen</button></div>`);
+  const stop=()=>{clearInterval(fokusTimer);fokusTimer=null};
+  document.getElementById("fkX").onclick=()=>{stop();closeSheet()};
+  const sb=document.getElementById("fkSay");if(sb)sb.onclick=()=>speak(`${t.titel}. ${st.length?"Die Schritte: "+st.join(". ")+".":""}`);
+  document.querySelectorAll("[data-st]").forEach(c=>c.onchange=()=>{const all=[...document.querySelectorAll("[data-st]")];if(all.every(x=>x.checked)){toast("👍 Alle Schritte geschafft! Jetzt abhaken.");try{navigator.vibrate&&navigator.vibrate(80)}catch(e){}}});
+  document.querySelectorAll("[data-fk]").forEach(b=>b.onclick=()=>{stop();const ende=Date.now()+(+b.dataset.fk)*60000,el=document.getElementById("fkZeit");
+    const tick=()=>{const el2=document.getElementById("fkZeit");if(!el2){stop();return}const r=Math.max(0,Math.round((ende-Date.now())/1000));el2.textContent=`⏱️ ${Math.floor(r/60)}:${String(r%60).padStart(2,"0")}`;
+      if(r<=0){stop();el2.textContent="⏰ Zeit ist um!";piep();if(TTS_OK)speak("Die Zeit ist um! Super, wie weit bist du gekommen?")}};tick();fokusTimer=setInterval(tick,1000)});
+  const d=document.getElementById("fkDone");if(d)d.onclick=()=>{stop();closeSheet();const c=document.querySelector(`[data-done="${CSS.escape(t.id)}"]`);if(c)c.click()};
 }
 function fixStars(p){
   const cur=starBalance(p);
@@ -1760,9 +1824,10 @@ function spielStart(sp){
 }
 function spielRunde(sp,p){
   if(p&&sternPause(p)){pauseToast(p);return}
-  const lvl=p?spielLvl(p,sp):1,N=10,G={i:0,ok:0,zeit:sp==="mathe"?(lvl===1?15:13):sp==="deutsch"?14:18,eing:"",auf:null,t0:0,tim:null,fertig:false,log:[]};
-  const vorlesen=sp==="deutsch"&&TTS_OK,autoV=vorlesen&&(()=>{try{return localStorage.getItem("fk-spiel-tts")!=="0"}catch(e){return true}})();
-  const sagFrage=()=>speak(G.auf.q);
+  const lese=hilfe(p||KID,"lesen"),fok=hilfe(p||KID,"fokus"),lvl=p?spielLvl(p,sp):1,N=fok?6:10,EIN=Math.ceil(N*(lese&&sp==="deutsch"?.7:.8)),ZWEI=lese&&sp==="deutsch"?Math.ceil(N*.9):N,G={i:0,ok:0,zeit:Math.round((sp==="mathe"?(lvl===1?15:13):sp==="deutsch"?14:18)*(lese?1.5:1)),eing:"",auf:null,t0:0,tim:null,fertig:false,log:[]};
+  const vorlesen=(sp==="deutsch"||lese)&&TTS_OK,autoV=vorlesen&&(()=>{try{return localStorage.getItem("fk-spiel-tts")!=="0"}catch(e){return true}})();
+  const sagFrage=()=>{const A=G.auf;let q=A.q;if(sp==="mathe")q=q.replace(/·/g," mal ").replace(/:/g," geteilt durch ").replace(/−/g," minus ").replace(/\+/g," plus ").replace(/\?/g," wie viel ").replace(/=/g," ist ");
+    if(sp==="deutsch"&&lese&&A.opts&&A.opts.length===2)q+=` Das Wort heißt: ${A.a}.`;speak(q)};
   const neu=()=>{G.auf=({mathe:matheAufgabe,deutsch:deutschAufgabe,uhr:uhrAufgabe,geld:geldAufgabe})[sp](lvl);G.eing="";G.t0=Date.now()+(autoV?2500:0);draw();if(autoV)sagFrage();
     clearInterval(G.tim);G.tim=setInterval(()=>{const bar=document.getElementById("spBar");if(!bar){clearInterval(G.tim);return}
       const rest=Math.min(G.zeit,Math.max(0,G.zeit-(Date.now()-G.t0)/1000));bar.style.width=(rest/G.zeit*100)+"%";bar.style.background=rest<4?"#ff6b6b":rest<8?"#ffd166":"#5fd38d";
@@ -1791,14 +1856,15 @@ function spielRunde(sp,p){
     document.querySelectorAll(".spiel button").forEach(b=>b.disabled=true);
     setTimeout(()=>{busy=false;if(!document.getElementById("spFb"))return;G.i++;if(G.i<N)neu();else ende()},ok?700:1800)};
   const ende=()=>{
-    let st=G.ok>=10?2:G.ok>=8?1:0,info="";
-    if(p){if(G.ok>=9)setSpielLvl(p,sp,lvl+1);else if(G.ok<=5)setSpielLvl(p,sp,lvl-1);
+    let st=G.ok>=ZWEI?2:G.ok>=EIN?1:0,info="";
+    if(p){if(G.ok>=N-1)setSpielLvl(p,sp,lvl+1);else if(G.ok<=Math.floor(N/2))setSpielLvl(p,sp,lvl-1);
       const frei=Math.max(0,spielLimit()-spielHeute(p));if(st>frei){info=frei?`Heute gibt es nur noch ${frei} ⭐ aus Spielen.`:"Das Tageslimit für Spiele-Sterne ist erreicht. Morgen geht es weiter!";st=frei}}
     else st=0;
-    const msg=G.ok>=10?"🏆 Perfekt! Alles richtig!":G.ok>=8?"🎉 Super gemacht!":G.ok>=5?"👍 Gut! Für einen Stern brauchst du 8 richtige.":"💪 Übung macht den Meister. Versuch es nochmal!";
+    if(p&&st>0){const c=capSterne(p,today,"sonder",st);if(c<st){info=c?`Heute gibt es nur noch ${c} ⭐ Extra-Sterne.`:"Das Tageslimit für Extra-Sterne ist erreicht. Morgen geht es weiter!";st=c}}
+    const msg=G.ok>=N?"🏆 Perfekt! Alles richtig!":G.ok>=EIN?"🎉 Super gemacht!":G.ok>=Math.ceil(N/2)?`👍 Gut! Für einen Stern brauchst du ${EIN} richtige.`:"💪 Übung macht den Meister. Versuch es nochmal!";
     if(p&&st>0&&store){store.add({typ:"erledigt",aufgabe:"spiel-"+sp,person:p,sterne:st,datum:today,titel:`${SPIELE[sp].n} · ${G.ok}/${N} richtig`});if(premOn(3)||KID)confetti()}
     if(p)try{lsSet("fk-spiel-last",String(Date.now()))}catch(e){}
-    sheet(SPIELE[sp].n,`<div class="spiel" style="text-align:center"><div style="font-size:52px">${G.ok>=8?"🌟":"🙂"}</div>
+    sheet(SPIELE[sp].n,`<div class="spiel" style="text-align:center"><div style="font-size:52px">${G.ok>=EIN?"🌟":"🙂"}</div>
       <h3 style="margin:4px 0">${G.ok} von ${N} richtig</h3><p>${msg}</p>
       ${st?`<p><b style="color:var(--star)">+${st} ⭐</b>${KID?" · sobald Mama oder Papa bestätigt haben":""}</p>`:""}${info?`<p class="hint">${info}</p>`:""}
       ${p&&G.ok>=9&&lvl<3?`<p class="hint">⬆️ Nächstes Mal geht es eine Stufe schwerer.</p>`:""}</div>
@@ -1909,7 +1975,7 @@ function radDrehen(p){
   document.getElementById("radGo").onclick=async()=>{const b=document.getElementById("radGo");b.disabled=true;
     const i=Math.floor(Math.random()*RAD.length),x=RAD[i],ziel=360*6+(360-(i*seg+seg/2));
     const R=document.getElementById("radR");R.style.transition="transform 4.2s cubic-bezier(.12,.75,.15,1)";R.style.transform=`rotate(${ziel}deg)`;
-    await store.add({typ:"erledigt",aufgabe:"rad",person:p,sterne:x[1],datum:today,woche:r.wk,titel:`🎡 Glücksrad: ${x[0]}`});
+    const radSt=capSterne(p,today,"sonder",x[1]);await store.add({typ:"erledigt",aufgabe:"rad",person:p,sterne:radSt,datum:today,woche:r.wk,titel:`🎡 Glücksrad: ${x[0]}`});
     setTimeout(()=>{const t=document.getElementById("radTxt");if(!t)return;confetti();
       t.innerHTML=`<b style="font-size:1.3rem">${esc(x[0])}</b><br>${KID?(x[1]?"Die Sterne bekommst du, sobald Mama oder Papa bestätigt haben.":"Zeig das Mama oder Papa, die lösen es für dich ein!"):"Steht jetzt im Verlauf."}`;
       b.textContent="👍 Fertig";b.disabled=false;b.onclick=()=>{closeSheet();render()};if(KID&&ttsAuto())speak(`Du hast gewonnen: ${x[0].replace("⭐","Sterne")}`)},4400)};
@@ -1919,7 +1985,7 @@ function spieleHTML(){
   const p=KID,frei=p?Math.max(0,spielLimit()-spielHeute(p)):0;
   return `<h3 class="sec">🎮 Lernspiele</h3>
     <div class="actions"><button class="btn${KID?"":" ghost"}" data-spiel="mathe">🧮 Mathe-Blitz</button><button class="btn${KID?"":" ghost"}" data-spiel="deutsch">✏️ Deutsch-Detektiv</button><button class="btn${KID?"":" ghost"}" data-spiel="uhr">🕐 Uhr-Profi</button><button class="btn${KID?"":" ghost"}" data-spiel="geld">💶 Geld-Profi</button></div>
-    <p class="hint">${KID?(spielLimit()?(frei?`Heute kannst du noch <b>${frei} ⭐</b> erspielen. 8 von 10 richtig = 1 ⭐, alle richtig = 2 ⭐.`:"Für heute hast du alle Spiele-Sterne. Üben geht trotzdem!"):"Spielen zum Üben, Sterne gibt es dafür gerade nicht."):`Für die 2.–3. Klasse, mit Zeitlimit und Stufen, die sich anpassen. Sterne pro Tag aus Spielen: <select id="spLim" aria-label="Tageslimit">${[0,1,2,3,4,5].map(n=>`<option value="${n}" ${spielLimit()===n?"selected":""}>${n}</option>`).join("")}</select>`}</p>`;
+    <p class="hint">${KID?(spielLimit()?(frei?`Heute kannst du noch <b>${frei} ⭐</b> erspielen. ${hilfe(KID,"fokus")?"5 von 6":"8 von 10"} richtig = 1 ⭐, alle richtig = 2 ⭐.`:"Für heute hast du alle Spiele-Sterne. Üben geht trotzdem!"):"Spielen zum Üben, Sterne gibt es dafür gerade nicht."):`Für die 2.–3. Klasse, mit Zeitlimit und Stufen, die sich anpassen. Sterne pro Tag aus Spielen: <select id="spLim" aria-label="Tageslimit">${[0,1,2,3,4,5].map(n=>`<option value="${n}" ${spielLimit()===n?"selected":""}>${n}</option>`).join("")}</select>`}</p>`;
 }
 function wireSpiele(){
   document.querySelectorAll("[data-spiel]").forEach(b=>b.onclick=()=>spielStart(b.dataset.spiel));
@@ -2015,7 +2081,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v84";
+const APP_VER="v85";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -3822,6 +3888,10 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-11c",d:"2026-11-11",t:"📏 Tageslimit & Lern-Hilfen",items:[
+    "📏 Tageslimit: höchstens 10 ⭐ pro Tag für Aufgaben und 5 ⭐ für Extras (einmalige Aufgaben, Spiele, Boni, Glücksrad). Einstellbar unter ⭐",
+    "📖 Lese-Hilfe (z. B. bei LRS): größere Schrift mit mehr Abstand, Aufgaben und Spielfragen zum Anhören, beim Deutsch-Detektiv mehr Zeit und schon ab 7 von 10 ein Stern",
+    "🎯 Fokus-Hilfe (z. B. bei ADHS): nur die nächsten 3 Aufgaben im Blick, jede Aufgabe in kleinen Schritten mit Timer, kürzere Spielrunden"]},
   {v:"2026-11-11b",d:"2026-11-11",t:"🏅 Level, Glücksrad & neue Spiele",items:[
     "🏅 Level und Abzeichen: Kinder steigen mit gesammelten Sternen auf (Anfänger bis Legende) und sammeln 16 Abzeichen",
     "🎡 Glücksrad: Wer in einer Woche 15 ⭐ geschafft hat, darf am Wochenende einmal drehen (Sterne, Nachtisch, Film …)",
