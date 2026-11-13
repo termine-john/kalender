@@ -111,8 +111,8 @@ button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid 
 .tabs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:4px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:4px}
 .tabs button{padding:9px 4px;border-radius:9px;font-weight:600;font-size:.88rem;color:var(--muted)}
 .tabs button[aria-selected="true"]{background:var(--accent);color:var(--surface)}
-.appbar .tabs{grid-template-columns:repeat(2,minmax(0,1fr))}.appbar .tabs [data-view="ferien"]::before{content:"🎒 "}.appbar .tabs [data-view="sterne"]::before{content:"⭐ "}
-body.off-sterne .appbar .tabs,html.kidmode body.off-sterne .appbar .tabs{grid-template-columns:repeat(1,minmax(0,1fr))}
+.appbar .tabs{grid-template-columns:none;grid-auto-flow:column;grid-auto-columns:minmax(0,1fr)}.appbar .tabs [data-view="familie"]::before{content:"🏠 "}html.kidmode .tabs [data-view="familie"],body.ro:not(.romem) .tabs [data-view="familie"]{display:none!important}.appbar .tabs [data-view="ferien"]::before{content:"🎒 "}.appbar .tabs [data-view="sterne"]::before{content:"⭐ "}
+
 .calswitch{grid-template-columns:repeat(4,minmax(0,1fr));margin:10px 0 6px;position:sticky;top:0;z-index:5;box-shadow:0 4px 14px rgba(0,0,0,.18)}
 .calswitch button{font-size:.95rem;padding:10px 4px}
 .badge{display:inline-block;font-size:.7rem;font-weight:600;padding:2px 6px;border-radius:6px;margin-left:6px;vertical-align:1px}
@@ -211,7 +211,7 @@ body.off-sterne .appbar .tabs,html.kidmode body.off-sterne .appbar .tabs{grid-te
 .cdialog p{margin:0;font-size:1rem;font-weight:600}
 .btn.danger.solid{background:var(--c-christin);color:#fff;border-color:var(--c-christin)}
 body.ro .foot,body.ro .fabs,body.ro:not(.romem) #gear,body.ro [data-view="sterne"],body.ro .plus,body.ro .empty-note,body.ro #mImg{display:none!important}
-body.ro .appbar .tabs{grid-template-columns:repeat(1,minmax(0,1fr))}
+
 body.ro .cell{cursor:default}
 .help .hsearch{margin:4px 0 6px}
 .help details{border:1px solid var(--line);border-radius:12px;background:var(--surface);margin:8px 0}
@@ -278,6 +278,16 @@ html.lesehilfe .spopts button{font-size:1.5rem;padding:16px 8px}html.lesehilfe .
 .wunsch{border-top:1px solid var(--line);padding:8px 0;display:flex;flex-direction:column;gap:4px}.wunsch .thbar i{display:block;height:100%;background:linear-gradient(90deg,#5fd38d,#ffd166)}
 .tausch{margin:10px 0 4px;padding:10px;border-radius:14px;background:linear-gradient(135deg,rgba(95,211,141,.14),rgba(255,209,102,.1));border:1px solid rgba(95,211,141,.35);display:flex;flex-direction:column;gap:6px}
 .tauschbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.tauschbtns button{font:inherit;display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 2px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:inherit}.tauschbtns button:disabled{opacity:.45}.tauschbtns em{font-style:normal;font-size:11px;color:#5fd38d;font-weight:700}
+.famview{display:flex;flex-direction:column;gap:6px}.famsec{border:1px solid var(--line);border-radius:16px;padding:10px 12px;background:var(--surface)}.famsec .sec{margin-top:2px}
+.ekadd{display:flex;gap:6px}.ekadd input{flex:1;font:inherit;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:inherit}.ekadd .btn{min-width:48px;font-size:1.3rem}
+.ekchips{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}.ekchips button{font:inherit;font-size:12.5px;padding:4px 10px;border-radius:99px;border:1px dashed var(--line);background:transparent;color:inherit}
+.ekgrp{display:flex;flex-direction:column;gap:4px;margin:8px 0}.ekitem{display:flex;gap:10px;align-items:center;text-align:left;font:inherit;font-size:1.02rem;padding:9px 10px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:inherit}.ekbox{width:22px;height:22px;border-radius:7px;border:2px solid var(--accent);display:grid;place-items:center;font-size:13px;flex:none}.ekitem.done{opacity:.5;text-decoration:line-through}.ekitem.done .ekbox{background:var(--accent);color:var(--surface)}
+.essnav{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}.essnav button{font:inherit;font-size:1.3rem;width:40px;height:34px;border-radius:10px;border:1px solid var(--line);background:var(--bg);color:inherit}
+.esslist{display:grid;gap:5px}.essday{display:grid;grid-template-columns:34px 1fr auto;gap:8px;align-items:center;text-align:left;font:inherit;padding:8px 10px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:inherit}.essday.heute{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
+.fahrt{display:flex;flex-direction:column;gap:6px;padding:8px 0;border-top:1px solid var(--line)}.fahrt:first-of-type{border-top:0}
+.geb{display:flex;flex-direction:column;gap:4px;padding:8px 0;border-top:1px solid var(--line)}.geb .bald{color:#ff9f6b;font-weight:700}.ideen{display:flex;flex-wrap:wrap;gap:5px}.ideen button{font:inherit;font-size:13px;padding:4px 10px;border-radius:99px;border:1px solid var(--line);background:var(--bg);color:inherit}.ideen button.ok{opacity:.6;text-decoration:line-through}.btn.klein{padding:5px 12px;font-size:13px;align-self:flex-start}
+.infogrp{display:flex;flex-direction:column;gap:5px;margin:8px 0}.infoitem{text-align:left;font:inherit;padding:9px 10px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:inherit;line-height:1.4}
+.fahrtsel{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:6px 0}.fahrtsel>span{min-width:64px;font-size:13px;opacity:.8}.fahrtsel button{font:inherit;font-size:13px;padding:5px 10px;border-radius:99px;border:1px solid var(--line);background:var(--bg);color:inherit}.fahrtsel button[aria-pressed="true"]{background:var(--accent);color:var(--surface);border-color:transparent}
 .kidbar{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
 .kidbar .pbar{height:12px;border-radius:99px;background:rgba(127,127,127,.2);overflow:hidden;margin:6px 0 2px}.kidbar .pbar i{display:block;height:100%;background:linear-gradient(90deg,#ffd166,#ff9f1c);border-radius:99px}
 .pend{display:grid;grid-template-columns:1fr auto auto auto;gap:6px;align-items:center}.pend button{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:10px;padding:6px 10px;font:inherit}
@@ -693,7 +703,7 @@ textarea.cfg{font:inherit;font-size:.8rem;font-family:ui-monospace,monospace;col
   </div>
   <div class="greet" id="greet" aria-live="polite"></div>
   <div class="tabs" role="tablist" aria-label="Ansicht">
-    <button role="tab" data-view="ferien">Ferien</button><button role="tab" data-view="sterne">Sterne</button>
+    <button role="tab" data-view="ferien">Ferien</button><button role="tab" data-view="familie">Familie</button><button role="tab" data-view="sterne">Sterne</button>
   </div>
   </header>
 
@@ -847,6 +857,7 @@ function splitData(all){
   redeems=all.filter(e=>e.typ==="einloesung");
   backups=all.filter(e=>e.typ==="sicherung");
   geldBuch=all.filter(e=>e.typ==="geld");wuensche=all.filter(e=>e.typ==="wunsch");
+  einkauf=all.filter(e=>e.typ==="einkauf");essen=all.filter(e=>e.typ==="essen");infos=all.filter(e=>e.typ==="info");
   const tb=document.querySelector('[data-view="sterne"]');if(tb)tb.classList.toggle("hasbadge",!KID&&ROLE!=="lesen"&&pendingCount()>0);
 }
 function pendingCount(){return taskLogs.filter(l=>l.offen&&!l.abgelehnt).length+redeems.filter(r=>r.offen).length}
@@ -1892,6 +1903,137 @@ function wireGeld(){
     const st=capSterne(w.person,today,"sonder",5);if(st)await store.add({typ:"erledigt",aufgabe:"bonus",person:w.person,sterne:st,datum:today,titel:`🛍️ Stolz-Bonus: ${w.titel} selbst gekauft`});
     confetti();toast(`🛍️ Super! ${PNAME[w.person]} hat es sich selbst gekauft${st?` · +${st} ⭐`:""}`)});
 }
+/* ================= Familie: Einkauf, Essen, Fahrten, Geburtstage, Infos, Export ================= */
+let einkauf=[],essen=[],infos=[];
+const nackt=e=>{const{id,_privat,...o}=e;return o};
+const EK_KAT=[["obst","🥦","Obst & Gemüse",/apfel|äpfel|banane|birne|tomate|gurke|salat|kartoffel|zwiebel|möhre|karotte|paprika|obst|gemüse|zitrone|orange|traube|beere|pilz|knoblauch|brokkoli|zucchini/i],
+  ["kuehl","🥛","Kühlregal",/milch|butter|käse|joghurt|quark|sahne|ei(er)?\b|eier|wurst|schinken|aufschnitt|frischkäse|margarine|hähnchen|hackfleisch|fleisch|fisch|tofu/i],
+  ["brot","🍞","Brot & Backwaren",/brot|brötchen|toast|baguette|croissant|kuchen|semmel/i],
+  ["tk","🧊","Tiefkühl",/tk|tiefkühl|pizza|pommes|eis\b|fischstäbchen|spinat/i],
+  ["vorrat","🥫","Vorrat",/nudel|pasta|reis|mehl|zucker|salz|öl|essig|soße|sauce|ketchup|konserve|dose|müsli|cornflakes|honig|marmelade|nutella|kaffee|tee|gewürz|brühe/i],
+  ["getraenke","🥤","Getränke",/wasser|saft|cola|limo|bier|wein|sprudel|getränk|apfelschorle/i],
+  ["drogerie","🧴","Drogerie & Haushalt",/zahnpasta|shampoo|duschgel|seife|klopapier|toilettenpapier|küchenrolle|taschentuch|spülmittel|waschmittel|müllbeutel|windel|deo|creme|zahnbürste|tabs|schwamm/i],
+  ["sonst","📦","Sonstiges",/$^/]];
+const ekKat=t=>(EK_KAT.find(([k,,,re])=>re.test(t))||EK_KAT[EK_KAT.length-1])[0];
+const EK_STD=["Milch","Brot","Eier","Butter","Bananen","Käse","Äpfel","Nudeln","Toilettenpapier","Joghurt"];
+function ekHaeufig(){let h={};try{h=JSON.parse(localStorage.getItem("fk-haeufig")||"{}")}catch(e){}
+  const offen=new Set(einkauf.filter(x=>!x.erledigt).map(x=>x.titel.toLowerCase()));
+  const top=Object.entries(h).sort((a,b)=>b[1]-a[1]).map(x=>x[0]);return [...new Set([...top,...EK_STD])].filter(t=>!offen.has(t.toLowerCase())).slice(0,10)}
+function ekMerken(t){try{const h=JSON.parse(localStorage.getItem("fk-haeufig")||"{}");h[t]=(h[t]||0)+1;localStorage.setItem("fk-haeufig",JSON.stringify(h))}catch(e){}}
+async function ekAdd(text){if(!store||READONLY)return;const teile=String(text||"").split(/[,;\n]/).map(x=>x.trim()).filter(Boolean).slice(0,30);
+  for(const t of teile){if(einkauf.some(x=>!x.erledigt&&x.titel.toLowerCase()===t.toLowerCase()))continue;await store.add({typ:"einkauf",titel:t.slice(0,60),kat:ekKat(t),erledigt:false});ekMerken(t)}}
+function ekHTML(){
+  const offen=einkauf.filter(x=>!x.erledigt),fertig=einkauf.filter(x=>x.erledigt);
+  const grp=EK_KAT.map(([k,ic,n])=>{const xs=offen.filter(x=>(x.kat||ekKat(x.titel))===k);return xs.length?`<div class="ekgrp"><span class="meta">${ic} ${n}</span>${xs.map(x=>`<button class="ekitem" data-ek="${esc(x.id)}"><span class="ekbox"></span>${esc(x.titel)}</button>`).join("")}</div>`:""}).join("");
+  return `<section class="famsec"><h3 class="sec">🛒 Einkaufsliste${offen.length?` · ${offen.length}`:""}</h3>
+    ${READONLY?"":`<div class="ekadd"><input id="ekIn" placeholder="z. B. Milch, Brot, Eier" enterkeyhint="done"><button class="btn" id="ekGo">+</button></div>
+    <div class="ekchips">${ekHaeufig().map(t=>`<button data-ekq="${esc(t)}">+ ${esc(t)}</button>`).join("")}</div>`}
+    ${grp||'<p class="hint">Die Liste ist leer. 🎉</p>'}
+    ${fertig.length?`<details class="ekdone"><summary class="meta">✓ ${fertig.length} im Wagen</summary>${fertig.map(x=>`<button class="ekitem done" data-ek="${esc(x.id)}"><span class="ekbox">✓</span>${esc(x.titel)}</button>`).join("")}${READONLY?"":`<button class="btn ghost" id="ekClean" style="width:100%;margin-top:6px">🧹 Erledigte entfernen</button>`}</details>`:""}</section>`;
+}
+/* Essensplan */
+let essWoche=null;
+const essVon=d=>essen.find(x=>x.datum===d);
+function essHTML(){
+  const mo=essWoche||mondayOf(today),tage=[...Array(7)].map((_,i)=>addDays(mo,i)),WT=["Mo","Di","Mi","Do","Fr","Sa","So"];
+  return `<section class="famsec"><h3 class="sec">🍝 Essensplan</h3><div class="essnav"><button data-essw="-1" aria-label="Vorige Woche">‹</button><span>${fmt(mo).slice(0,6)} – ${fmt(addDays(mo,6)).slice(0,6)}</span><button data-essw="1" aria-label="Nächste Woche">›</button></div>
+    <div class="esslist">${tage.map((d,i)=>{const e=essVon(d);return `<button class="essday${d===today?" heute":""}" data-ess="${d}"><b>${WT[i]}</b><span>${e?esc(e.titel):`<span class="meta">${READONLY?"–":"+ Gericht"}</span>`}</span>${e&&e.zutaten&&e.zutaten.length?`<span class="meta">${e.zutaten.length} Zutaten</span>`:""}</button>`}).join("")}</div></section>`;
+}
+function essSheet(d){
+  if(READONLY)return;const e=essVon(d)||{};
+  sheet(`🍝 ${fmt(d)}`,`<label class="f">Was gibt es?<input id="esT" maxlength="60" value="${esc(e.titel||"")}" placeholder="z. B. Spaghetti Bolognese"></label>
+    <label class="f">Zutaten (mit Komma trennen)<textarea id="esZ" rows="3" placeholder="Spaghetti, Hackfleisch, Tomaten, Zwiebel">${esc((e.zutaten||[]).join(", "))}</textarea></label>
+    <div class="actions"><button class="btn" id="esOk">Speichern</button><button class="btn ghost" id="esEk">🛒 Zutaten auf die Liste</button></div>
+    ${e.id?`<button class="btn danger" id="esDel" style="width:100%">Löschen</button>`:""}`);
+  const lese=()=>({t:document.getElementById("esT").value.trim().slice(0,60),z:document.getElementById("esZ").value.split(/[,;\n]/).map(x=>x.trim()).filter(Boolean).slice(0,30)});
+  const spei=async()=>{const {t,z}=lese();if(!t&&!z.length)return;await store.set(`essen-${d}`,{typ:"essen",datum:d,titel:t||"Essen",zutaten:z})};
+  document.getElementById("esOk").onclick=async()=>{await spei();closeSheet();toast("🍝 Gespeichert")};
+  document.getElementById("esEk").onclick=async()=>{const {z}=lese();if(!z.length){toast("Erst Zutaten eintragen");return}await spei();await ekAdd(z.join(","));closeSheet();toast(`🛒 ${z.length} Zutaten auf der Einkaufsliste`)};
+  const dl=document.getElementById("esDel");if(dl)dl.onclick=async()=>{await store.del(e.id);closeSheet()};
+}
+/* Fahrten */
+function fahrtenHTML(){
+  const bis=addDays(today,14),list=entries.filter(e=>!e._privat&&(e.bringt==="offen"||e.holt==="offen")&&e.datum>=today&&e.datum<=bis).sort((a,b)=>(a.datum+(a.von||"")).localeCompare(b.datum+(b.von||"")));
+  const P=persons().filter(([k])=>k!==KID);
+  return `<section class="famsec"><h3 class="sec">🚗 Wer bringt, wer holt?</h3>${list.length?list.map(e=>[["bringt","Bringen"],["holt","Abholen"]].filter(([f])=>e[f]==="offen").map(([f,n])=>`<div class="fahrt"><span><b>${n}:</b> ${esc(PNAME[e.person]||"")} · ${esc(e.titel||TYPN[e.typ])}<br><span class="meta">${fmt(e.datum)}${e.von?" · "+(f==="holt"&&e.bis?e.bis:e.von):""}</span></span>
+    ${READONLY?"":`<div class="nameq">${P.filter(([k])=>k!==e.person).map(([k,nm])=>`<button data-fahrt="${esc(e.id)}:${f}:${k}">${esc(nm)}</button>`).join("")}</div>`}</div>`).join("")).join(""):'<p class="hint">Keine offenen Fahrten in den nächsten 2 Wochen. Beim Termin unter „🚗 Wer bringt, wer holt?“ kannst du Fahrten eintragen.</p>'}</section>`;
+}
+const fahrtTxt=e=>{const t=[];if(e.bringt)t.push(e.bringt==="offen"?"⚠️ Bringen offen":`🚗 bringt: ${PNAME[e.bringt]||e.bringt}`);if(e.holt)t.push(e.holt==="offen"?"⚠️ Abholen offen":`🚗 holt: ${PNAME[e.holt]||e.holt}`);return t.join(" · ")};
+/* Geburtstage */
+function gebHTML(){
+  const list=entries.filter(e=>e.typ==="geburtstag").map(e=>({e,ev:eventDateOf(e)})).filter(x=>x.ev>=today&&x.ev<=addDays(today,60)).sort((a,b)=>a.ev.localeCompare(b.ev));
+  return `<section class="famsec"><h3 class="sec">🎂 Geburtstage & Geschenkideen</h3>${list.length?list.map(({e,ev})=>{const d=diffDays(today,ev),id=e.ideen||[],a=ageOn(e,ev);
+    return `<div class="geb"><div class="rw-head"><b>${esc(e.titel)}${a?` <span class="meta">wird ${a}</span>`:""}</b><span class="${d<=7?"bald":""}">${d===0?"🎉 Heute!":d===1?"morgen":`in ${d} Tagen`}</span></div>
+      <span class="meta">${fmt(ev)}${id.length?` · 🎁 ${id.filter(x=>x.ok).length}/${id.length} Ideen besorgt`:""}</span>
+      ${id.length?`<div class="ideen">${id.map((x,i)=>`<button data-idee="${esc(e.id)}:${i}" class="${x.ok?"ok":""}">${x.ok?"✅":"🎁"} ${esc(x.t)}</button>`).join("")}</div>`:""}
+      ${READONLY?"":`<button class="btn ghost klein" data-ideeneu="${esc(e.id)}">+ Geschenkidee</button>`}</div>`}).join(""):'<p class="hint">In den nächsten 60 Tagen hat niemand Geburtstag. Geburtstage trägst du als Eintrag mit der Art „🎂 Geburtstag“ ein.</p>'}</section>`;
+}
+/* Infobrett */
+const INFO_KAT=[["notfall","🚨","Notfall"],["arzt","🩺","Ärzte"],["schule","🏫","Schule & Kita"],["gesund","💊","Allergien & Medikamente"],["groesse","👕","Größen"],["sonst","📝","Sonstiges"]];
+function infoHTML(){
+  return `<section class="famsec"><h3 class="sec">📇 Familien-Infobrett</h3>${INFO_KAT.map(([k,ic,n])=>{const xs=infos.filter(x=>x.kat===k);return xs.length?`<div class="infogrp"><span class="meta">${ic} ${n}</span>${xs.map(x=>`<button class="infoitem" data-info="${esc(x.id)}"><b>${esc(x.titel)}</b>${x.person&&PNAME[x.person]?` <span class="meta">· ${esc(PNAME[x.person])}</span>`:""}<br><span>${esc(x.text||"").replace(/\n/g,"<br>")}</span></button>`).join("")}</div>`:""}).join("")||'<p class="hint">Noch leer. Hier gehören Kinderarzt, Schule, Notfallnummern, Allergien oder Kleidergrößen hin. Praktisch auch für Oma oder Babysitter.</p>'}
+    ${READONLY?"":`<button class="btn ghost" id="infoNeu" style="width:100%">+ Info hinzufügen</button>`}</section>`;
+}
+function infoSheet(x){
+  if(READONLY)return;const d=x?{...x}:{kat:"arzt",titel:"",text:"",person:""};
+  sheet(x?"📇 Info bearbeiten":"📇 Neue Info",`<label class="f">Bereich<select id="inK">${INFO_KAT.map(([k,ic,n])=>`<option value="${k}" ${d.kat===k?"selected":""}>${ic} ${n}</option>`).join("")}</select></label>
+    <label class="f">Titel<input id="inT" maxlength="60" value="${esc(d.titel)}" placeholder="z. B. Kinderarzt Dr. Müller"></label>
+    <label class="f">Details<textarea id="inX" rows="4" maxlength="600" placeholder="Telefon, Adresse, Sprechzeiten …">${esc(d.text||"")}</textarea></label>
+    <label class="f">Gehört zu (optional)<select id="inP"><option value="">Alle</option>${persons().map(([k,n])=>`<option value="${k}" ${d.person===k?"selected":""}>${esc(n)}</option>`).join("")}</select></label>
+    <div class="actions"><button class="btn" id="inOk">Speichern</button><button class="btn ghost" id="inX2">Abbrechen</button></div>${x?`<button class="btn danger" id="inDel" style="width:100%">Löschen</button>`:""}`);
+  document.getElementById("inX2").onclick=closeSheet;
+  document.getElementById("inOk").onclick=async()=>{const o={typ:"info",kat:document.getElementById("inK").value,titel:document.getElementById("inT").value.trim().slice(0,60),text:document.getElementById("inX").value.trim().slice(0,600)};const p=document.getElementById("inP").value;if(p)o.person=p;
+    if(!o.titel){toast("Bitte einen Titel eingeben");return}closeSheet();if(x)await store.set(x.id,o);else await store.add(o);toast("📇 Gespeichert")};
+  const dl=document.getElementById("inDel");if(dl)dl.onclick=async()=>{if(!await askConfirm(`„${x.titel}“ löschen?`))return;closeSheet();await store.del(x.id)};
+}
+/* Export in den Handy-Kalender */
+const icsEsc=t=>String(t||"").replace(/\\/g,"\\\\").replace(/;/g,"\\;").replace(/,/g,"\\,").replace(/\n/g,"\\n");
+const icsD=d=>d.replace(/-/g,""),icsT=(d,t)=>icsD(d)+"T"+t.replace(":","")+"00";
+function icsEvent(e){
+  const L=["BEGIN:VEVENT",`UID:${e.id||Math.random().toString(36).slice(2)}@familienkalender`,`DTSTAMP:${new Date().toISOString().replace(/[-:]/g,"").slice(0,15)}Z`];
+  const nm=e.typ==="geburtstag"?`🎂 ${e.titel}`:`${PNAME[e.person]&&e.person!=="gemeinsam"?PNAME[e.person]+": ":""}${e.typ==="arbeit"?(e.titel||"Arbeit"):isGanz(e.typ)?(e.titel?TYPN[e.typ]+" · "+e.titel:TYPN[e.typ]):(e.titel||TYPN[e.typ])}`;
+  L.push(`SUMMARY:${icsEsc(nm)}`);
+  if(e.von&&!isGanz(e.typ)&&e.typ!=="geburtstag"){L.push(`DTSTART:${icsT(e.datum,e.von)}`);L.push(`DTEND:${e.bis?icsT(e.endDatum||e.datum,e.bis):icsT(e.datum,e.von)}`)}
+  else{L.push(`DTSTART;VALUE=DATE:${icsD(e.datum)}`);L.push(`DTEND;VALUE=DATE:${icsD(addDays(e.endDatum&&e.endDatum>e.datum?e.endDatum:e.datum,1))}`)}
+  if(e.typ==="geburtstag")L.push("RRULE:FREQ=YEARLY");
+  const ft=fahrtTxt(e);if(ft)L.push(`DESCRIPTION:${icsEsc(ft)}`);
+  L.push("END:VEVENT");return L.join("\r\n");
+}
+function icsLaden(list,name){
+  const txt=["BEGIN:VCALENDAR","VERSION:2.0","PRODID:-//Familienkalender//DE","CALSCALE:GREGORIAN",...list.map(icsEvent),"END:VCALENDAR"].join("\r\n");
+  const a=document.createElement("a");a.href=URL.createObjectURL(new Blob([txt],{type:"text/calendar;charset=utf-8"}));a.download=name;document.body.appendChild(a);a.click();setTimeout(()=>{URL.revokeObjectURL(a.href);a.remove()},2000);
+}
+function exportHTML(){
+  return `<section class="famsec"><h3 class="sec">📅 In den Handy-Kalender übernehmen</h3><p class="hint">Lädt die Termine der nächsten 6 Monate als Kalender-Datei. Öffne sie, dann übernimmt dein Handy-Kalender (z. B. Google- oder Apple-Kalender) die Termine mit seinen eigenen Erinnerungen. Änderungen danach werden nicht automatisch übernommen.</p>
+    <div class="nameq"><button data-ics="">Alle</button>${persons().map(([k,n])=>`<button data-ics="${k}">${esc(n)}</button>`).join("")}<button data-ics="gemeinsam">Gemeinsam</button></div></section>`;
+}
+function exportStart(p){
+  const bis=addDays(today,183),list=entries.filter(e=>(!p||e.person===p)&&(e.typ==="geburtstag"||((e.endDatum||e.datum)>=today&&e.datum<=bis)));
+  if(!list.length){toast("Keine Termine zum Übernehmen");return}
+  const seen=new Set(),uniq=list.filter(e=>{if(e.typ!=="geburtstag")return true;const k=e.titel+e.datum.slice(5);if(seen.has(k))return false;seen.add(k);return true});
+  icsLaden(uniq,`familienkalender${p?"-"+(PNAME[p]||p).toLowerCase().replace(/[^a-z0-9äöü]+/g,"-"):""}.ics`);toast(`📅 ${uniq.length} Termine als Kalender-Datei geladen`);
+}
+/* Ansicht */
+function renderFamilie(){
+  const el=document.getElementById("vOther");
+  el.innerHTML=`<div class="famview">${ekHTML()}${essHTML()}${fahrtenHTML()}${gebHTML()}${infoHTML()}${exportHTML()}</div>`;
+  const $=id=>document.getElementById(id);
+  if($("ekGo")){const go=async()=>{const v=$("ekIn").value;if(!v.trim())return;$("ekIn").value="";await ekAdd(v)};$("ekGo").onclick=go;$("ekIn").onkeydown=ev=>{if(ev.key==="Enter")go()}}
+  el.querySelectorAll("[data-ekq]").forEach(b=>b.onclick=()=>ekAdd(b.dataset.ekq));
+  el.querySelectorAll("[data-ek]").forEach(b=>b.onclick=async()=>{if(READONLY)return;const x=einkauf.find(y=>y.id===b.dataset.ek);if(!x)return;const{id,...o}=x;b.classList.toggle("done");await store.set(id,{...o,erledigt:!x.erledigt})});
+  if($("ekClean"))$("ekClean").onclick=async()=>{for(const x of einkauf.filter(y=>y.erledigt))await store.del(x.id);toast("🧹 Aufgeräumt")};
+  el.querySelectorAll("[data-essw]").forEach(b=>b.onclick=()=>{essWoche=addDays(essWoche||mondayOf(today),7*(+b.dataset.essw));render()});
+  el.querySelectorAll("[data-ess]").forEach(b=>b.onclick=()=>essSheet(b.dataset.ess));
+  el.querySelectorAll("[data-fahrt]").forEach(b=>b.onclick=async()=>{const [id,f,k]=b.dataset.fahrt.split(":"),e=entries.find(x=>x.id===id);if(!e||e._privat)return;const o=nackt(e);o[f]=k;await store.set(id,o);toast(`🚗 ${PNAME[k]} ${f==="bringt"?"bringt":"holt ab"}`)});
+  el.querySelectorAll("[data-ideeneu]").forEach(b=>b.onclick=()=>{const e=entries.find(x=>x.id===b.dataset.ideeneu);if(!e)return;if(e._privat){toast("Bei privaten Einträgen geht das nicht");return}
+    sheet(`🎁 Geschenkidee für ${esc(e.titel)}`,`<label class="f">Idee<input id="idT" maxlength="60" placeholder="z. B. Buch, Gutschein, Lego"></label><div class="actions"><button class="btn" id="idOk">Hinzufügen</button><button class="btn ghost" id="idX">Abbrechen</button></div>`);
+    document.getElementById("idX").onclick=closeSheet;
+    document.getElementById("idOk").onclick=async()=>{const t=document.getElementById("idT").value.trim();if(!t)return;closeSheet();const o=nackt(e);o.ideen=[...(e.ideen||[]),{t:t.slice(0,60),ok:false}].slice(0,20);await store.set(e.id,o);toast("🎁 Idee gespeichert")}});
+  el.querySelectorAll("[data-idee]").forEach(b=>b.onclick=async()=>{const [id,i]=b.dataset.idee.split(":"),e=entries.find(x=>x.id===id);if(!e||READONLY||e._privat)return;const o=nackt(e);o.ideen=(e.ideen||[]).map((x,j)=>j===+i?{...x,ok:!x.ok}:x);await store.set(id,o)});
+  if($("infoNeu"))$("infoNeu").onclick=()=>infoSheet(null);
+  el.querySelectorAll("[data-info]").forEach(b=>b.onclick=()=>infoSheet(infos.find(x=>x.id===b.dataset.info)));
+  el.querySelectorAll("[data-ics]").forEach(b=>b.onclick=()=>exportStart(b.dataset.ics));
+}
 function fixStars(p){
   const cur=starBalance(p);
   sheet(`⭐ Sterne von ${esc(PNAME[p]||"")}`,`<p class="hint">Aktueller Stand: <b>${sF(cur)} ⭐</b>. Gib den neuen Stand ein. Die Änderung erscheint im 📜 Verlauf als „Korrektur“.</p>
@@ -2224,7 +2366,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v89";
+const APP_VER="v90";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -2896,6 +3038,7 @@ function chipHTML(e,day){
   const multi=e.endDatum&&e.endDatum>e.datum;
   const t=timeTxt(e);
   let label=emoP(e)+(e._privat?"👥 ":"")+(e.geschuetzt?"🔒 ":"")+(e.typ==="geburtstag"?bdayLabel(e,day):e.typ==="arbeit"?(e.titel||"Arbeit"):isGanz(e.typ)?(e.titel?`${TYPN[e.typ]} · ${e.titel}`:TYPN[e.typ]):e.titel);
+  if(e.bringt==="offen"||e.holt==="offen")label+=" ⚠️🚗";else if(e.bringt||e.holt)label+=" 🚗";
   const range=multi&&e.typ!=="geburtstag"?` <span class="rep">(${fmt(e.datum).slice(3)}–${fmt(e.endDatum).slice(3)})</span>`:"";
   const rep=e.serie?` <span class="rep">↻</span>`:"";
   return `<button class="chip ${e.typ} ${e.person}${e.wichtig?" imp":""}${CLASH.has(e.id)?" clash":""}" data-id="${esc(e.id)}" ${CLASH.has(e.id)?'title="Überschneidet sich mit einem anderen Termin"':""}>${t?`<span class="t">${CLASH.has(e.id)?"⚠️ ":""}${t}</span>`:""}<span class="chip-label">${esc(label)}</span>${range}${rep}</button>`;
@@ -2944,8 +3087,8 @@ function renderInner(){
   document.querySelectorAll(".tabs [data-view]").forEach(b=>b.setAttribute("aria-selected",String(b.dataset.view===view)));
   document.getElementById("vWoche").hidden=view!=="woche";
   document.getElementById("vOther").hidden=view==="woche";
-  document.getElementById("navbar").hidden=view==="ferien"||view==="sterne";
-  if(view==="tag")renderDay();else if(view==="monat")renderMonth();else if(view==="jahr")renderYear();else if(view==="ferien")renderFerien();else if(view==="sterne")renderStars();else renderWeek();
+  document.getElementById("navbar").hidden=view==="ferien"||view==="sterne"||view==="familie";
+  if(view==="tag")renderDay();else if(view==="monat")renderMonth();else if(view==="jahr")renderYear();else if(view==="ferien")renderFerien();else if(view==="sterne")renderStars();else if(view==="familie")renderFamilie();else renderWeek();
   renderMorning();renderNews();renderEve();renderNext();renderRemind();renderWishes();renderPet();
 }
 /* ---------- Tagesübersicht (Zeitstrahl) ---------- */
@@ -3413,6 +3556,8 @@ function drawSheet(){
       <label class="f">${d.typ==="arbeit"?"Arbeitsbeginn":"Von (optional)"}<input type="time" id="i-von" value="${d.von||""}"></label>
       <label class="f">${d.typ==="arbeit"?"Arbeitsende":"Bis (optional)"}<input type="time" id="i-bis" value="${d.bis||""}"></label>
     </div>`:""}
+    ${d.typ==="termin"&&!bd?`<div class="box"><span class="lbl-s">🚗 Wer bringt, wer holt? (optional)</span>
+      ${[["bringt","Bringen"],["holt","Abholen"]].map(([f,n])=>`<div class="fahrtsel"><span>${n}</span>${[["","–"],["offen","❓ offen"],...persons().map(([k,nm])=>[k,nm])].map(([v,l])=>`<button data-fs="${f}:${v}" aria-pressed="${(d[f]||"")===v}">${esc(l)}</button>`).join("")}</div>`).join("")}</div>`:""}
     <div id="clashBox" class="clashbox" hidden></div>
     ${bd?"":!isEdit?`<div class="box">
       <span class="lbl-s">Wiederholen</span>
@@ -3436,6 +3581,7 @@ function drawSheet(){
         ${d.serie?`<button class="btn danger" id="delFrom">✂️ Ab hier bis Serienende (${entries.filter(x=>x.serie===d.serie&&x.datum>=d.datum).length})</button><button class="btn danger" id="delSeries">Ganze Serie (${series})</button>`:""}
         <button class="btn ghost" id="delNo">Nein</button></div></div>`
       :`<button class="btn danger" id="del">Löschen</button>`):""}
+    ${isEdit?`<button class="btn ghost" id="icsOne" style="width:100%;margin-top:8px">📅 In Handy-Kalender übernehmen</button>`:""}
   </div></div>`;
   const $=id=>document.getElementById(id);
   const read=()=>{d.titel=$("i-titel").value.trim();d.datum=$("i-datum").value||d.datum;d.endDatum=$("i-end").value;
@@ -3466,6 +3612,8 @@ function drawSheet(){
   showClash(d);
   $("cancel").onclick=closeSheet;
   $("i-imp").onclick=()=>{read();d.wichtig=!d.wichtig;drawSheet()};
+  document.querySelectorAll(".sheet [data-fs]").forEach(b=>b.onclick=()=>{read();const [f,v]=b.dataset.fs.split(":");if(v)d[f]=v;else delete d[f];drawSheet()});
+  if($("icsOne"))$("icsOne").onclick=()=>{read();icsLaden([{...d,id:d.id||"neu"}],"termin.ics");toast("📅 Kalender-Datei geladen")};
   document.querySelectorAll(".sheet [data-vis]").forEach(b=>b.onclick=()=>{read();d.sichtbar=b.dataset.vis==="auswahl"?(isPrivObj(d)?d.sichtbar:[MY_UID]):[];if(b.dataset.vis==="auswahl"&&!MEMBERS.length)loadMembers2().then(()=>drawSheet());drawSheet()});
   if($("i-lock"))$("i-lock").onclick=()=>{read();if(!MY_UID){toast("Gerade keine Verbindung · bitte später nochmal");return}d.geschuetzt=!d.geschuetzt;if(d.geschuetzt&&!d.ersteller)d.ersteller=MY_UID;toast(d.geschuetzt?"🔒 Nur du kannst diesen Termin löschen":"Schutz aufgehoben");drawSheet()};
   document.querySelectorAll(".sheet [data-vl]").forEach(b=>b.onclick=()=>{read();d.vorlauf=+b.dataset.vl;if(d.vorlauf&&!d.vorlaufText)d.vorlaufText=vlText(d);drawSheet()});
@@ -3489,6 +3637,8 @@ function clean(d){
   const o={typ:d.typ,person:d.person,titel:d.titel||"",datum:d.datum,endDatum:(d.endDatum&&d.endDatum>d.datum)?d.endDatum:"",
     von:isGanz(d.typ)?"":(d.von||""),bis:isGanz(d.typ)?"":(d.bis||""),serie:d.serie||"",intervall:d.intervall||0};
   if(d.wichtig)o.wichtig=true;
+  if(d.typ==="termin"){if(d.bringt)o.bringt=String(d.bringt).slice(0,20);if(d.holt)o.holt=String(d.holt).slice(0,20)}
+  if(d.typ==="geburtstag"&&Array.isArray(d.ideen))o.ideen=d.ideen.slice(0,20);
   if(d.geschuetzt){o.geschuetzt=true;if(d.ersteller)o.ersteller=d.ersteller}
   if(isPrivObj(d)){o.sichtbar=[...new Set([...(d.sichtbar||[]),...(MY_UID&&(!d.ersteller||d.ersteller===MY_UID)?[MY_UID]:[])])].slice(0,30);o.ersteller=d.ersteller||MY_UID}
   if(d.vonName)o.vonName=d.vonName;
@@ -4031,6 +4181,13 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-13b",d:"2026-11-13",t:"🏠 Neuer Bereich: Familie",items:[
+    "🛒 Gemeinsame Einkaufsliste: live auf allen Handys, nach Bereichen sortiert, häufige Artikel mit einem Tipp",
+    "🍝 Essensplan der Woche: Zutaten mit einem Tipp auf die Einkaufsliste",
+    "🚗 Wer bringt, wer holt? Fahrten beim Termin eintragen, offene Fahrten mit einem Tipp übernehmen",
+    "🎂 Geburtstage der nächsten 60 Tage mit Geschenkideen zum Abhaken",
+    "📇 Familien-Infobrett: Ärzte, Schule, Notfallnummern, Allergien, Größen",
+    "📅 Termine in den Handy-Kalender übernehmen (alle, pro Person oder einzeln)"]},
   {v:"2026-11-13a",d:"2026-11-13",t:"🤝 Halbe Sterne",items:[
     "🤝 Allein oder mit Hilfe: Wer eine Aufgabe mit Hilfe schafft, bekommt die halben Sterne (z. B. ½ ⭐ statt 1 ⭐)",
     "✅ Eltern wählen beim Bestätigen „💪 Allein“ oder „🤝 Mit Hilfe“, auch bei Foto-Aufgaben",
