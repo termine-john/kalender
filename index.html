@@ -280,7 +280,7 @@ html.lesehilfe .spopts button{font-size:1.5rem;padding:16px 8px}html.lesehilfe .
 .tauschbtns{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}.tauschbtns button{font:inherit;display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 2px;border-radius:12px;border:1px solid var(--line);background:var(--surface);color:inherit}.tauschbtns button:disabled{opacity:.45}.tauschbtns em{font-style:normal;font-size:11px;color:#5fd38d;font-weight:700}
 .kidbar{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
 .kidbar .pbar{height:12px;border-radius:99px;background:rgba(127,127,127,.2);overflow:hidden;margin:6px 0 2px}.kidbar .pbar i{display:block;height:100%;background:linear-gradient(90deg,#ffd166,#ff9f1c);border-radius:99px}
-.pend{display:grid;grid-template-columns:1fr auto auto;gap:6px;align-items:center}.pend button{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:10px;padding:6px 10px;font:inherit}
+.pend{display:grid;grid-template-columns:1fr auto auto auto;gap:6px;align-items:center}.pend button{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:10px;padding:6px 10px;font:inherit}
 .kidsel{margin-top:4px;max-width:100%;font:inherit;font-size:12px;padding:3px 4px;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:inherit}
 .nameq{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0}
 .nameq button{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:999px;padding:8px 14px;font:inherit}
@@ -1435,7 +1435,7 @@ function taskThema(t){if(t.thema&&THEMA[t.thema])return t.thema;const x=THEMEN.f
 function renderStars(){
   applyHilfen();
   const P=persons();
-  const cards=P.map(([k,n])=>`<div class="starcard${popPerson===k?" pop":""}">${av(k,"av big-av")}<span class="nm p-${k}" style="background:none">${esc(n)}</span><span class="big">⭐ ${starBalance(k)}</span><button class="lvlchip" data-abzshow="${k}">${levelVon(k).ic} ${levelVon(k).n}</button><span class="wk">${sternPause(k)?"🏠 heute bei Papa · Pause":`diese Woche +${starWeek(k)}`}</span>${KID||READONLY?"":`<button class="stfix" data-fix="${k}" aria-label="Sterne von ${esc(n)} korrigieren">✏️ ändern</button>`}</div>`).join("");
+  const cards=P.map(([k,n])=>`<div class="starcard${popPerson===k?" pop":""}">${av(k,"av big-av")}<span class="nm p-${k}" style="background:none">${esc(n)}</span><span class="big">⭐ ${sF(starBalance(k))}</span><button class="lvlchip" data-abzshow="${k}">${levelVon(k).ic} ${levelVon(k).n}</button><span class="wk">${sternPause(k)?"🏠 heute bei Papa · Pause":`diese Woche +${starWeek(k)}`}</span>${KID||READONLY?"":`<button class="stfix" data-fix="${k}" aria-label="Sterne von ${esc(n)} korrigieren">✏️ ändern</button>`}</div>`).join("");
   popPerson="";
   const vis=tasks.filter(t=>{const l=logFor(t);return !(t.wiederholung==="einmalig"&&l&&l.datum<today)});
   vis.sort((a,b)=>(!!logFor(a))-(!!logFor(b))||String(a.person).localeCompare(b.person));
@@ -1450,14 +1450,14 @@ function renderStars(){
     return `<details class="thema th-${k}" ${done<ts.length?"open":""}><summary><span class="thi">${ic}</span><span class="thn"><b>${nm}</b><span class="meta">${done===ts.length?"✅ alles geschafft!":`${done} von ${ts.length} erledigt · noch ${offen} ⭐ drin`}</span><span class="thbar"><i style="width:${pct}%"></i></span></span></summary>
       <div class="tasklist">${ts.map(row).join("")}</div></details>`}).join("");
   const rws=rewards.slice().sort((a,b)=>(+a.kosten)-(+b.kosten)).map(r=>`<div class="rw${KID&&zielGet()===r.id?" ziel":""}"><div class="rw-head"><b>${KID&&zielGet()===r.id?"🎯 ":""}${esc(r.titel)}</b><span class="st" style="color:var(--star);font-weight:700">${+r.kosten} ⭐</span></div>${+r.proMonat?`<span class="meta">max. ${+r.proMonat}× im Monat${P.length===1?` · diesen Monat noch ${Math.max(0,+r.proMonat-imMonat(P[0][0],r))}×`:""}</span>`:""}
-    <div class="rw-btns">${P.map(([k,n])=>`<button data-redeem="${esc(r.id)}" data-who="${k}" ${starBalance(k)>=+r.kosten&&!monatVoll(k,r)?"":"disabled"}>${KID?(starBalance(k)>=+r.kosten?"🎁 Einlösen":`🔒 noch ${+r.kosten-starBalance(k)} ⭐`):"Einlösen für "+esc(n)}</button>`).join("")}${KID&&+r.kosten>starBalance(KID)?`<button data-ziel="${esc(r.id)}">${zielGet()===r.id?"✖ Kein Sparziel":"🎯 Sparziel"}</button>`:""}<button data-rwedit="${esc(r.id)}">Bearbeiten</button></div></div>`).join("");
+    <div class="rw-btns">${P.map(([k,n])=>`<button data-redeem="${esc(r.id)}" data-who="${k}" ${starBalance(k)>=+r.kosten&&!monatVoll(k,r)?"":"disabled"}>${KID?(starBalance(k)>=+r.kosten?"🎁 Einlösen":`🔒 noch ${sF(+r.kosten-starBalance(k))} ⭐`):"Einlösen für "+esc(n)}</button>`).join("")}${KID&&+r.kosten>starBalance(KID)?`<button data-ziel="${esc(r.id)}">${zielGet()===r.id?"✖ Kein Sparziel":"🎯 Sparziel"}</button>`:""}<button data-rwedit="${esc(r.id)}">Bearbeiten</button></div></div>`).join("");
   const last=redeems.slice().sort((a,b)=>a.datum<b.datum?1:-1).slice(0,5).map(r=>`<li>${fmt(r.datum)}: ${esc(PNAME[r.person]||"")} hat „${esc(r.titel)}“ eingelöst (−${+r.kosten} ⭐)${r.offen?" · ⏳ wartet auf Bestätigung":""}</li>`).join("");
-  const pend=[...taskLogs.filter(l=>l.offen&&!l.abgelehnt).map(l=>({id:l.id,foto:!!l.foto,txt:`${l.foto?"📸 ":""}${esc(PNAME[l.person]||"")}: „${esc(l.titel)}“${l.aufgabe==="rad"?"":" erledigt"}`,st:l.aufgabe==="rad"&&!+l.sterne?"🎁":`+${+l.sterne||1} ⭐`})),...redeems.filter(r=>r.offen).map(r=>({id:r.id,txt:`${esc(PNAME[r.person]||"")} möchte „${esc(r.titel)}“ einlösen`,st:`−${+r.kosten} ⭐`}))];
-  const pendH=!KID&&!READONLY&&pend.length?`<h3 class="sec">✅ Zu bestätigen</h3><div class="tasklist">${pend.map(x=>`<div class="task pend"><span>${x.txt} <b style="color:var(--star)">${x.st}</b></span>${x.foto?`<button data-rate="${esc(x.id)}" aria-label="Foto ansehen und bewerten">📸 ansehen</button>`:`<button data-ok="${esc(x.id)}" aria-label="Bestätigen">✅</button>`}<button data-no="${esc(x.id)}" aria-label="Ablehnen">✖</button></div>`).join("")}</div>`:"";
+  const pend=[...taskLogs.filter(l=>l.offen&&!l.abgelehnt).map(l=>({id:l.id,foto:!!l.foto,hilfeOk:!!tasks.find(t=>t.id===l.aufgabe)&&+l.sterne>0,txt:`${l.foto?"📸 ":""}${esc(PNAME[l.person]||"")}: „${esc(l.titel)}“${l.aufgabe==="rad"?"":" erledigt"}`,st:l.aufgabe==="rad"&&!+l.sterne?"🎁":`+${sF(+l.sterne||0)} ⭐`})),...redeems.filter(r=>r.offen).map(r=>({id:r.id,txt:`${esc(PNAME[r.person]||"")} möchte „${esc(r.titel)}“ einlösen`,st:`−${+r.kosten} ⭐`}))];
+  const pendH=!KID&&!READONLY&&pend.length?`<h3 class="sec">✅ Zu bestätigen</h3><div class="tasklist">${pend.map(x=>`<div class="task pend"><span>${x.txt} <b style="color:var(--star)">${x.st}</b></span>${x.foto?`<button data-rate="${esc(x.id)}" aria-label="Foto ansehen und bewerten">📸 ansehen</button>`:`${x.hilfeOk?`<button data-half="${esc(x.id)}" aria-label="Mit Hilfe: halbe Sterne" title="Mit Hilfe = halbe Sterne">🤝 ½</button>`:""}<button data-ok="${esc(x.id)}" aria-label="Allein geschafft: bestätigen">✅</button>`}<button data-no="${esc(x.id)}" aria-label="Ablehnen">✖</button></div>`).join("")}</div>`:"";
   let kidH="";
   if(KID){const b=starBalance(KID),zr=rewards.find(r=>r.id===zielGet()),nx=zr&&+zr.kosten>b?zr:rewards.filter(r=>+r.kosten>b).sort((a,b2)=>(+a.kosten)-(+b2.kosten))[0],np=taskLogs.filter(l=>l.offen&&!l.abgelehnt).reduce((a,l)=>a+(+l.sterne||0),0);
     const heute=taskLogs.filter(l=>l.person===KID&&l.datum===today&&!l.abgelehnt).reduce((a,l)=>a+(+l.sterne||0),0),noch=vis.filter(t=>t.person===KID&&!logFor(t)).reduce((a,t)=>a+(+t.sterne||1),0);
-    kidH=levelHTML(KID)+`<div class="kidbar">${sternPause(KID)?`<div class="pausebox">🏠 <b>Heute bist du bei Papa.</b><br>Das Sterne-System macht Pause: keine Aufgaben, kein Abzug. Morgen geht es weiter!</div>`:""}<b>Hallo ${esc(PNAME[KID]||"")}! 👋</b><div class="kidsum"><span>⭐ Heute verdient<b>+${heute}</b></span><span>🎯 Noch möglich<b>${noch}</b></span><span>💰 Kontostand<b>${b}</b></span></div>${nx?`<div class="pbar"><i style="width:${Math.min(100,Math.round(b/(+nx.kosten)*100))}%"></i></div><span class="meta">${zr&&nx===zr?"🎯 Dein Sparziel":"Nächstes Ziel"}: <b>${esc(nx.titel)}</b> · noch ${+nx.kosten-b} ⭐</span>`:rewards.length?`<br><span class="meta">Du kannst dir jede Belohnung leisten! 🎉</span>`:""}${np?`<br><span class="meta">⏳ ${np} ⭐ warten noch auf Bestätigung</span>`:""}${limitHTML(KID)}${abzugHTML()}${bonusHTML()}</div>`}
+    kidH=levelHTML(KID)+`<div class="kidbar">${sternPause(KID)?`<div class="pausebox">🏠 <b>Heute bist du bei Papa.</b><br>Das Sterne-System macht Pause: keine Aufgaben, kein Abzug. Morgen geht es weiter!</div>`:""}<b>Hallo ${esc(PNAME[KID]||"")}! 👋</b><div class="kidsum"><span>⭐ Heute verdient<b>+${sF(heute)}</b></span><span>🎯 Noch möglich<b>${sF(noch)}</b></span><span>💰 Kontostand<b>${sF(b)}</b></span></div>${nx?`<div class="pbar"><i style="width:${Math.min(100,Math.round(b/(+nx.kosten)*100))}%"></i></div><span class="meta">${zr&&nx===zr?"🎯 Dein Sparziel":"Nächstes Ziel"}: <b>${esc(nx.titel)}</b> · noch ${sF(+nx.kosten-b)} ⭐</span>`:rewards.length?`<br><span class="meta">Du kannst dir jede Belohnung leisten! 🎉</span>`:""}${np?`<br><span class="meta">⏳ ${np} ⭐ warten noch auf Bestätigung</span>`:""}${limitHTML(KID)}${abzugHTML()}${bonusHTML()}</div>`}
   const tlH=tl||'<p class="hint">Noch keine Aufgaben. Leg zum Beispiel „Zimmer aufräumen“ für John mit 2 Sternen an. Wer eine Aufgabe erledigt, tippt auf den Kreis und bekommt die Sterne.</p>';
   document.getElementById("vOther").innerHTML=`<div class="starcards">${cards}</div>${kidH}
     ${KID?`<h3 class="sec">✅ Deine Aufgaben</h3>${hilfe(KID,"fokus")?jetztH():""}${hilfe(KID,"fokus")?`<details class="spaeter"><summary>📋 Alle Aufgaben ansehen</summary>${tlH}</details>`:tlH}${radHTML()}`:""}
@@ -1488,16 +1488,24 @@ document.getElementById("vOther").addEventListener("click",async ev=>{
   const dn=ev.target.closest("[data-done]");
   if(dn){const t=tasks.find(x=>x.id===dn.dataset.done);if(!t||!store)return;if(sternPause(t.person)){pauseToast(t.person);return}const l=logFor(t);
     if(l){if(KID&&!l.offen){toast("Schon bestätigt ✓ Super gemacht!");return}
-      if(!await askConfirm(l.offen?"Abhaken zurücknehmen?":`Erledigt zurücknehmen? ${PNAME[t.person]} verliert dafür ${+l.sterne||1} ⭐.`,"Zurücknehmen"))return;await store.del(l.id);toast("Zurückgenommen")}
+      if(!await askConfirm(l.offen?"Abhaken zurücknehmen?":`Erledigt zurücknehmen? ${PNAME[t.person]} verliert dafür ${sF(+l.sterne||0)} ⭐.`,"Zurücknehmen"))return;await store.del(l.id);toast("Zurückgenommen")}
     else if(KID&&t.foto){kidFoto(t)}
     else if(KID){const w=+t.sterne||1,st=capSterne(t.person,today,artVon(t),w);await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:st,datum:today,titel:t.titel});render();confetti();toast(st?`⏳ Super! +${st} ⭐, sobald Mama oder Papa bestätigt haben${capTxt(st,w)}`:"✅ Super gemacht! Für heute ist das Sterne-Limit erreicht.");if(ttsAuto())speak(`Super gemacht, ${PNAME[KID]||""}! ${t.titel} ist abgehakt. Du bekommst ${sternTxt(+t.sterne||1)}, sobald Mama oder Papa bestätigt haben.`)}
-    else{const w=+t.sterne||1,st=capSterne(t.person,today,artVon(t),w);await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:st,datum:today,titel:t.titel});popPerson=t.person;render();if(premOn(3))confetti();toast(`⭐ +${st} für ${PNAME[t.person]}!${capTxt(st,w)}`)}
+    else{const voll=+t.sterne||1;
+      const buche=async hilfe=>{closeSheet();const w=hilfe?halb(voll):voll,st=capSterne(t.person,today,artVon(t),w);await store.add({typ:"erledigt",aufgabe:t.id,person:t.person,sterne:st,datum:today,titel:t.titel,...(hilfe?{mitHilfe:true}:{})});popPerson=t.person;render();if(premOn(3)&&!hilfe)confetti();toast(`${hilfe?"🤝":"⭐"} +${sF(st)} für ${PNAME[t.person]}!${capTxt(st,w)}`)};
+      sheet(`✅ ${esc(t.titel)}`,`<p class="hint" style="margin-top:0">Wie hat ${esc(PNAME[t.person]||"")} das geschafft?</p>
+        <div class="rate"><button class="btn" id="hAll">💪 Allein<br><small>+${sF(voll)} ⭐</small></button><button class="btn ghost" id="hMit">🤝 Mit Hilfe<br><small>+${sF(halb(voll))} ⭐</small></button></div>
+        <button class="btn ghost" id="hX" style="width:100%">Abbrechen</button>`);
+      document.getElementById("hAll").onclick=()=>buche(false);document.getElementById("hMit").onclick=()=>buche(true);document.getElementById("hX").onclick=closeSheet}
     return}
   const zb=ev.target.closest("[data-ziel]");if(zb){const id=zb.dataset.ziel;zielSet(zielGet()===id?"":id);render();if(zielGet()){const r=rewards.find(x=>x.id===id);toast(`🎯 Dein Sparziel: ${r?r.titel:""}`)}return}
   const fx=ev.target.closest("[data-fix]");if(fx){fixStars(fx.dataset.fix);return}
   const okb=ev.target.closest("[data-ok]");
+  const hb=ev.target.closest("[data-half]");
+  if(hb){const x=taskLogs.find(y=>y.id===hb.dataset.half);if(!x)return;const{id,offen,...o}=x,st=halb(x.sterne);await store.set(id,{...o,sterne:st,mitHilfe:true});popPerson=x.person;
+    toast(`🤝 Mit Hilfe: +${sF(st)} ⭐ für ${PNAME[x.person]}`);return}
   if(okb){const x=[...taskLogs,...redeems].find(y=>y.id===okb.dataset.ok);if(!x)return;const{id,offen,...o}=x;await store.set(id,o);if(x.typ==="einloesung"&&+x.zuschuss)await zuschussBuchen(x);popPerson=x.person;
-    toast(x.typ==="erledigt"?`⭐ +${+x.sterne||1} für ${PNAME[x.person]} bestätigt`:`🎉 „${x.titel}“ für ${PNAME[x.person]} bestätigt`);return}
+    toast(x.typ==="erledigt"?`⭐ +${sF(+x.sterne||0)} für ${PNAME[x.person]} bestätigt`:`🎉 „${x.titel}“ für ${PNAME[x.person]} bestätigt`);return}
   const nob=ev.target.closest("[data-no]");
   if(nob){const x=[...taskLogs,...redeems].find(y=>y.id===nob.dataset.no);if(!x)return;if(!await askConfirm(x.typ==="erledigt"?`„${x.titel}“ nicht bestätigen? Die Sterne gibt es dann nicht.`:`„${x.titel}“ ablehnen? Die Sterne bekommt ${PNAME[x.person]} zurück.`,"Ablehnen"))return;await store.del(x.id);toast("Abgelehnt");return}
   const tk=ev.target.closest("[data-task]");if(tk){if(KID){const t=tasks.find(x=>x.id===tk.dataset.task);if(t&&hilfe(KID,"fokus")){fokusSheet(t);return}if(t){const l=logFor(t);speak(`${t.titel}. ${sternTxt(+t.sterne||1)}. ${l?(l.offen?"Schon abgehakt, wartet auf Bestätigung.":"Schon erledigt. Super!"):"Noch zu erledigen."}`)}return}openTaskSheet(tasks.find(x=>x.id===tk.dataset.task));return}
@@ -1627,7 +1635,8 @@ function kidFoto(t){
 async function fotoBewerten(id){
   const x=taskLogs.find(l=>l.id===id);if(!x)return;
   sheet("📸 Foto bewerten",`<p style="margin:0 0 8px"><b>${esc(PNAME[x.person]||"")}:</b> ${esc(x.titel)}</p><div id="fImg" class="hint" style="text-align:center;padding:30px 0">Foto wird geladen …</div>
-    <div class="rate"><button class="btn" data-rt="ok">✅ Gut gemacht<br><small>+${+x.sterne||1} ⭐</small></button><button class="btn" data-rt="perfekt" style="background:linear-gradient(135deg,#ffd166,#ff9f1c);color:#3a2300">🌟 100 % perfekt<br><small>+${2*(+x.sterne||1)} ⭐</small></button></div>
+    <div class="rate"><button class="btn" data-rt="ok">✅ Allein & gut<br><small>+${sF(+x.sterne||0)} ⭐</small></button><button class="btn" data-rt="perfekt" style="background:linear-gradient(135deg,#ffd166,#ff9f1c);color:#3a2300">🌟 100 % perfekt<br><small>+${2*(+x.sterne||1)} ⭐</small></button></div>
+    <button class="btn ghost" data-rt="hilfe" style="width:100%;margin-bottom:8px">🤝 Mit Hilfe geschafft · +${sF(halb(x.sterne))} ⭐</button>
     <label class="f">Was fehlt noch? (bei „Nochmal“)<input id="fHint" maxlength="80" placeholder="z. B. Schreibtisch auch aufräumen"></label>
     <div class="actions"><button class="btn ghost" data-rt="nochmal">🔁 Nochmal machen</button><button class="btn ghost" id="fX">Später</button></div>`);
   document.getElementById("fX").onclick=closeSheet;
@@ -1636,7 +1645,8 @@ async function fotoBewerten(id){
     if(rt==="nochmal"){const h=document.getElementById("fHint").value.trim().slice(0,80);await store.set(x.id,{...o,offen:true,abgelehnt:true,hinweis:h||"Bitte nochmal ordentlich machen"});
       toast(`🔁 ${PNAME[x.person]} soll „${x.titel}“ nochmal machen`)}
     else if(rt==="perfekt"){const w=2*(+x.sterne||1),st=Math.max(+x.sterne||0,capSterne(x.person,x.datum,logArt(x),w,x.id));await store.set(x.id,{...o,sterne:st,perfekt:true});popPerson=x.person;confetti();toast(`🌟 Perfekt! +${st} ⭐ für ${PNAME[x.person]}${capTxt(st,w)}`)}
-    else{await store.set(x.id,{...o,fotoOk:true});popPerson=x.person;toast(`✅ +${+x.sterne||1} ⭐ für ${PNAME[x.person]}`)}
+    else if(rt==="hilfe"){const st=halb(x.sterne);await store.set(x.id,{...o,sterne:st,fotoOk:true,mitHilfe:true});popPerson=x.person;toast(`🤝 Mit Hilfe: +${sF(st)} ⭐ für ${PNAME[x.person]}`)}
+    else{await store.set(x.id,{...o,fotoOk:true});popPerson=x.person;toast(`✅ +${sF(+x.sterne||0)} ⭐ für ${PNAME[x.person]}`)}
     closeSheet();fotoWeg(foto);setTimeout(()=>runBonus(),800)});
 }
 /* Perfekte Tage */
@@ -1701,6 +1711,7 @@ function wireBonus(){
 }
 /* ---------- Neuigkeiten fürs Kinder-Handy (nur Sterne-System) ---------- */
 const KID_NEWS=[
+  {id:"k14",ic:"🤝",t:"Allein oder mit Hilfe",x:"Wenn du eine Aufgabe ganz allein schaffst, gibt es alle Sterne. Hat dir jemand geholfen, gibt es die Hälfte, also zum Beispiel einen halben Stern. Probier es allein, du schaffst das!"},
   {id:"k13",ic:"💶",t:"Zahltag",x:"Einmal pro Woche ist Zahltag. Dann kannst du Sterne in Geld für dein Erspartes tauschen. Tipp: Je mehr Sterne du auf einmal tauschst, desto mehr Geld bekommst du! 100 Sterne geben 12 Euro statt 10. Sparen lohnt sich also."},
   {id:"k12",ic:"💰",t:"Dein eigenes Geld",x:"Neu: Unter Mein Geld siehst du dein Erspartes und deine Wunschliste. Deine Sterne kannst du gegen echtes Geld für dein Erspartes tauschen. Davon kaufst du dir deine Wünsche selbst, zum Beispiel Nike-Sachen oder Spiele-Guthaben. Wer selbst kauft, bekommt 5 Sterne Stolz-Bonus!"},
   {id:"k11",ic:"🎯",t:"Sparziel & Spar-Zinsen",x:"Neue Belohnungen: Spiele-Guthaben und Nike-Sachen! Tipp bei einer großen Belohnung auf Sparziel, dann siehst du immer, wie viel noch fehlt. Und wer eine ganze Woche nichts ausgibt, bekommt Spar-Zinsen: bis zu 5 Sterne extra!"},
@@ -1727,6 +1738,9 @@ function showKidNews(force){
   const ks=document.getElementById("knSay");if(ks)ks.onclick=()=>speak(neu.map(n=>n.t+". "+n.x).join(" "));
   document.getElementById("knOk").onclick=()=>{try{speechSynthesis.cancel()}catch(e){}try{localStorage.setItem("fk-kidnews",JSON.stringify([...new Set([...seen,...neu.map(n=>n.id)])]))}catch(e){}closeSheet();view="sterne";render()};
 }
+/* ---------- Halbe Sterne ---------- */
+const sF=n=>{n=Math.round((+n||0)*2)/2;const neg=n<0;n=Math.abs(n);const w=Math.floor(n),h=n-w>0;return (neg?"−":"")+(h?(w?w+"½":"½"):String(w))};
+const halb=n=>Math.round(+n||0)/2;
 /* ---------- Tageslimit für Sterne ---------- */
 const limN=()=>{const v=FAMCONF&&FAMCONF.limitN;return v===0||v?+v:10};
 const limS=()=>{const v=FAMCONF&&FAMCONF.limitS;return v===0||v?+v:5};
@@ -1880,17 +1894,17 @@ function wireGeld(){
 }
 function fixStars(p){
   const cur=starBalance(p);
-  sheet(`⭐ Sterne von ${esc(PNAME[p]||"")}`,`<p class="hint">Aktueller Stand: <b>${cur} ⭐</b>. Gib den neuen Stand ein. Die Änderung erscheint im 📜 Verlauf als „Korrektur“.</p>
-    <label class="f">Neuer Stand<input id="fxN" type="number" inputmode="numeric" min="0" max="9999" value="${cur}"></label>
+  sheet(`⭐ Sterne von ${esc(PNAME[p]||"")}`,`<p class="hint">Aktueller Stand: <b>${sF(cur)} ⭐</b>. Gib den neuen Stand ein. Die Änderung erscheint im 📜 Verlauf als „Korrektur“.</p>
+    <label class="f">Neuer Stand<input id="fxN" type="number" inputmode="decimal" step="0.5" min="0" max="9999" value="${cur}"></label>
     <label class="f">Grund (optional)<input id="fxW" maxlength="60" placeholder="z. B. Streit mit der Schwester"></label>
     <div class="actions"><button class="btn" id="fxOk">Speichern</button><button class="btn ghost" id="fxX">Abbrechen</button></div>`);
   document.getElementById("fxX").onclick=closeSheet;
-  document.getElementById("fxOk").onclick=async()=>{const nv=Math.max(0,Math.round(+document.getElementById("fxN").value||0)),diff=nv-cur,w=document.getElementById("fxW").value.trim().slice(0,60);
+  document.getElementById("fxOk").onclick=async()=>{const nv=Math.max(0,Math.round((+String(document.getElementById("fxN").value).replace(",",".")||0)*2)/2),diff=nv-cur,w=document.getElementById("fxW").value.trim().slice(0,60);
     if(!diff){closeSheet();return}if(!store)return;closeSheet();
     const titel="✏️ Korrektur"+(w?": "+w:"");
     if(diff>0)await store.add({typ:"erledigt",aufgabe:"korrektur",person:p,sterne:diff,datum:today,titel});
     else await store.add({typ:"einloesung",person:p,kosten:-diff,titel,datum:today});
-    popPerson=p;render();toast(`⭐ ${PNAME[p]} hat jetzt ${nv} Sterne`)};
+    popPerson=p;render();toast(`⭐ ${PNAME[p]} hat jetzt ${sF(nv)} Sterne`)};
 }
 function showHistory(who){
   const P=persons().filter(([k])=>taskLogs.some(l=>l.person===k)||redeems.some(r=>r.person===k));
@@ -1904,9 +1918,9 @@ function showHistory(who){
     const days={};for(const x of xs)(days[x.datum]=days[x.datum]||[]).push(x);
     return `<details class="rw" ${m===wk[0]?"open":""}><summary style="cursor:pointer"><b>${m===mondayOf(today)?"Diese Woche":m===mondayOf(addDays(today,-7))?"Letzte Woche":"Woche ab "+fmt(m)}</b> · ✅ ${cnt} erledigt · <span style="color:var(--star)">+${plus} ⭐</span>${minus?` · 🎁 −${minus} ⭐`:""}</summary>
       ${Object.keys(days).sort().reverse().map(d=>`<div style="margin-top:8px"><span class="lbl-s">${d===today?"Heute":d===addDays(today,-1)?"Gestern":fmt(d)}</span>
-        ${days[d].map(x=>`<div class="hint" style="margin:2px 0">${x._k==="t"?(x.abgelehnt?"🔁":x.offen?"⏳":"✅"):"🎁"} ${!who?`<b>${esc(PNAME[x.person]||"")}</b>: `:""}${esc(x.titel||"")}${x._k==="t"?` <span style="color:var(--star)">+${+x.sterne||1} ⭐</span>${x.offen?" · wartet auf Bestätigung":""}`:` <span>−${+x.kosten} ⭐</span>${x.offen?" · wartet auf Bestätigung":""}`}</div>`).join("")}</div>`).join("")}</details>`}).join("");
+        ${days[d].map(x=>`<div class="hint" style="margin:2px 0">${x._k==="t"?(x.abgelehnt?"🔁":x.offen?"⏳":x.mitHilfe?"🤝":"✅"):"🎁"} ${!who?`<b>${esc(PNAME[x.person]||"")}</b>: `:""}${esc(x.titel||"")}${x._k==="t"?` <span style="color:var(--star)">+${sF(+x.sterne||0)} ⭐</span>${x.offen?" · wartet auf Bestätigung":""}`:` <span>−${+x.kosten} ⭐</span>${x.offen?" · wartet auf Bestätigung":""}`}</div>`).join("")}</div>`).join("")}</details>`}).join("");
   sheet("📜 Verlauf",`${!KID&&P.length>1?`<div class="nameq"><button data-hw="" ${who?"":'style="outline:2px solid var(--accent)"'}>Alle</button>${P.map(([k,n])=>`<button data-hw="${k}" ${who===k?'style="outline:2px solid var(--accent)"':""}>${esc(n)}</button>`).join("")}</div>`:""}
-    ${who?`<p class="hint">${esc(PNAME[who]||"")} hat insgesamt <b>${taskLogs.filter(l=>l.person===who&&!l.offen).length}</b> Aufgaben erledigt und hat jetzt <b>${starBalance(who)} ⭐</b>.</p>`:""}
+    ${who?`<p class="hint">${esc(PNAME[who]||"")} hat insgesamt <b>${taskLogs.filter(l=>l.person===who&&!l.offen).length}</b> Aufgaben erledigt und hat jetzt <b>${sF(starBalance(who))} ⭐</b>.</p>`:""}
     ${html||'<p class="hint">Noch nichts erledigt.</p>'}
     <button class="btn ghost" id="hClose">Schließen</button>`);
   document.querySelectorAll("[data-hw]").forEach(b=>b.onclick=()=>showHistory(b.dataset.hw));
@@ -2060,7 +2074,7 @@ const ABZ=[
   ["fleiss","💪","Fleißig","100 Aufgaben erledigt",p=>zaehl(p,l=>!!tasks.find(t=>t.id===l.aufgabe)),100]];
 const abzVon=p=>ABZ.map(([id,ic,n,txt,f,ziel])=>{const ist=Math.min(f(p),ziel);return {id,ic,n,txt,ist,ziel,ok:ist>=ziel}});
 function abzHTML(p,klein){let a=abzVon(p);if(klein){const ok=a.filter(b=>b.ok),nah=a.filter(b=>!b.ok).sort((x,y)=>y.ist/y.ziel-x.ist/x.ziel).slice(0,3);a=[...ok,...nah]}return `<div class="abzgrid${klein?" klein":""}">${a.map(b=>`<div class="abz${b.ok?" ok":""}" title="${esc(b.txt)}"><span class="abzi">${b.ok?b.ic:"🔒"}</span><b>${esc(b.n)}</b><span class="meta">${b.ok?"geschafft!":`${b.ist}/${b.ziel} · ${esc(b.txt)}`}</span></div>`).join("")}</div>`}
-function levelHTML(p){const L=levelVon(p);return `<div class="lvlcard"><span class="lvli">${L.ic}</span><div class="lvlt"><b>Level ${L.i+1}: ${L.n}</b><span class="thbar"><i style="width:${L.pct}%"></i></span><span class="meta">${L.nx?`${L.v} ⭐ gesammelt · noch ${L.nx[0]-L.v} ⭐ bis ${L.nx[1]} ${L.nx[2]}`:`${L.v} ⭐ gesammelt · höchstes Level!`}</span></div></div>`}
+function levelHTML(p){const L=levelVon(p);return `<div class="lvlcard"><span class="lvli">${L.ic}</span><div class="lvlt"><b>Level ${L.i+1}: ${L.n}</b><span class="thbar"><i style="width:${L.pct}%"></i></span><span class="meta">${L.nx?`${sF(L.v)} ⭐ gesammelt · noch ${L.nx[0]-L.v} ⭐ bis ${L.nx[1]} ${L.nx[2]}`:`${sF(L.v)} ⭐ gesammelt · höchstes Level!`}</span></div></div>`}
 function showAbz(p){sheet(`🏅 ${esc(PNAME[p]||"")}: Level & Abzeichen`,`${levelHTML(p)}<p class="hint">${abzVon(p).filter(b=>b.ok).length} von ${ABZ.length} Abzeichen geschafft</p>${abzHTML(p)}<button class="btn ghost" id="abX" style="margin-top:10px">Schließen</button>`);document.getElementById("abX").onclick=closeSheet}
 function neueAbz(){
   if(!KID||!DATA_READY)return;let seen=null;try{seen=JSON.parse(localStorage.getItem("fk-abz")||"null")}catch(e){}
@@ -2210,7 +2224,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v88";
+const APP_VER="v89";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -4017,6 +4031,10 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-13a",d:"2026-11-13",t:"🤝 Halbe Sterne",items:[
+    "🤝 Allein oder mit Hilfe: Wer eine Aufgabe mit Hilfe schafft, bekommt die halben Sterne (z. B. ½ ⭐ statt 1 ⭐)",
+    "✅ Eltern wählen beim Bestätigen „💪 Allein“ oder „🤝 Mit Hilfe“, auch bei Foto-Aufgaben",
+    "½ Halbe Sterne werden überall angezeigt und lassen sich auch beim Korrigieren eintragen"]},
   {v:"2026-11-11f",d:"2026-11-11",t:"💶 Zahltag",items:[
     "💶 Sterne lassen sich einmal pro Woche am Zahltag in Geld fürs Ersparte tauschen, nicht jederzeit",
     "📈 Wer mehr auf einmal tauscht, bekommt mehr: 20 ⭐ = 2 €, 50 ⭐ = 5,50 €, 100 ⭐ = 12 €",
