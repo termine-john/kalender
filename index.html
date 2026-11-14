@@ -1323,7 +1323,7 @@ const voiceOK=()=>!!SRClass;
 let recog=null;
 function startVoice(){
   if(!SRClass){toast("Spracheingabe geht in diesem Browser nicht. Bitte Chrome verwenden.");return}
-  sheet("Sprich deinen Termin",`<p class="hint">Zum Beispiel: „Donnerstag 15 Uhr Elternabend John“, „Christin Arbeit morgen von 6 bis 14 Uhr“ oder „Geburtstag Oma Helga am 3. März“.</p>
+  sheet("Sprich deinen Termin",`<p class="hint">Zum Beispiel: „Donnerstag 15 Uhr Elternabend Ben“, „Mama Arbeit morgen von 6 bis 14 Uhr“ oder „Geburtstag Oma Helga am 3. März“.</p>
     <div class="voice-live on" id="vLive" aria-live="polite">Ich höre zu …</div>
     <div class="actions"><button class="btn ghost" id="vStop">Abbrechen</button></div>`);
   let finalText="",failed=false;
@@ -1478,7 +1478,7 @@ function renderStars(){
   if(KID){const b=starBalance(KID),zr=rewards.find(r=>r.id===zielGet()),nx=zr&&+zr.kosten>b?zr:rewards.filter(r=>+r.kosten>b).sort((a,b2)=>(+a.kosten)-(+b2.kosten))[0],np=taskLogs.filter(l=>l.offen&&!l.abgelehnt).reduce((a,l)=>a+(+l.sterne||0),0);
     const heute=taskLogs.filter(l=>l.person===KID&&l.datum===today&&!l.abgelehnt).reduce((a,l)=>a+(+l.sterne||0),0),noch=vis.filter(t=>t.person===KID&&!logFor(t)).reduce((a,t)=>a+(+t.sterne||1),0);
     kidH=levelHTML(KID)+`<div class="kidbar">${sternPause(KID)?`<div class="pausebox">🏠 <b>Heute bist du bei Papa.</b><br>Das Sterne-System macht Pause: keine Aufgaben, kein Abzug. Morgen geht es weiter!</div>`:""}<b>Hallo ${esc(PNAME[KID]||"")}! 👋</b><div class="kidsum"><span>⭐ Heute verdient<b>+${sF(heute)}</b></span><span>🎯 Noch möglich<b>${sF(noch)}</b></span><span>💰 Kontostand<b>${sF(b)}</b></span></div>${nx?`<div class="pbar"><i style="width:${Math.min(100,Math.round(b/(+nx.kosten)*100))}%"></i></div><span class="meta">${zr&&nx===zr?"🎯 Dein Sparziel":"Nächstes Ziel"}: <b>${esc(nx.titel)}</b> · noch ${sF(+nx.kosten-b)} ⭐</span>`:rewards.length?`<br><span class="meta">Du kannst dir jede Belohnung leisten! 🎉</span>`:""}${np?`<br><span class="meta">⏳ ${np} ⭐ warten noch auf Bestätigung</span>`:""}${limitHTML(KID)}${abzugHTML()}${bonusHTML()}</div>`}
-  const tlH=tl||'<p class="hint">Noch keine Aufgaben. Leg zum Beispiel „Zimmer aufräumen“ für John mit 2 Sternen an. Wer eine Aufgabe erledigt, tippt auf den Kreis und bekommt die Sterne.</p>';
+  const tlH=tl||'<p class="hint">Noch keine Aufgaben. Leg zum Beispiel „Zimmer aufräumen“ für dein Kind mit 2 Sternen an. Wer eine Aufgabe erledigt, tippt auf den Kreis und bekommt die Sterne.</p>';
   document.getElementById("vOther").innerHTML=`<div class="starcards">${cards}</div>${kidH}
     ${KID?`<h3 class="sec">✅ Deine Aufgaben</h3>${hilfe(KID,"fokus")?jetztH():""}${hilfe(KID,"fokus")?`<details class="spaeter"><summary>📋 Alle Aufgaben ansehen</summary>${tlH}</details>`:tlH}${radHTML()}`:""}
     <div class="actions" style="margin:8px 0">${TTS_OK&&tasks.length?`<button class="btn${KID?"":" ghost"}" id="ttsBtn">🔊 Vorlesen</button>`:""}<button class="btn ghost" id="histBtn">📜 Verlauf</button></div>
@@ -2375,7 +2375,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v91";
+const APP_VER="v92";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -2445,7 +2445,7 @@ function adminBoxFill(){
     <li><b>+ Sammlung starten</b> → Sammlungs-ID: <b>admins</b></li>
     <li>Dokument-ID: diesen Code einfügen:</li></ol>
     <div class="linkbox" id="myUid">${esc(uid)}</div><button class="btn ghost" id="uidCopy">Code kopieren</button>
-    <ol class="steps" start="4"><li>Feld: <b>name</b>, Wert: <b>Robert</b> → Speichern</li><li>App neu öffnen. Hier erscheint dann das Postfach.</li></ol>
+    <ol class="steps" start="4"><li>Feld: <b>name</b>, Wert: <b>dein Name</b> → Speichern</li><li>App neu öffnen. Hier erscheint dann das Postfach.</li></ol>
     <p class="hint" id="admSt">Prüfe Freischaltung …</p><button class="btn ghost" id="admRe">🔄 Nochmal prüfen</button></details>`;
   const st=async()=>{const el=document.getElementById("admSt");if(el)el.textContent="Prüfe Freischaltung …";await checkAdmin();
     if(IS_ADMIN){adminBoxFill();return}const e2=document.getElementById("admSt");if(!e2)return;
@@ -3462,7 +3462,7 @@ function renderNext(){
 }
 setInterval(()=>{if(!document.hidden)renderNext()},60*1000);
 function openSearch(){
-  sheet("Suchen",`<label class="f">Wonach suchst du?<input id="sq" type="search" placeholder="z. B. Zahnarzt, Pascal, Fußball" autocomplete="off"></label><div id="sres" class="tasklist"></div>`);
+  sheet("Suchen",`<label class="f">Wonach suchst du?<input id="sq" type="search" placeholder="z. B. Zahnarzt, Oma, Fußball" autocomplete="off"></label><div id="sres" class="tasklist"></div>`);
   const q=document.getElementById("sq"),box=document.getElementById("sres");
   const run=()=>{const v=q.value.trim().toLowerCase();if(v.length<2){box.innerHTML='<p class="hint">Mindestens 2 Buchstaben eingeben.</p>';return}
     const hits=entries.filter(e=>[(e.titel||""),PNAME[e.person]||"",TYPN[e.typ]||""].join(" ").toLowerCase().includes(v));
@@ -3541,7 +3541,7 @@ function drawSheet(){
     ${!isEdit&&voiceOK()?`<button class="btn ghost" id="voiceIn">🎤 Per Sprache ausfüllen</button>`:""}
     <div class="seg" style="--n:${Math.min(4,peopleAllowed.length)}">${peopleAllowed.map(([k,n])=>`<button class="p-${k}" data-person="${k}" aria-pressed="${d.person===k}">${n}</button>`).join("")}</div>
     ${bd?`<p class="hint">In welcher Spalte soll der Geburtstag stehen? Für Verwandte und Freunde passt „Gemeinsam“.</p>`:""}
-    <label class="f">${bd?"Wer hat Geburtstag?":d.typ==="termin"?"Was?":"Notiz (optional)"}<input id="i-titel" list="dlTitles" autocomplete="off" value="${esc(d.titel)}" placeholder="${bd?"z. B. Oma Helga":d.typ==="termin"?"z. B. John bei Papa, Zahnarzt …":d.typ==="arbeit"?"z. B. Frühdienst":"z. B. Ostsee"}"></label>
+    <label class="f">${bd?"Wer hat Geburtstag?":d.typ==="termin"?"Was?":"Notiz (optional)"}<input id="i-titel" list="dlTitles" autocomplete="off" value="${esc(d.titel)}" placeholder="${bd?"z. B. Oma Helga":d.typ==="termin"?"z. B. Fußballtraining, Zahnarzt …":d.typ==="arbeit"?"z. B. Frühdienst":"z. B. Ostsee"}"></label>
     <div class="box">
       <span class="lbl-s">🔔 Vorher erinnern</span>
       <div class="seg" style="--n:5">${[[0,"Nein"],[1,"1 Tag"],[3,"3 Tage"],[7,"1 Woche"],[14,"2 Wo."]].map(([v,t])=>`<button class="typ" data-vl="${v}" aria-pressed="${vlDays(d)===v}">${t}</button>`).join("")}</div>
@@ -3942,7 +3942,7 @@ const TOUR=[
   {s:".legend",v:"woche",t:"Eine Spalte pro Person",p:"Jede Person hat ihre eigene Spalte und Farbe. „Gemeinsam“ ist für Familientermine. Die Namen kannst du in den Einstellungen ändern."},
   {s:"#days .cell",v:"woche",t:"Schnell eintragen",p:"Tippe einfach in ein Feld. Dann ist der Eintrag gleich für diese Person und diesen Tag vorbereitet."},
   {s:"#fab",t:"Neuer Eintrag",p:"Wähle Termin, Arbeitszeit, Urlaub, Ferien oder Geburtstag. Termine kannst du jede Woche oder alle 2 Wochen wiederholen lassen und mit ❗ als wichtig markieren."},
-  {s:"#micBtn",t:"Per Sprache",p:"Sag zum Beispiel: „Donnerstag 15 Uhr Elternabend John“. Das Formular füllt sich von selbst, du prüfst es nur noch."},
+  {s:"#micBtn",t:"Per Sprache",p:"Sag zum Beispiel: „Donnerstag 15 Uhr Elternabend Ben“. Das Formular füllt sich von selbst, du prüfst es nur noch."},
   {s:"#photoBtn",t:"Per Foto",p:"Fotografiere einen Terminzettel, Brief oder Dienstplan. Die App liest Datum und Uhrzeit heraus und schlägt die Einträge vor."},
   {s:"#days .chip",v:"woche",t:"Eintrag bearbeiten",p:"Tippe auf einen Eintrag, um ihn zu ändern oder zu löschen. Dort kannst du ihn auch jede Woche oder alle 2 Wochen fortlaufend eintragen. Vor dem Löschen fragt die App immer nach."},
   {s:"#morning",t:"Deine Tagesübersicht",p:"Hier steht alles für heute und die wichtigen Termine der nächsten Tage. Mit „Gelesen ✓“ blendest du sie aus. 🖼 erstellt ein Bild für deinen Sperrbildschirm."},
@@ -4762,7 +4762,7 @@ const I18N={
 "Du hast in diesem Kalender nur Leserechte":["You only have read access in this calendar","Bu takvimde sadece okuma iznin var","Masz tylko dostęp do odczytu","У тебе лише доступ на перегляд"],
 "🌐 Sprache":["🌐 Language","🌐 Dil","🌐 Język","🌐 Мова"],
 "Familienkalender":["Family Calendar","Aile Takvimi","Kalendarz","Сімейний календар"],
-"z. B. John bei Papa, Zahnarzt …":["e.g. Dentist, football …","ör. Diş hekimi, futbol …","np. Dentysta, piłka …","напр. Стоматолог, футбол …"],
+"z. B. Fußballtraining, Zahnarzt …":["e.g. Dentist, football …","ör. Diş hekimi, futbol …","np. Dentysta, piłka …","напр. Стоматолог, футбол …"],
 "z. B. Frühdienst":["e.g. Early shift","ör. Sabah vardiyası","np. Ranna zmiana","напр. Рання зміна"],"z. B. Ostsee":["e.g. Seaside","ör. Deniz kenarı","np. Morze","напр. Море"],
 "z. B. Oma Helga":["e.g. Grandma","ör. Büyükanne","np. Babcia","напр. Бабуся"],"z. B. 1956":["e.g. 1956","ör. 1956","np. 1956","напр. 1956"],
 "z. B. Mama":["e.g. Mom","ör. Anne","np. Mama","напр. Мама"],"Termine suchen":["Search events","Etkinlik ara","Szukaj wydarzeń","Шукати події"],
