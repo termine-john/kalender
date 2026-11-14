@@ -3,6 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="Kostenloser Familienkalender fürs Handy: eine Spalte pro Person, Arbeitszeiten, Urlaub, Ferien, Einkaufsliste, Essensplan und ein Sterne-System für Kinder. Ohne Anmeldung, ohne Werbung.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="Familienkalender">
+<meta property="og:title" content="📅 Familienkalender – kostenlos, ohne Anmeldung, ohne Werbung">
+<meta property="og:description" content="Alle Termine der Familie an einem Ort: Spalte pro Person, Arbeitszeiten, Urlaub & Ferien, Einkaufsliste, Essensplan und Sterne & Belohnungen für Kinder. Für Android & iPhone.">
+<meta property="og:url" content="https://familien-kalender.github.io/">
+<meta property="og:image" content="https://familien-kalender.github.io/icon-512.png">
+<meta property="og:locale" content="de_DE">
+<meta name="twitter:card" content="summary">
 <title>Familienkalender</title>
 <link rel="manifest" href="manifest.webmanifest">
 <meta name="theme-color" content="#15394b">
@@ -12,7 +21,7 @@
 <link rel="apple-touch-icon" href="icon-192.png">
 <style>
 html{-webkit-text-size-adjust:100%}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}body{margin:0}img{max-width:100%}[hidden]{display:none!important}
-/* Layout: Wochenansicht, je Tag eine Zeile mit 4 Spalten , Morgen-Übersicht oben, Eingabe im Bottom-Sheet */
+/* Layout: Wochenansicht, je Tag eine Zeile mit 4 Spalten (Christin · John · Robert · Gemeinsam), Morgen-Übersicht oben, Eingabe im Bottom-Sheet */
 :root{
   --bg:#cdd7dd; --surface:#e9eef1; --fg:#0f181e; --muted:#43525b; --line:#b3c0c8;
   --accent:#174a61; --band:#15394b; --on-band:#eef6fa; --on-band-dim:#a9c4d2;
@@ -2366,7 +2375,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v90";
+const APP_VER="v91";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
