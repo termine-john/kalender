@@ -297,6 +297,14 @@ html.lesehilfe .spopts button{font-size:1.5rem;padding:16px 8px}html.lesehilfe .
 .geb{display:flex;flex-direction:column;gap:4px;padding:8px 0;border-top:1px solid var(--line)}.geb .bald{color:#ff9f6b;font-weight:700}.ideen{display:flex;flex-wrap:wrap;gap:5px}.ideen button{font:inherit;font-size:13px;padding:4px 10px;border-radius:99px;border:1px solid var(--line);background:var(--bg);color:inherit}.ideen button.ok{opacity:.6;text-decoration:line-through}.btn.klein{padding:5px 12px;font-size:13px;align-self:flex-start}
 .infogrp{display:flex;flex-direction:column;gap:5px;margin:8px 0}.infoitem{text-align:left;font:inherit;padding:9px 10px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:inherit;line-height:1.4}
 .fahrtsel{display:flex;flex-wrap:wrap;gap:5px;align-items:center;margin:6px 0}.fahrtsel>span{min-width:64px;font-size:13px;opacity:.8}.fahrtsel button{font:inherit;font-size:13px;padding:5px 10px;border-radius:99px;border:1px solid var(--line);background:var(--bg);color:inherit}.fahrtsel button[aria-pressed="true"]{background:var(--accent);color:var(--surface);border-color:transparent}
+.introopen{overflow:hidden}#intro{position:fixed;inset:0;z-index:9000;overflow-y:auto;background:radial-gradient(120% 60% at 50% 0%,rgba(124,160,245,.25),transparent 60%),var(--bg);color:var(--text);-webkit-overflow-scrolling:touch}
+.intro-in{max-width:560px;margin:0 auto;padding:28px 18px 40px}.intro-hero{text-align:center}.intro-hero img{border-radius:18px;box-shadow:0 8px 28px rgba(0,0,0,.35)}.intro-hero h1{margin:12px 0 4px;font-size:clamp(1.7rem,7vw,2.3rem)}.intro-hero p{margin:0 0 10px;font-size:1.1rem;opacity:.9}
+.intro-pills{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}.intro-pills span{font-size:12.5px;padding:4px 10px;border-radius:99px;background:rgba(127,127,127,.14)}
+.intro-cta{display:flex;flex-direction:column;gap:8px;margin:20px 0}.intro-cta .btn{padding:14px;font-size:1.05rem}.intro-link{font:inherit;background:none;border:0;color:var(--accent);text-decoration:underline;padding:6px}
+#intro h2{font-size:1.15rem;margin:22px 0 10px}.intro-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.intro-grid>div{display:flex;flex-direction:column;gap:3px;padding:12px;border-radius:14px;background:var(--surface);border:1px solid var(--line)}.intro-grid span{font-size:26px}.intro-grid small{opacity:.8;line-height:1.35}
+.intro-steps{padding-left:20px;line-height:1.6}#intro details{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:10px 12px;margin:6px 0}#intro summary{font-weight:700;cursor:pointer}#intro details p{margin:6px 0 0}.intro-foot{text-align:center;margin-top:24px;font-size:13px}.intro-foot a{color:inherit;opacity:.7}
+#demobar{position:fixed;left:8px;right:8px;bottom:calc(8px + env(safe-area-inset-bottom));z-index:800;display:flex;gap:8px;align-items:center;justify-content:space-between;padding:8px 10px;border-radius:14px;background:linear-gradient(135deg,#ffd166,#ff9f1c);color:#2a1700;box-shadow:0 6px 20px rgba(0,0,0,.35);font-size:13px}#demobar .btn{background:#2a1700;color:#ffd166;padding:8px 10px;font-size:13px;white-space:nowrap}
+body.demo .fabs{bottom:calc(70px + env(safe-area-inset-bottom))}body.demo{padding-bottom:70px}
 .kidbar{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:10px 12px;margin:8px 0}
 .kidbar .pbar{height:12px;border-radius:99px;background:rgba(127,127,127,.2);overflow:hidden;margin:6px 0 2px}.kidbar .pbar i{display:block;height:100%;background:linear-gradient(90deg,#ffd166,#ff9f1c);border-radius:99px}
 .pend{display:grid;grid-template-columns:1fr auto auto auto;gap:6px;align-items:center}.pend button{border:1px solid var(--line);background:var(--surface);color:inherit;border-radius:10px;padding:6px 10px;font:inherit}
@@ -942,7 +950,10 @@ async function init(){
     if(c&&c.lesen){startReader(c);return}
     READONLY=true;document.body.classList.add("ro");entries=[];applyNames([]);render();setStatus("Bitte den vollständigen Link öffnen, den du bekommen hast.");return}
   const cfg=getCfg();
-  if(!cfg){if(!_ln){applyNames([]);render()}store=localStore();setStatus("Noch nicht eingerichtet · tippe oben rechts");render();showSetup();return}
+  if(!cfg){if(!_ln){applyNames([]);render()}store=localStore();setStatus("Noch nicht eingerichtet · tippe oben rechts");render();
+    let goSetup=false;try{goSetup=sessionStorage.getItem("fk-setup")==="1";sessionStorage.removeItem("fk-setup")}catch(e){}
+    const hatDaten=(()=>{try{return JSON.parse(localStorage.getItem("familienkalender-lokal")||"[]").length>0}catch(e){return false}})();
+    if(goSetup||hatDaten)showSetup();else showIntro();return}
   if(cfg.lesen){startReader(cfg);return}
   if(cfg.local||!window.firebase){store=localStore();setStatus(cfg.local?"Nur auf diesem Gerät gespeichert":"Datenbank nicht erreichbar · nur auf diesem Gerät");render();autoBackup();return}
   let col;
@@ -2043,6 +2054,55 @@ function renderFamilie(){
   el.querySelectorAll("[data-info]").forEach(b=>b.onclick=()=>infoSheet(infos.find(x=>x.id===b.dataset.info)));
   el.querySelectorAll("[data-ics]").forEach(b=>b.onclick=()=>exportStart(b.dataset.ics));
 }
+/* ---------- Startseite & Beispiel-Familie ---------- */
+let DEMO=false;
+const introGesehen=()=>{try{return localStorage.getItem("fk-intro")==="1"}catch(e){return false}};
+function showIntro(){
+  const el=document.createElement("div");el.id="intro";el.setAttribute("role","dialog");el.setAttribute("aria-label","Willkommen beim Familienkalender");
+  const F=[["👨‍👩‍👧‍👦","Eine Spalte pro Person","Jeder sieht sofort, wer wann was hat. Live auf allen Handys."],["💼","Arbeit, Urlaub & Ferien","Schichten, Urlaub und Schulferien auf einen Blick."],["🔗","Lese-Link für Ex-Partner, Oma …","Sieht nur die Termine des Kindes, sonst nichts."],["⭐","Sterne & Belohnungen","Kinder sammeln Sterne für Aufgaben, mit Lernspielen und Foto-Beweis."],["🛒","Einkaufsliste & Essensplan","Zusammen planen, zusammen einkaufen."],["🚗","Wer bringt, wer holt?","Fahrten verteilen mit einem Tipp."],["🧒","Kinder-Handy","Das Kind sieht nur seine eigenen Termine und Aufgaben."],["🔒","Privat & sicher","Ohne Anmeldung, ohne Werbung. Eure Daten sieht nur eure Familie."]];
+  el.innerHTML=`<div class="intro-in">
+    <div class="intro-hero"><img src="icon-192.png" alt="" width="72" height="72"><h1>Familienkalender</h1><p>Der Kalender, der eure ganze Familie zusammenbringt.</p><span class="intro-pills"><span>✅ kostenlos</span><span>✅ ohne Anmeldung</span><span>✅ ohne Werbung</span><span>📱 Android & iPhone</span></span></div>
+    <div class="intro-cta"><button class="btn" id="inDemo">👀 Erst mal ausprobieren</button><button class="btn ghost" id="inNeu">✨ Eigenen Familienkalender anlegen</button><button class="intro-link" id="inJoin">🔗 Ich habe einen Einladungslink</button></div>
+    <h2>Was der Kalender kann</h2><div class="intro-grid">${F.map(([i,t,x])=>`<div><span>${i}</span><b>${t}</b><small>${x}</small></div>`).join("")}</div>
+    <h2>So einfach geht's</h2><ol class="intro-steps"><li><b>Anlegen:</b> Namen eintragen, fertig. Kein Konto, keine E-Mail.</li><li><b>Einladen:</b> Link per WhatsApp an die Familie schicken.</li><li><b>Installieren:</b> „📲 Als App installieren“, dann liegt er wie eine App auf dem Startbildschirm.</li></ol>
+    <h2>Häufige Fragen</h2><details><summary>Was kostet das?</summary><p>Nichts. Keine Werbung, kein Abo.</p></details><details><summary>Wer sieht unsere Termine?</summary><p>Nur wer euren Einladungslink bekommt. Jede Familie hat ihren eigenen, geheimen Kalender.</p></details><details><summary>Brauche ich ein Konto?</summary><p>Nein. Einfach anlegen und loslegen.</p></details>
+    <div class="intro-cta"><button class="btn" id="inDemo2">👀 Beispiel-Familie ansehen</button></div>
+    <p class="intro-foot"><a href="datenschutz.html">Datenschutz & Impressum</a></p></div>`;
+  document.body.appendChild(el);document.body.classList.add("introopen");
+  const zu=()=>{el.remove();document.body.classList.remove("introopen");try{localStorage.setItem("fk-intro","1")}catch(e){}};
+  const demo=()=>{zu();startDemo()};
+  el.querySelector("#inDemo").onclick=demo;el.querySelector("#inDemo2").onclick=demo;
+  el.querySelector("#inNeu").onclick=()=>{zu();showSetup()};
+  el.querySelector("#inJoin").onclick=()=>{zu();showSetup();setTimeout(()=>{const i=document.getElementById("joinIn");if(i){i.scrollIntoView({block:"center"});i.focus()}},300)};
+}
+function startDemo(){
+  DEMO=true;document.body.classList.add("demo");
+  const d=n=>addDays(today,n),mo=mondayOf(today),W=n=>addDays(mo,n);
+  let all=[];const add=o=>all.push({...o,id:"d"+all.length});
+  for(let i=0;i<5;i++){add({typ:"arbeit",person:"christin",titel:"Frühdienst",datum:W(i),von:"06:00",bis:"14:00",endDatum:""});add({typ:"arbeit",person:"robert",titel:"Büro",datum:W(i),von:"09:00",bis:"17:30",endDatum:""})}
+  [[1,"⚽ Fußballtraining","17:00","18:30","robert","offen"],[3,"⚽ Fußballtraining","17:00","18:30","christin","robert"],[2,"🦷 Zahnarzt","15:30","16:00","christin",""]].forEach(([i,t,v,b,br,ho])=>add({typ:"termin",person:"john",titel:t,datum:W(i),von:v,bis:b,endDatum:"",...(br?{bringt:br}:{}),...(ho?{holt:ho}:{})}));
+  add({typ:"termin",person:"gemeinsam",titel:"🍰 Kaffee bei Oma",datum:W(5),von:"15:00",bis:"",endDatum:""});
+  add({typ:"termin",person:"gemeinsam",titel:"Elternabend",datum:W(2),von:"19:00",bis:"20:30",endDatum:"",wichtig:true});
+  add({typ:"geburtstag",person:"gemeinsam",titel:"Oma Helga",datum:"1955-"+d(9).slice(5),ideen:[{t:"Fotobuch",ok:true},{t:"Blumen",ok:false}]});
+  add({typ:"ferien",person:"john",titel:"Weihnachtsferien",datum:d(30),endDatum:d(44),von:"",bis:""});
+  [["🛏️ Bett machen",1,"taeglich"],["📚 Hausaufgaben ohne Erinnerung",2,"taeglich"],["🧹 Zimmer aufräumen",3,"woechentlich"],["🗑️ Müll rausbringen",2,"woechentlich"]].forEach(([t,s,w],i)=>all.push({id:"dt"+i,typ:"aufgabe",titel:t,person:"john",sterne:s,wiederholung:w}));
+  all.push({id:"dl0",typ:"erledigt",aufgabe:"dt0",person:"john",sterne:1,datum:today,titel:"🛏️ Bett machen"});
+  all.push({id:"dl1",typ:"erledigt",aufgabe:"x",person:"john",sterne:24,datum:d(-3),titel:"Aufgaben der Woche"});
+  [["🍦 Eis essen gehen",25],["🎬 Filmabend, ich suche den Film aus",40],["🍿 Kinobesuch",100]].forEach(([t,k],i)=>all.push({id:"dr"+i,typ:"belohnung",titel:t,kosten:k}));
+  ["Milch","Bananen","Brot","Zahnpasta"].forEach((t,i)=>all.push({id:"de"+i,typ:"einkauf",titel:t,kat:ekKat(t),erledigt:false}));
+  all.push({id:"essen-"+today,typ:"essen",datum:today,titel:"Spaghetti Bolognese",zutaten:["Spaghetti","Hackfleisch","Tomaten"]});
+  all.push({id:"essen-"+d(1),typ:"essen",datum:d(1),titel:"Pfannkuchen",zutaten:["Mehl","Eier","Milch"]});
+  all.push({id:"dg0",typ:"geld",person:"john",betrag:2350,titel:"Geld von Oma",art:"geschenk",datum:d(-10)});all.push({id:"dw0",typ:"wunsch",person:"john",titel:"🧱 Lego-Set",preis:3999});
+  all.push({id:"di0",typ:"info",kat:"arzt",titel:"Kinderarzt Dr. Beispiel",text:"030 1234567 · Mo–Fr 8–12 Uhr",person:"john"});
+  applyNames(["Anna","Ben","Tom"]);
+  const upd=()=>{splitData(all);render()};
+  store={mode:"demo",async add(o){all.push({...o,id:"d"+Math.random().toString(36).slice(2,9)});upd()},async set(id,o){all=all.filter(e=>e.id!==id);all.push({...o,id});upd()},async del(id){all=all.filter(e=>e.id!==id);upd()},async names(){toast("In der Beispiel-Familie lassen sich die Namen nicht ändern")},async conf(){},async wipe(){}};
+  FAMCONF={};splitData(all);DATA_READY=true;setStatus("👀 Beispiel-Familie");
+  const bar=document.createElement("div");bar.id="demobar";bar.innerHTML=`<span>👀 <b>Beispiel-Familie</b> · Probier alles aus, nichts wird gespeichert.</span><button class="btn" id="demoGo">✨ Eigenen Kalender anlegen</button>`;
+  document.body.appendChild(bar);
+  bar.querySelector("#demoGo").onclick=()=>{try{sessionStorage.setItem("fk-setup","1")}catch(e){}location.reload()};
+  view="woche";render();toast("👀 Das ist eine Beispiel-Familie. Schau dir Woche, Familie und Sterne an!");
+}
 function fixStars(p){
   const cur=starBalance(p);
   sheet(`⭐ Sterne von ${esc(PNAME[p]||"")}`,`<p class="hint">Aktueller Stand: <b>${sF(cur)} ⭐</b>. Gib den neuen Stand ein. Die Änderung erscheint im 📜 Verlauf als „Korrektur“.</p>
@@ -2375,7 +2435,7 @@ function openRewardSheet(r){
 let FS=null,LESE=[],memberOK=null,memberErr="",mirrorTimer=null;
 
 /* ---------- Support ---------- */
-const APP_VER="v92";
+const APP_VER="v93";
 const IS_MAIN_SITE=location.hostname==="robertpahl1987-creator.github.io";
 function supDB(){
   if(FS)return FS;
@@ -4190,6 +4250,9 @@ setTimeout(greetUser,2600);
 /* ---------- Was ist neu? (Sammel-Übersicht aller Updates) ---------- */
 // Neue Einträge immer OBEN als NEUEN Block anfügen (nie an einen freigegebenen Block anhängen). v = eindeutige Kennung, d = Datum.
 const CHANGELOG=[
+  {v:"2026-11-14a",d:"2026-11-14",t:"👋 Neue Startseite",items:[
+    "👋 Wer die App zum ersten Mal öffnet, sieht eine Startseite mit allen Funktionen",
+    "👀 Mit „Erst mal ausprobieren“ lässt sich eine Beispiel-Familie ansehen, ohne etwas anzulegen"]},
   {v:"2026-11-13b",d:"2026-11-13",t:"🏠 Neuer Bereich: Familie",items:[
     "🛒 Gemeinsame Einkaufsliste: live auf allen Handys, nach Bereichen sortiert, häufige Artikel mit einem Tipp",
     "🍝 Essensplan der Woche: Zutaten mit einem Tipp auf die Einkaufsliste",
